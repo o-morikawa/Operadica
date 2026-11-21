@@ -115,10 +115,10 @@ endCompose[set_List][f_Association, i_Integer, g_Association] :=
     Association[
       Map[
         Function[tup,
-          tup -> f[Key[
+          tup -> Lookup[f, Key[
             Join[
               Take[tup, i - 1],
-              {g[Key[Take[tup, {i, i + m - 1}]]]},
+              {Lookup[g, Key[Take[tup, {i, i + m - 1}]]]},
               Drop[tup, i + m - 1]
             ]
           ]]
@@ -132,7 +132,7 @@ endCompose[set_List][f_Association, i_Integer, g_Association] :=
 endAct[set_List][f_Association, s_List] :=
   With[{sinv = Ordering[s]},
     Association[
-      Map[Function[tup, tup -> f[Key[tup[[sinv]]]]], Tuples[set, Length[s]]]
+      Map[Function[tup, tup -> Lookup[f, Key[tup[[sinv]]]]], Tuples[set, Length[s]]]
     ]
   ];
 

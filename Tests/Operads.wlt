@@ -55,7 +55,7 @@ VerificationTest[
 VerificationTest[
   With[{and = <|{0, 0} -> 0, {0, 1} -> 0, {1, 0} -> 0, {1, 1} -> 1|>, end = EndOperad[{0, 1}]},
     With[{and3 = end["Compose"][and, 1, and]},
-      {and3[Key[{1, 1, 1}]], and3[Key[{1, 0, 1}]], Length[and3]}
+      {Lookup[and3, Key[{1, 1, 1}]], Lookup[and3, Key[{1, 0, 1}]], Length[and3]}
     ]
   ],
   {1, 0, 8},

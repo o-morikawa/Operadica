@@ -152,7 +152,7 @@ boundaryMatrix[low_List, high_List] :=
       SparseArray[
         Flatten[
           Table[
-            {index[Key[Delete[high[[j]], p]]], j} -> (-1)^(p - 1),
+            {Lookup[index, Key[Delete[high[[j]], p]]], j} -> (-1)^(p - 1),
             {j, 1, Length[high]}, {p, 1, Length[high[[j]]]}
           ],
           1
