@@ -149,3 +149,16 @@ VerificationTest[
   {OpEvaluate::arity},
   TestID -> "Trees-evaluate-arity"
 ]
+
+(* subtrees *)
+
+VerificationTest[
+  {
+    OpSubtree[m[m[OpLeaf, OpLeaf], t[OpLeaf, OpLeaf, OpLeaf]], {2}],
+    OpSubtree[m[OpLeaf, OpLeaf], {}],
+    OpReplaceSubtree[m[m[OpLeaf, OpLeaf], OpLeaf], {1}, OpLeaf],
+    OpReplaceSubtree[m[OpLeaf, OpLeaf], {}, OpLeaf]
+  },
+  {t[OpLeaf, OpLeaf, OpLeaf], m[OpLeaf, OpLeaf], m[OpLeaf, OpLeaf], OpLeaf},
+  TestID -> "Trees-subtree"
+]

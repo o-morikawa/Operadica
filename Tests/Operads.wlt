@@ -128,3 +128,88 @@ VerificationTest[
   27,
   TestID -> "Operads-algebra-Z3"
 ]
+
+(* ---------------------------------------------------------------------- *)
+(* symmetric operads                                                      *)
+(* ---------------------------------------------------------------------- *)
+
+(* the block permutation s o_i t *)
+
+VerificationTest[
+  {
+    PermutationCompose[{2, 1}, 1, {1, 2}],
+    PermutationCompose[{2, 1}, 2, {2, 1}],
+    PermutationCompose[{2, 3, 1}, 2, {2, 1}],
+    PermutationCompose[{1, 2, 3}, 2, {2, 1}],
+    PermutationCompose[{3, 1, 2}, 1, {1, 2, 3}]
+  },
+  {{2, 3, 1}, {3, 2, 1}, {2, 4, 3, 1}, {1, 3, 2, 4}, {3, 4, 5, 1, 2}},
+  TestID -> "Operads-PermutationCompose"
+]
+
+VerificationTest[
+  {
+    WordOperad[]["Action"][{2, 1, 3}, {2, 3, 1}],
+    WordOperad[]["Action"][{1, 2, 3}, {2, 3, 1}]
+  },
+  {{1, 3, 2}, {3, 1, 2}},
+  TestID -> "Operads-words-action"
+]
+
+(* right action and equivariance of partial composition *)
+
+VerificationTest[
+  OperadEquivariantQ[WordOperad[], 4],
+  True,
+  TestID -> "Operads-words-equivariant"
+]
+
+VerificationTest[
+  {OperadAxiomsQ[CommutativeOperad[], 5], OperadEquivariantQ[CommutativeOperad[], 4]},
+  {True, True},
+  TestID -> "Operads-Com"
+]
+
+VerificationTest[
+  OperadEquivariantQ[EndOperad[{0, 1}], 3,
+    "Elements" -> <|
+      1 -> EndOperad[{0, 1}]["Elements"][1],
+      2 -> EndOperad[{0, 1}]["Elements"][2],
+      3 -> Take[EndOperad[{0, 1}]["Elements"][3], {100, 105}]
+    |>],
+  True,
+  TestID -> "Operads-End-equivariant"
+]
+
+VerificationTest[
+  With[{r = OperadEquivarianceCheck[WordOperad[], 3]},
+    {r["Passed"], Sort[Keys[r["Checked"]]], AllTrue[Values[r["Checked"]], # > 0 &]}
+  ],
+  {True, {"Action", "Equivariance"}, True},
+  TestID -> "Operads-equivariance-report"
+]
+
+(* an operad without an action is reported, and a wrong action is caught *)
+
+VerificationTest[
+  OperadEquivarianceCheck[AssociativeOperad[], 3],
+  $Failed,
+  {OperadEquivarianceCheck::noaction},
+  TestID -> "Operads-equivariance-noaction"
+]
+
+VerificationTest[
+  OperadEquivariantQ[Join[WordOperad[], <|"Action" -> Function[{w, s}, s[[w]]]|>], 3],
+  False,
+  TestID -> "Operads-wrong-action-detected"
+]
+
+(* supplying the elements to test *)
+
+VerificationTest[
+  With[{r = OperadAxiomCheck[WordOperad[], 4, "Elements" -> <|1 -> {{1}}, 2 -> {{2, 1}}, 3 -> {{3, 1, 2}}|>]},
+    {r["Passed"], StringStartsQ[r["Strength"], "over the supplied elements"]}
+  ],
+  {True, True},
+  TestID -> "Operads-supplied-elements"
+]

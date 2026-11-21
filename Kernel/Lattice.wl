@@ -1,7 +1,9 @@
 (* ::Package:: *)
 
 (* ====================================================================== *)
-(*  Cochains on the hypercubic lattice Z^d                                 *)
+(*  Operadica`Lattice`                                                     *)
+(*                                                                        *)
+(*  Cochains on the hypercubic lattice Z^d.                                *)
 (*                                                                        *)
 (*  A cell is LCell[x, s]: base point x, increasing list of directions s.  *)
 (*  A cochain expression is built from                                    *)
@@ -26,8 +28,46 @@
 (*      and the component formulas of its Appendix A (which follow        *)
 (*      Chen-Tata, arXiv:2106.05274).                                     *)
 (*                                                                        *)
-(*  This file is read by Operadica.wl inside Operadica`Private`.          *)
+(*  Layer: lattice.  Depends on: nothing.                                 *)
 (* ====================================================================== *)
+
+BeginPackage["Operadica`Lattice`"];
+
+LCell::usage = "LCell[x, s] is the cell of the hypercubic lattice with base point x (a list of d coordinates) spanned by the directions s (an increasing list of integers between 1 and d).";
+
+LCells::usage = "LCells[dims, p] lists all p-cells of the periodic lattice with side lengths dims.";
+
+Cochain::usage = "Cochain[p, f] is the p-cochain whose value on the cell LCell[x, s] is f[x, s]. With f an undefined symbol this is a generic cochain, suitable for proving identities.";
+
+Coboundary::usage = "Coboundary[c] is the lattice coboundary (exterior derivative) of the cochain c. It stays unevaluated until it is evaluated on a cell with CochainValue.";
+
+HigherCup::usage = "HigherCup[i][a, b] is the higher cup product of a p-cochain a and a q-cochain b, of degree p + q - i. HigherCup[0] is the cup product Cup[a, b]. The sign convention is that of eq. (A3) of arXiv:2303.06160; see SteenrodCupSign for Steenrod's original convention.";
+
+CochainQ::usage = "CochainQ[c] gives True if c is a cochain expression: built from Cochain, Coboundary, Cup, HigherCup, sums and scalar multiples.";
+
+CochainDegree::usage = "CochainDegree[c] gives the degree of a homogeneous cochain expression.";
+
+CochainValue::usage = "CochainValue[c, x, s] evaluates the cochain expression c on the cell with base point x and directions s. CochainValue[c, LCell[x, s]] does the same. Directions given out of order pick up the sign of the permutation.";
+
+CochainZeroQ::usage = "CochainZeroQ[c, d] gives True if the cochain expression c vanishes identically on the d-dimensional hypercubic lattice, tested at a symbolic base point. CochainZeroQ[c, {L1, ..., Ld}] tests all cells of a periodic lattice. The option Modulus -> n tests vanishing modulo n.";
+
+CochainEqualQ::usage = "CochainEqualQ[a, b, d] gives True if the cochain expressions a and b agree identically on the d-dimensional hypercubic lattice. CochainEqualQ[a, b, {L1, ..., Ld}] compares on all cells of a periodic lattice. The option Modulus -> n compares modulo n.";
+
+PeriodicCochain::usage = "PeriodicCochain[p, dims, data] is the p-cochain on the periodic lattice with side lengths dims whose values are given by the Association data, with keys {x, s}; missing cells have value 0.";
+
+RandomCochain::usage = "RandomCochain[p, dims] is a p-cochain on the periodic lattice with random integer values. RandomCochain[p, dims, {min, max}] sets the range.";
+
+THooftFluxCochain::usage = "THooftFluxCochain[z, dims] is the closed 2-cochain on the periodic lattice with side lengths dims that equals z[[mu, nu]] on the plaquette in the (mu, nu) plane at the sites whose mu and nu coordinates are both maximal, and 0 elsewhere. z is an antisymmetric matrix.";
+
+CochainIntegrate::usage = "CochainIntegrate[c, dims] sums the top-degree cochain c over all top cells of the periodic lattice with side lengths dims.";
+
+PontryaginSquare::usage = "PontryaginSquare[b] gives Cup[b, b] - HigherCup[1][b, Coboundary[b]].";
+
+SteenrodSquare::usage = "SteenrodSquare[k][a] gives HigherCup[p - k][a, a] for a p-cochain a; modulo 2 this represents the Steenrod square Sq^k.";
+
+SteenrodCupSign::usage = "SteenrodCupSign[p, q, i] gives the sign (-1)^(i (p + q + 1)) relating the two conventions for higher cup products: Steenrod's cup-i of a p-cochain and a q-cochain equals SteenrodCupSign[p, q, i] times HigherCup[i].";
+
+Begin["`Private`"];
 
 (* ---------------------------------------------------------------------- *)
 (* cells                                                                  *)
@@ -301,3 +341,7 @@ PontryaginSquare[b_] := Cup[b, b] - HigherCup[1][b, Coboundary[b]];
 SteenrodSquare[k_Integer][a_] := HigherCup[CochainDegree[a] - k][a, a];
 
 SteenrodCupSign[p_Integer, q_Integer, i_Integer] := (-1)^(i (p + q + 1));
+
+End[];
+
+EndPackage[];
