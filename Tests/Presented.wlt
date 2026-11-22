@@ -526,3 +526,77 @@ VerificationTest[
   {True, True, True, True, False, True},
   TestID -> "Presented-Koszul-series"
 ]
+
+(* ---------------------------------------------------------------------- *)
+(* characters of the symmetric groups, and free algebras                  *)
+(* ---------------------------------------------------------------------- *)
+
+(* the cycle types are listed as in IntegerPartitions[k]: the identity is
+   last.  Com(k) is the trivial representation, Ass(k) the regular one, and
+   Lie(3), Lie(4) have the characters (-1, 0, 2) and (0, 0, -2, 0, 6) *)
+
+VerificationTest[
+  With[{values = Function[{oper, arity}, Map[Function[tr, Lookup[tr, 0, 0]], Values[OperadCharacter[oper, arity]]]]},
+    {
+      Keys[OperadCharacter[LieOperad[], 3]],
+      Keys[OperadCharacter[LieOperad[], 4]],
+      Table[values[PresentedCommutativeOperad[], k], {k, 2, 4}],
+      Table[values[PresentedAssociativeOperad[], k], {k, 2, 4}],
+      Table[values[LieOperad[], k], {k, 2, 4}],
+      OperadCharacter[LieOperad[], 1]
+    }
+  ],
+  {
+    {{3}, {2, 1}, {1, 1, 1}},
+    {{4}, {3, 1}, {2, 2}, {2, 1, 1}, {1, 1, 1, 1}},
+    {{1, 1}, {1, 1, 1}, {1, 1, 1, 1, 1}},
+    {{0, 2}, {0, 0, 6}, {0, 0, 0, 0, 24}},
+    {{-1, 1}, {-1, 0, 2}, {0, 0, -2, 0, 6}},
+    <|{1} -> <|0 -> 1|>|>
+  },
+  TestID -> "Presented-characters"
+]
+
+(* the Gerstenhaber operad in arity 3, by the number of brackets; the Poisson
+   operad is the regular representation *)
+
+VerificationTest[
+  {
+    OperadCharacter[GerstenhaberOperad[], 3],
+    Table[Map[Total, Values[OperadCharacter[PoissonOperad[1], k]]], {k, 2, 4}]
+  },
+  {
+    <|
+      {3} -> <|0 -> 1, 2 -> -1|>,
+      {2, 1} -> <|0 -> 1, 1 -> 1|>,
+      {1, 1, 1} -> <|0 -> 1, 1 -> 3, 2 -> 2|>
+    |>,
+    {{0, 2}, {0, 0, 6}, {0, 0, 0, 0, 24}}
+  },
+  TestID -> "Presented-characters-Poisson"
+]
+
+(* free algebras on graded generators, arity by arity: symmetric and exterior
+   powers over Com, tensor powers over Ass, the free Lie algebra on two even
+   and on two odd generators (2, 1, 2, 3 and 2, 3, 2, 3), and the free
+   Gerstenhaber algebra on a class x of degree 2: x^k and x^(k-2) [x, x] *)
+
+VerificationTest[
+  {
+    FreeAlgebraDimensions[PresentedCommutativeOperad[], {2}, 4],
+    FreeAlgebraDimensions[PresentedCommutativeOperad[], {1}, 4],
+    FreeAlgebraDimensions[PresentedAssociativeOperad[], {1, 1}, 4],
+    FreeAlgebraDimensions[LieOperad[], {2, 2}, 4],
+    FreeAlgebraDimensions[LieOperad[], {1, 1}, 4],
+    FreeAlgebraDimensions[GerstenhaberOperad[], {2}, 4]
+  },
+  {
+    <|1 -> <|2 -> 1|>, 2 -> <|4 -> 1|>, 3 -> <|6 -> 1|>, 4 -> <|8 -> 1|>|>,
+    <|1 -> <|1 -> 1|>, 2 -> <||>, 3 -> <||>, 4 -> <||>|>,
+    <|1 -> <|1 -> 2|>, 2 -> <|2 -> 4|>, 3 -> <|3 -> 8|>, 4 -> <|4 -> 16|>|>,
+    <|1 -> <|2 -> 2|>, 2 -> <|4 -> 1|>, 3 -> <|6 -> 2|>, 4 -> <|8 -> 3|>|>,
+    <|1 -> <|1 -> 2|>, 2 -> <|2 -> 3|>, 3 -> <|3 -> 2|>, 4 -> <|4 -> 3|>|>,
+    <|1 -> <|2 -> 1|>, 2 -> <|4 -> 1, 5 -> 1|>, 3 -> <|6 -> 1, 7 -> 1|>, 4 -> <|8 -> 1, 9 -> 1|>|>
+  },
+  TestID -> "Presented-free-algebra"
+]

@@ -564,3 +564,47 @@ VerificationTest[
   {False, True, 2},
   TestID -> "Bridge-Pontryagin-needs-cup-1"
 ]
+
+(* ---------------------------------------------------------------------- *)
+(* operad <-> loop spaces: the approximation theorem                      *)
+(*   C_n X ~ Omega^n Sigma^n X for connected X.  Rationally: the free     *)
+(*   algebra over P_n = H_*(E_n) on the homology of X has the Poincare    *)
+(*   series of Omega^n Sigma^n X.  Here by arity, up to arity 4            *)
+(* ---------------------------------------------------------------------- *)
+
+(* one sphere: Omega^n S^(n+d) *)
+
+VerificationTest[
+  Table[ApproximationTheoremQ[n, {d}, 4], {n, 1, 3}, {d, 1, 4}],
+  {{True, True, True, True}, {True, True, True, True}, {True, True, True, True}},
+  TestID -> "Bridge-approximation-theorem-spheres"
+]
+
+(* wedges of spheres; and the wrong n does not fit: the free Gerstenhaber
+   algebra on a class of degree 2 has [x, x], which Omega^3 S^5 has not *)
+
+VerificationTest[
+  {
+    Table[
+      ApproximationTheoremQ[n, degrees, 4],
+      {n, 1, 3}, {degrees, {{1, 1}, {1, 2}, {2, 3}, {1, 1, 1}, {1, 2, 3}}}
+    ],
+    FreeAlgebraDimensions[PoissonOperad[2], {2}, 3] === LoopSuspensionDimensions[3, {2}, 3],
+    FreeAlgebraDimensions[PoissonOperad[3], {1, 2}, 4]
+  },
+  {
+    {
+      {True, True, True, True, True},
+      {True, True, True, True, True},
+      {True, True, True, True, True}
+    },
+    False,
+    <|
+      1 -> <|1 -> 1, 2 -> 1|>,
+      2 -> <|3 -> 1, 4 -> 2, 5 -> 1|>,
+      3 -> <|5 -> 2, 6 -> 3, 7 -> 1, 8 -> 1, 9 -> 1|>,
+      4 -> <|7 -> 2, 8 -> 4, 9 -> 3, 10 -> 2, 11 -> 2, 12 -> 2, 13 -> 1|>
+    |>
+  },
+  TestID -> "Bridge-approximation-theorem-wedges"
+]

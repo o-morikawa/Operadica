@@ -1,6 +1,6 @@
 # Operadica 設計文書
 
-最終更新: 2026-11-22(v0.7.0)
+最終更新: 2026-11-22(v0.8.0)
 
 ## 1. 目的
 
@@ -146,6 +146,15 @@ arity n の部分は associahedron Kₙ の胞体鎖複体で、ホモロジー�
 - 射は生成元の行き先で与える(`OperadMorphismQ`)。交換子 `xy − yx` が Lie → Ass を与えること、
   反交換子(Jordan 積)は可換だが結合的でないこと、など。
 - Koszul 双対の対の母関数の関係 `f_P(−f_Q(−x)) = x` は `KoszulSeriesQ`(Com と Lie、Ass と Ass)。
+- **指標**:`OperadCharacter[op, k]` は、対称群 S_k の op(k) への作用の指標を、巡回型(k の分割)ごと、次数ごとに返す。
+  Com(k) は自明表現、Ass(k) は正則表現、Lie(3) は (2, 0, −1)。Poisson operad は正則表現で、次数ごとに分けると分かれる。
+- **自由代数**:次数付きベクトル空間 V の上の自由 P-代数の arity k の部分は `P(k) ⊗_(S_k) V^(⊗k)` で、その次元は
+
+  `(1/k!) Σ_σ tr(σ | P(k)) · tr(σ | V^(⊗k))`
+
+  長さ l の巡回置換の V^(⊗l) の上の跡は、V の基底 e にわたる `(−1)^(|e|(l−1)) t^(l|e|)` の和(Koszul 符号)。
+  `FreeAlgebraDimensions[op, degrees, kmax]`。Com で対称・外積冪、Ass でテンソル冪、Lie で自由次数付き Lie 代数
+  (偶の生成元 2 個で 2, 1, 2, 3、奇の生成元 2 個で 2, 3, 2, 3)。`reference/approximation_reference.py` で確認。
 
 ### 3.5 Barratt–Eccles operad(E∞)と Eₙ の段
 
@@ -210,6 +219,10 @@ Eilenberg–MacLane 空間 K(A, n) = BⁿA(ホモトピー群が次数 n の A �
 - `EilenbergMacLaneHomology`:退化していない単体の鎖複体のホモロジー。bar 構成のホモロジーと一致する。
   K(Z₂, 2) は次元 4 と 5 に退化していない単体を 41 個と 768 個持ち、H₄ = Z₄。
 - `EilenbergMacLaneCycles`:cycle の、整数の上での基底。
+- **ループ空間の側**(有理係数):球面の楔 X = ∨S^(dᵢ)(dᵢ ≥ 1)に対し、ΩΣⁿX の有理ホモトピーは次数 dᵢ+n−1 の
+  生成元の上の自由次数付き Lie 代数(Hilton–Milnor)で、ΩⁿΣⁿX の有理ホモロジーは、それを n−1 だけ下げたものの上の
+  自由次数付き可換代数である(Milnor–Moore)。`FreeLieDimensions`(PBW から)、`LoopSuspensionDimensions`。
+  Ω²S⁴ は次数 2 の多項式類と次数 5 の外積類、Ω³S⁴ は次数 1 の外積類と次数 4 の多項式類。
 - K(A, n) の k-単体の上の、1 を法とする値を持つ関数 w が cocycle であること(退化した単体の上で 0、
   (k+1)-単体の面にわたる交代和が 0)を `CharacteristicCocycleQ` が検査する。そのような w は、
   平坦な n-form ゲージ場の、k 次元での位相的作用である。`CharacteristicClassOrder` は、その類の
@@ -360,6 +373,7 @@ Gerstenhaber operad の Leibniz 則が cochain の上ではホモトピーを除
 | A 上の Eₙ 構造の個数 = H_(n+2)(K(A, n)) の位数 | `EnStructureCount` |
 | 平坦な Z_N ゲージ場の上の格子作用 `(k/N²) A∪δA` は K(Z_N, 1) の 3-cocycle で、四面体の上の値が `VecZN[N, k]` の associator | `FlatFieldCochain`、`DijkgraafWittenWeight`、`DijkgraafWittenAssociatorQ` |
 | `(p/2N) P(B)` は K(Z_N, 2) の 4-cocycle で、その類の位数は `ZNAnyons[N, p]` の spin p/2N の分母 | `PontryaginWeight`、`PontryaginSpinQ` |
+| 近似定理 CₙX ≃ ΩⁿΣⁿX(X 連結)の、有理 Poincaré 級数での確認:H̃_*(X) の上の自由 Pₙ-代数 = H_*(ΩⁿΣⁿX; Q) | `ApproximationTheoremQ` |
 | 四次元トーラス上の 't Hooft flux での重み `(p/2N)ΣP(B)` = flux の相互 braiding | `PontryaginFluxPhase`, `FluxBraidingPhase` |
 
 ### 格子 cochain は E∞ 代数
@@ -473,6 +487,22 @@ K(Z_N, n) の k-単体は、k-単体の上の平坦な Z_N 値 n-form 場であ�
 n = 2 では、cocycle を cochain として bar 構成の (w, c) と比べること(Eilenberg–MacLane の比較写像)はまだしていない。
 比べているのは類の位数である。
 
+### 近似定理
+
+May の近似定理は、連結な X に対して CₙX ≃ ΩⁿΣⁿX を主張する(recognition theorem の証明の中心)。
+有理ホモロジーでは、左辺は H̃_*(X) の上の自由 Pₙ-代数(Pₙ = H_*(Eₙ)、F. Cohen)、右辺は 3.6 のループ空間の計算である。
+`ApproximationTheoremQ[n, degrees, kmax]` は、球面の楔 X について、両辺の次元が arity(生成元の個数)ごと、
+次数ごとに一致することを確かめる。左辺は 3.4 の指標から、右辺は Hilton–Milnor と Milnor–Moore から計算するので、
+二つは独立な計算である。
+
+- 球面 1 個:次数 d の類 x の上の自由 Pₙ-代数は、n+d が奇数なら S(x)、偶数なら S(x, [x, x])。
+  括弧の次数は n−1 なので `[x, x]` は n+d が偶数のときだけ 0 でなく、次数は 2d+n−1。これは ΩⁿS^(n+d) の有理ホモロジーで、
+  `[x, x]` は S^m(m = n+d が偶数)の Whitehead 積 `[ι, ι]`、つまり π_(2m−1)(S^m) ⊗ Q の生成元にあたる。
+- n = 1, 2, 3、球面 1 個(d ≤ 4)と楔(次元 (1,1)、(1,2)、(2,3)、(1,1,1)、(1,2,3))で arity 4 まで確認している。
+- n を取り違えると一致しない(次数 2 の類の上の自由 Gerstenhaber 代数は `[x, x]` を持つが、Ω³S⁵ にはない)。
+
+確かめているのは次元の一致で、写像 CₙX → ΩⁿΣⁿX そのもの(両側 bar 構成)は作っていない。
+
 ## 7. 道筋と到達判定
 
 | 段階 | 作るもの | 到達判定 | 状態 |
@@ -484,7 +514,7 @@ n = 2 では、cocycle を cochain として bar 構成の (w, c) と比べる�
 | C | 点付き Eₙ モノイダル圏、coherence、braid 群の作用 | 五角形・六角形・分類の個数。coherence が長さ 6 まで | 実装済み(parenthesized braids の coherence は未着手) |
 | G | 多重線形展開、ゲージ変分、作用 | 5 節の恒等式が通る | 実装済み |
 | 4 | E∞ operad(Barratt–Eccles、table reduction で surjection へ)、Eₙ フィルトレーション、cochain への作用 | eᵢ ↦ (1,2,1,2,…) の作用が ∪ᵢ を再現。三つの法則 (L)・(C)・(E)。Hirsch 公式のホモトピー | 実装済み(surjection operad の合成は未実装) |
-| 5 | 単体的対象、bar 構成 B(Σⁿ, Cₙ, X) | 反復 bar 構成で作った BⁿA のホモトピー群が次数 n の A だけ。近似定理を有理 Poincaré 級数の一致で確認 | 離散群の場合を実装済み(BⁿA のホモロジーとホモトピー群、Eₙ 構造 = BⁿA の cocycle、格子の作用 = K(A, n) の cocycle)。両側 bar 構成 B(Σⁿ, Cₙ, X) と近似定理は未着手 |
+| 5 | 単体的対象、bar 構成 B(Σⁿ, Cₙ, X) | 反復 bar 構成で作った BⁿA のホモトピー群が次数 n の A だけ。近似定理を有理 Poincaré 級数の一致で確認 | 離散群の場合を実装済み(BⁿA のホモロジーとホモトピー群、Eₙ 構造 = BⁿA の cocycle、格子の作用 = K(A, n) の cocycle)。近似定理は、球面の楔について有理 Poincaré 級数の一致を arity 4 まで確認済み。両側 bar 構成 B(Σⁿ, Cₙ, X) そのものは未着手 |
 
 次の候補:
 
@@ -492,7 +522,7 @@ n = 2 では、cocycle を cochain として bar 構成の (w, c) と比べる�
 - Pontryagin 平方や高次 cup 積を含む作用のゲージ変分を、E∞ の演算で系統的に書くこと
 - K(A, 2) の 4-cocycle と bar 構成 B² の cocycle (w, c) を cochain として比べること(Eilenberg–MacLane の比較写像)
 - surjection operad の、単体的 cochain への作用(arity 3 以上。単体の上では Hirsch のホモトピーが 0 になること)
-- 両側 bar 構成 B(Σⁿ, Cₙ, X) と近似定理 CₙX ≃ ΩⁿΣⁿX(有理 Poincaré 級数の一致)
+- 両側 bar 構成 B(Σⁿ, Cₙ, X) そのもの(単体的な対象として)。Dyer–Lashof 作用素(mod p の近似定理)
 - Koszul 双対の計算(関係式の直交補空間)と operad の bar 構成
 
 ## 8. 開発の進め方
@@ -519,6 +549,8 @@ n = 2 では、cocycle を cochain として bar 構成の (w, c) と比べる�
   単独の層のロードと、14 層すべてのロードも確認済み。`BarConstruction`、`SmithInvariants`、`ChainHomology`、橋の delooping の主張を含む。
 - v0.7.0:`wolframscript -file Scripts/RunTests.wls` で 281/281 が通過(2026-11-22、Wolfram Language 15.0.1、利用者の環境)。
   単独の層のロードと、15 層すべてのロードも確認済み。`Simplicial`、`IntegerKernel`、`EilenbergMacLaneCycles`、`CharacteristicCocycleQ`、`CharacteristicClassOrder`、橋の格子作用の主張を含む。
+- v0.8.0:`wolframscript -file Scripts/RunTests.wls` で 288/288 が通過(2026-11-22、Wolfram Language 15.0.1、利用者の環境)。
+  単独の層のロードと、15 層すべてのロードも確認済み。`OperadCharacter`、`FreeAlgebraDimensions`、`FreeLieDimensions`、`LoopSuspensionDimensions`、`ApproximationTheoremQ` を含む。
 
 ### Python 参照実装(整数・有理数の厳密計算)
 
@@ -544,3 +576,5 @@ n = 2 では、cocycle を cochain として bar 構成の (w, c) と比べる�
 - `simplicial_reference.py`:単体の上の δ² = 0、Leibniz 則、結合則、(A3)(次数 3 まで)、Hirsch 公式が厳密に成り立つこと、
   Pontryagin 平方の恒等式、整数核、`(k/N²) A∪δA` が Vec の associator であること(N ≤ 5)、
   `(p/2N) P(B)` が cocycle でその類の位数が spin の分母であること(N ≤ 4)、∪₁ の項が必要であること。実行に 30 秒ほどかかる
+- `approximation_reference.py`:Com・Ass・Lie の指標、その自由代数(次数付きの Witt の公式)、Pₙ の指標(arity 4 まで)、
+  自由 Pₙ-代数と H_*(ΩⁿΣⁿX; Q) の一致(n ≤ 3、球面 1 個と楔 7 通り、arity 4 まで)

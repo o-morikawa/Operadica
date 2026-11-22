@@ -51,6 +51,12 @@
 (*                            (pentagon and hexagons: left side minus      *)
 (*                            right side, as in Operadica`EnCategories`.)  *)
 (*                                                                        *)
+(*   operad <-> loop spaces                                                *)
+(*     ApproximationTheoremQ  the free P_n-algebra on the homology of a    *)
+(*                            wedge of spheres X has the Poincare series   *)
+(*                            of Omega^n Sigma^n X: the approximation      *)
+(*                            theorem C_n X ~ Omega^n Sigma^n X, rationally *)
+(*                                                                        *)
 (*   lattice <-> delooping <-> category                                    *)
 (*     FlatFieldCochain,      a simplex of K(Z_N, n) is a flat n-form      *)
 (*     DijkgraafWittenWeight, field on a simplex; its lift to integers is  *)
@@ -121,6 +127,8 @@ PontryaginWeight::usage = "PontryaginWeight[nn, p][x] gives the value modulo 1 o
 DijkgraafWittenAssociatorQ::usage = "DijkgraafWittenAssociatorQ[nn, k] gives True if DijkgraafWittenWeight[nn, k], on every flat field on the tetrahedron with the values a, b, c on the edges 01, 12, 23, equals the associator w(a, b, c) of VecZN[nn, k].";
 
 PontryaginSpinQ::usage = "PontryaginSpinQ[nn, p] gives True if PontryaginWeight[nn, p] is a cocycle on K(Z_nn, 2) and the order of its class in H^4(K(Z_nn, 2); U(1)) is the denominator of the spin p / (2 nn) of the generator of ZNAnyons[nn, p].";
+
+ApproximationTheoremQ::usage = "ApproximationTheoremQ[n, degrees, kmax] gives True if, for X a wedge of spheres of the given dimensions (all >= 1), the free algebra over PoissonOperad[n] = H_*(E_n) on the reduced homology of X and the rational homology of the n-fold loop space of the n-fold suspension of X have the same dimensions in every degree, for the arities (weights) 1, ..., kmax: the approximation theorem C_n X ~ Omega^n Sigma^n X at the level of rational Poincare series.";
 
 Begin["`Private`"];
 
@@ -319,6 +327,15 @@ EnStructureCount[orders : {__Integer}, n_Integer?Positive] :=
   With[{h = BarHomology[orders, n, n + 2]},
     If[MemberQ[h, 0], Infinity, Times @@ h]
   ];
+
+
+(* ---------------------------------------------------------------------- *)
+(* operad <-> loop spaces: the approximation theorem                      *)
+(* ---------------------------------------------------------------------- *)
+
+ApproximationTheoremQ[n_Integer?Positive, degrees : {__Integer}, kmax_Integer?Positive] :=
+  FreeAlgebraDimensions[PoissonOperad[n], degrees, kmax] ===
+    LoopSuspensionDimensions[n, degrees, kmax];
 
 
 (* ---------------------------------------------------------------------- *)

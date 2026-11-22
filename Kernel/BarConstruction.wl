@@ -81,6 +81,10 @@ CharacteristicCocycleQ::usage = "CharacteristicCocycleQ[orders, n, k, w] gives T
 
 CharacteristicClassOrder::usage = "CharacteristicClassOrder[orders, n, k, w] gives the order of the class of the cocycle w in H^k(K(A, n); U(1)): the least common multiple of the denominators of its values on a basis of the cycles. w must satisfy CharacteristicCocycleQ.";
 
+FreeLieDimensions::usage = "FreeLieDimensions[degrees, kmax] gives the dimensions of the free graded Lie algebra on generators of the given degrees, up to the weight (number of generators) kmax: an Association {weight, degree} -> dimension. They follow from the Poincare-Birkhoff-Witt theorem: the tensor algebra is the free graded commutative algebra on the Lie algebra.";
+
+LoopSuspensionDimensions::usage = "LoopSuspensionDimensions[n, degrees, kmax] gives the rational homology of the n-fold loop space of the n-fold suspension of a wedge of spheres of the given dimensions (all >= 1), by weight up to kmax: an Association weight -> (degree -> dimension). The rational homotopy of the loop space of a wedge of spheres is a free graded Lie algebra (Hilton-Milnor), and the homology of the n-fold loop space is the free graded commutative algebra on it, shifted down by n - 1 (Milnor-Moore).";
+
 Begin["`Private`"];
 
 (* ---------------------------------------------------------------------- *)
@@ -425,6 +429,58 @@ EilenbergMacLaneHomology[orders : {__Integer}, n_Integer?Positive, k_Integer?Pos
       ]
     ];
     ChainHomology[nd, boundary][[2]]
+  ];
+
+
+(* ---------------------------------------------------------------------- *)
+(* loop spaces of suspensions of wedges of spheres, rationally            *)
+(*   a series in the weight is the list of its coefficients, polynomials  *)
+(*   in tvar, for the weights 0, ..., kmax                                *)
+(* ---------------------------------------------------------------------- *)
+
+seriesOne[kmax_Integer] := Join[{1}, ConstantArray[0, kmax]];
+
+seriesTimes[a_List, b_List] :=
+  Table[Expand[Sum[a[[i + 1]] b[[w - i + 1]], {i, 0, w}]], {w, 0, Length[a] - 1}];
+
+(* (1 + s^w t^e)^m for odd e, (1 - s^w t^e)^(-m) for even e *)
+seriesFactor[w_Integer, e_Integer, m_Integer, kmax_Integer] :=
+  Table[
+    If[Mod[j, w] === 0,
+      With[{r = Quotient[j, w]},
+        If[OddQ[e], Binomial[m, r], Binomial[m + r - 1, r]] tvar^(r e)
+      ],
+      0
+    ],
+    {j, 0, kmax}
+  ];
+
+polynomialRules[poly_] :=
+  Map[Function[r, r[[1, 1]] -> r[[2]]], CoefficientRules[Expand[poly], {tvar}]];
+
+FreeLieDimensions[degrees : {__Integer}, kmax_Integer?Positive] :=
+  Module[{gen = Total[Map[Function[e, tvar^e], degrees]], prod = seriesOne[kmax], lie = {}, new, w},
+    Do[
+      new = polynomialRules[gen^w - prod[[w + 1]]];
+      lie = Join[lie, Map[Function[r, {w, r[[1]]} -> r[[2]]], new]];
+      Do[prod = seriesTimes[prod, seriesFactor[w, r[[1]], r[[2]], kmax]], {r, new}],
+      {w, 1, kmax}
+    ];
+    KeySort[Association[lie]]
+  ];
+
+LoopSuspensionDimensions[n_Integer?Positive, degrees : {__Integer}, kmax_Integer?Positive] :=
+  Module[{prod = seriesOne[kmax], r},
+    Do[
+      prod = seriesTimes[
+        prod,
+        seriesFactor[r[[1, 1]], r[[1, 2]] - (n - 1), r[[2]], kmax]
+      ],
+      {r, Normal[FreeLieDimensions[Map[Function[d, d + n - 1], degrees], kmax]]}
+    ];
+    Association[
+      Table[w -> KeySort[Association[polynomialRules[prod[[w + 1]]]]], {w, 1, kmax}]
+    ]
   ];
 
 End[];

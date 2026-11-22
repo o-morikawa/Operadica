@@ -309,6 +309,19 @@ Every check reports its strength in the key `"Strength"`:
 | confluence | critical pairs up to an arity: normal forms in all arities |
 | supplied or sampled | only the elements you passed in |
 
+The symmetric groups act on a presented operad, and the characters give the
+free algebra on a graded vector space, arity by arity, with the Koszul signs:
+
+```wolfram
+OperadCharacter[LieOperad[], 3]            (* <|{3} -> <|0 -> -1|>, {2, 1} -> <||>, {1, 1, 1} -> <|0 -> 2|>|> *)
+OperadCharacter[GerstenhaberOperad[], 3]   (* by cycle type and by the number of brackets *)
+
+(* the free Lie algebra on two even generators: 2, 1, 2, 3 (Witt) *)
+FreeAlgebraDimensions[LieOperad[], {2, 2}, 4]
+(* the free Gerstenhaber algebra on a class x of degree 2: x^2 and [x, x] in arity 2 *)
+FreeAlgebraDimensions[GerstenhaberOperad[], {2}, 2]   (* <|1 -> <|2 -> 1|>, 2 -> <|4 -> 1, 5 -> 1|>|> *)
+```
+
 ### The Barratt-Eccles operad
 
 ``Operadica`BarrattEccles` `` is an E-infinity operad small enough to compute
@@ -469,6 +482,24 @@ BarCochainValue[Semion[], BarWord[BarWord[{1}], BarWord[{1}]]]     (* 1/4 *)
 In the third bar construction `[a || a]` taken twice is a boundary, which is
 why a symmetric structure only has bosons and fermions.
 
+### The approximation theorem
+
+For connected `X`, the little cubes with labels in `X` approximate the
+iterated loop space: `C_n X ~ Omega^n Sigma^n X`. Rationally the left side is
+the free algebra over `P_n = H_*(E_n)` on the homology of `X`, computed from
+the characters above, and for a wedge of spheres the right side is known from
+the free graded Lie algebra of Hilton and Milnor. The two computations are
+independent, and they agree:
+
+```wolfram
+LoopSuspensionDimensions[2, {2}, 2]        (* Omega^2 S^4: <|1 -> <|2 -> 1|>, 2 -> <|4 -> 1, 5 -> 1|>|> *)
+ApproximationTheoremQ[2, {2}, 4]           (* True *)
+ApproximationTheoremQ[3, {1, 2}, 4]        (* True: Omega^3 Sigma^3 (S^1 v S^2), up to arity 4 *)
+```
+
+The bracket `[x, x]` of a class of degree `d` is non-zero exactly when `n + d`
+is even: it is the Whitehead square of the sphere of dimension `n + d`.
+
 ### Lattice actions are cocycles on K(Z_N, n)
 
 A simplex of `K(Z_N, n)` is a flat field on a simplex, so a lattice action can
@@ -520,6 +551,7 @@ python3 reference/presented_reference.py    # Lie, Poisson, Gerstenhaber; little
 python3 reference/einfinity_reference.py    # Barratt-Eccles operad and its action on cochains
 python3 reference/bar_reference.py          # bar construction, K(A, n), E_n structures as cocycles
 python3 reference/simplicial_reference.py   # cochains on simplices, characteristic classes (30 s)
+python3 reference/approximation_reference.py   # characters, free algebras, loop spaces of suspensions
 ```
 
 ## Layout

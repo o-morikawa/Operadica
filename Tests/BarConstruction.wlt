@@ -599,3 +599,54 @@ VerificationTest[
   {True, 2, True, 2, False},
   TestID -> "BarConstruction-characteristic-cocycle"
 ]
+
+(* ---------------------------------------------------------------------- *)
+(* loop spaces of suspensions, rationally                                 *)
+(* ---------------------------------------------------------------------- *)
+
+(* the free graded Lie algebra, by {weight, degree}.  On one odd generator x
+   it is spanned by x and [x, x]; on one even generator by x alone *)
+
+VerificationTest[
+  {
+    FreeLieDimensions[{1}, 4],
+    FreeLieDimensions[{2}, 4],
+    FreeLieDimensions[{2, 2}, 4],
+    FreeLieDimensions[{1, 1}, 4],
+    FreeLieDimensions[{1, 2}, 4]
+  },
+  {
+    <|{1, 1} -> 1, {2, 2} -> 1|>,
+    <|{1, 2} -> 1|>,
+    <|{1, 2} -> 2, {2, 4} -> 1, {3, 6} -> 2, {4, 8} -> 3|>,
+    <|{1, 1} -> 2, {2, 2} -> 3, {3, 3} -> 2, {4, 4} -> 3|>,
+    <|
+      {1, 1} -> 1, {1, 2} -> 1, {2, 2} -> 1, {2, 3} -> 1, {3, 4} -> 1, {3, 5} -> 1,
+      {4, 5} -> 1, {4, 6} -> 2, {4, 7} -> 1
+    |>
+  },
+  TestID -> "BarConstruction-free-Lie"
+]
+
+(* Omega^2 S^4: a polynomial class of degree 2 and an exterior class of degree
+   5.  Omega^3 S^4: an exterior class of degree 1 and a polynomial class of
+   degree 4.  Omega^2 S^3: rationally a circle.  Omega Sigma (S^1 v S^1): the
+   tensor algebra *)
+
+VerificationTest[
+  {
+    LoopSuspensionDimensions[2, {2}, 4],
+    LoopSuspensionDimensions[3, {1}, 4],
+    LoopSuspensionDimensions[2, {1}, 4],
+    LoopSuspensionDimensions[1, {1, 1}, 4],
+    LoopSuspensionDimensions[2, {1, 1}, 4]
+  },
+  {
+    <|1 -> <|2 -> 1|>, 2 -> <|4 -> 1, 5 -> 1|>, 3 -> <|6 -> 1, 7 -> 1|>, 4 -> <|8 -> 1, 9 -> 1|>|>,
+    <|1 -> <|1 -> 1|>, 2 -> <|4 -> 1|>, 3 -> <|5 -> 1|>, 4 -> <|8 -> 1|>|>,
+    <|1 -> <|1 -> 1|>, 2 -> <||>, 3 -> <||>, 4 -> <||>|>,
+    <|1 -> <|1 -> 2|>, 2 -> <|2 -> 4|>, 3 -> <|3 -> 8|>, 4 -> <|4 -> 16|>|>,
+    <|1 -> <|1 -> 2|>, 2 -> <|2 -> 1, 3 -> 1|>, 3 -> <|4 -> 2, 5 -> 2|>, 4 -> <|5 -> 1, 6 -> 4, 7 -> 3|>|>
+  },
+  TestID -> "BarConstruction-loop-suspension"
+]

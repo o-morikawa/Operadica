@@ -85,6 +85,10 @@ PoissonOperad::usage = "PoissonOperad[n] gives the operad P_n: a commutative pro
 
 GerstenhaberOperad::usage = "GerstenhaberOperad[] gives the Gerstenhaber operad PoissonOperad[2], the homology of the little 2-cubes operad: a commutative product and a bracket of degree 1.";
 
+OperadCharacter::usage = "OperadCharacter[op, k] gives the character of the symmetric group S_k on the arity-k part of the presented operad op: an Association from the cycle types (the partitions of k, as in IntegerPartitions[k]) to Associations degree -> trace of a permutation of that cycle type on the part of that degree.";
+
+FreeAlgebraDimensions::usage = "FreeAlgebraDimensions[op, degrees, kmax] gives the dimensions of the free algebra over the presented operad op on generators of the given degrees, for the arities 1, ..., kmax: an Association arity -> (degree -> dimension). The arity-k part is op(k) tensored over S_k with the k-th tensor power of the space of generators, and its dimensions are computed from OperadCharacter with the Koszul signs.";
+
 KoszulSeriesQ::usage = "KoszulSeriesQ[p, q] gives True if the lists p = {dim P(1), dim P(2), ...} and q satisfy f_P(-f_Q(-x)) = x to the order of the shorter list, where f(x) is the sum of dim(n) x^n / n!. This holds if P is a Koszul operad with dimensions p and Q its Koszul dual.";
 
 Begin["`Private`"];
@@ -601,6 +605,93 @@ KoszulSeriesQ[p_List, q_List] :=
     fp = Total[Table[p[[n]] (-fq)^n / n!, {n, 1, order}]];
     comp = Expand[fp];
     Table[Coefficient[comp, x, n], {n, 1, order}] === UnitVector[order, 1]
+  ];
+
+
+(* ---------------------------------------------------------------------- *)
+(* characters, and the free algebra on a graded vector space              *)
+(*   dim (P(k) (x)_(S_k) V^(x k)) = (1/k!) sum_s tr(s | P(k)) tr(s | V^k), *)
+(*   and a cycle of length l has on V^(x l) the trace                     *)
+(*   sum over a basis e of V of (-1)^(|e| (l - 1)) t^(l |e|).             *)
+(* ---------------------------------------------------------------------- *)
+
+(* a permutation with the cycle lengths lam *)
+cycleRepresentative[lam_List] :=
+  Module[{start = 1, out = {}, len},
+    Do[
+      out = Join[out, Table[start + Mod[j + 1, len], {j, 0, len - 1}]];
+      start = start + len,
+      {len, lam}
+    ];
+    out
+  ];
+
+classSize[lam_List] :=
+  Factorial[Total[lam]] /
+    Apply[Times, KeyValueMap[Function[{len, m}, len^m Factorial[m]], Counts[lam]]];
+
+OperadCharacter[op_Association, 1] := <|{1} -> <|0 -> 1|>|>;
+
+OperadCharacter[op_Association, k_Integer?Positive] :=
+  OperadCharacter[op, k] =
+    With[{basis = OperadBasis[op, k], degree = op["Degree"]},
+      Association[
+        Map[
+          Function[lam,
+            With[{s = cycleRepresentative[lam]},
+              lam -> KeySort[
+                DeleteCases[
+                  Merge[
+                    Map[
+                      Function[t,
+                        degree[t] -> Total[
+                          Cases[
+                            LinearTerms[OperadReduce[op, PresentedAct[op][LBasis[t], s]]],
+                            ({c_, u_} /; u === t) :> c
+                          ]
+                        ]
+                      ],
+                      basis
+                    ],
+                    Total
+                  ],
+                  0
+                ]
+              ]
+            ]
+          ],
+          IntegerPartitions[k]
+        ]
+      ]
+    ];
+
+polynomialAssociation[poly_] :=
+  KeySort[
+    Association[
+      Map[Function[r, r[[1, 1]] -> r[[2]]], CoefficientRules[Expand[poly], {tvar}]]
+    ]
+  ];
+
+FreeAlgebraDimensions[op_Association, degrees : {__Integer}, kmax_Integer?Positive] :=
+  Association[
+    Table[
+      k -> polynomialAssociation[
+        Total[
+          KeyValueMap[
+            Function[{lam, tr},
+              (classSize[lam] / Factorial[k]) *
+                Total[KeyValueMap[Function[{d, c}, c tvar^d], tr]] *
+                Product[
+                  Total[Map[Function[d, (-1)^(d (len - 1)) tvar^(len d)], degrees]],
+                  {len, lam}
+                ]
+            ],
+            OperadCharacter[op, k]
+          ]
+        ]
+      ],
+      {k, 1, kmax}
+    ]
   ];
 
 End[];
