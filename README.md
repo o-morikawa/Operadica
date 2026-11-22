@@ -22,13 +22,14 @@ automatically; the lattice and category layers do not need the operad layer.
 | operad | ``Operadica`Trees` `` | | planar trees, grafting, enumeration |
 | operad | ``Operadica`Operads` `` | Trees | operad objects, axiom and equivariance verifiers, algebras |
 | operad | ``Operadica`Rewriting` `` | Trees | quotient operads, normal forms, confluence |
-| operad | ``Operadica`LittleCubes` `` | | the little n-cubes operads (E_n), arity-two homotopy type |
+| operad | ``Operadica`LittleCubes` `` | | the little n-cubes operads (E_n), nerves and Betti numbers of their spaces |
 | operad | ``Operadica`Graded` `` | Trees | linear combinations, graded operads with Koszul signs, differentials |
 | operad | ``Operadica`AInfinity` `` | Trees, Graded, Rewriting | the A-infinity operad, associahedra |
+| operad | ``Operadica`Presented` `` | Graded | symmetric operads by generators and relations: Com, Lie, Ass, Poisson, Gerstenhaber, P_n |
 | category | ``Operadica`EnCategories` `` | | pointed E_n-monoidal categories: pentagon, hexagons, spins |
 | lattice gauge theory | ``Operadica`Lattice` `` | | cochains, coboundary, cup and higher cup products |
 | lattice gauge theory | ``Operadica`Gauge` `` | Lattice | multilinear expansion, gauge variations, actions |
-| bridge | ``Operadica`Bridge` `` | Trees, Operads, Lattice, EnCategories | statements connecting the layers |
+| bridge | ``Operadica`Bridge` `` | Trees, Operads, LittleCubes, Presented, Lattice, EnCategories | statements connecting the layers |
 
 ```wolfram
 PacletDirectoryLoad["/path/to/Operadica"];
@@ -47,6 +48,9 @@ Requires Wolfram Language 12.1 or later.
   E_1, E_2, E_3 mean concretely.** Load ``Operadica`EnCategories` ``.
 - **I want to learn operads by computing.** Load ``Operadica`Operads` ``,
   ``Operadica`Rewriting` ``, ``Operadica`LittleCubes` `` and ``Operadica`AInfinity` ``.
+- **I want to know whether an identity follows from the Jacobi and Leibniz
+  rules, with the right signs for a bracket of odd degree.** Load
+  ``Operadica`Presented` `` and ask `OperadZeroQ`.
 - **I want to see why these are the same subject.** Load ``Operadica`Bridge` ``.
 
 ## Lattice gauge theory layer
@@ -201,6 +205,60 @@ An operad is an `Association` with the keys `"Elements"`, `"Compose"`,
 `"Unit"`, and optionally `"Equal"` and `"Action"`. To check your own, build
 such an Association and pass it to `OperadAxiomCheck`.
 
+### Operads by generators and relations
+
+``Operadica`Presented` `` computes symmetric operads with binary generators and
+quadratic relations by linear algebra. A labelled tree has the numbers of its
+inputs at the leaves: `OpLie[OpLie[1, 2], 3]` is `[[x1, x2], x3]`.
+
+```wolfram
+lie = LieOperad[];  pois = PoissonOperad[];  ger = GerstenhaberOperad[];
+
+Table[OperadDimension[lie, n], {n, 1, 5}]         (* {1, 1, 2, 6, 24} = (n - 1)! *)
+
+(* the Jacobi relation as a rewriting rule: normal forms are left-normed brackets *)
+OperadReduce[lie, LBasis[OpLie[1, OpLie[2, 3]]]]
+(* LBasis[OpLie[OpLie[1, 2], 3]] - LBasis[OpLie[OpLie[1, 3], 2]] *)
+
+(* in the Gerstenhaber operad the bracket has degree 1; the Koszul rule changes the sign *)
+OperadReduce[ger, LBasis[OpLie[1, OpLie[2, 3]]]]
+(* -LBasis[OpLie[OpLie[1, 2], 3]] - LBasis[OpLie[OpLie[1, 3], 2]] *)
+
+(* does an identity follow from the relations?  {ab, cd} = a{b,c}d + ac{b,d} + b{a,c}d + bc{a,d} *)
+OperadZeroQ[pois,
+  LBasis[OpLie[OpCom[1, 2], OpCom[3, 4]]] -
+    LBasis[OpCom[OpCom[1, OpLie[2, 3]], 4]] - LBasis[OpCom[OpCom[1, 3], OpLie[2, 4]]] -
+    LBasis[OpCom[OpCom[2, OpLie[1, 3]], 4]] - LBasis[OpCom[OpCom[2, 3], OpLie[1, 4]]]]   (* True *)
+
+(* P_n = H_*(E_n): dimensions by degree are the Betti numbers of configuration spaces *)
+OperadDimensionsByDegree[ger, 4]                  (* <|0 -> 1, 1 -> 6, 2 -> 11, 3 -> 6|> *)
+OperadDimensionsByDegree[PoissonOperad[3], 4]     (* <|0 -> 1, 2 -> 6, 4 -> 11, 6 -> 6|> *)
+
+(* the quotient is an operad: axioms with Koszul signs *)
+DGOperadQ[ger, 4]                                 (* True *)
+
+(* the commutator of an associative product is a Lie bracket *)
+OperadMorphismQ[lie, PresentedAssociativeOperad[],
+  {OpLie -> LBasis[OpAss[1, 2]] - LBasis[OpAssOp[1, 2]]}]                                (* True *)
+```
+
+`OperadZeroQ` and `OperadReduce` decide by row reduction of the ideal of
+relations in the arity of the expression, so a `True` is a proof that the
+identity follows from the relations.
+
+Your own operad goes into `PresentedOperad[{g1 -> s1, ...}, {relations}]`,
+where `s` is `1` (symmetric), `-1` (antisymmetric) or the name of the opposite
+operation, and `{s, d}` gives the generator the degree `d`.
+
+Conventions: a tree is the tensor product of its vertices in preorder, as in
+``Operadica`Graded` ``. Swapping the children of a vertex costs the sign of the
+generator times `(-1)^(|a| |b|)`; plugging `x` into the input `k` of `t` costs
+`(-1)^(|x| D)` with `D` the degree of the vertices of `t` after `k`; the
+symmetric group acts by `(t.s)(x1, ..., xn) = t(x_{s^-1(1)}, ...)`. In
+`PoissonOperad[n]` the bracket has degree `n - 1` and sign `(-1)^n` under the
+swap, and the relations have the same form for every `n`: associativity,
+`[[1,2],3] + [[2,3],1] + [[3,1],2] = 0`, and `[12, 3] = 1 [2,3] + [1,3] 2`.
+
 Every check reports its strength in the key `"Strength"`:
 
 | Strength | Meaning |
@@ -222,7 +280,17 @@ MacLaneCoherenceQ[Semion[], 5]
 
 (* a 4d weight on a 't Hooft flux background = mutual braiding of the fluxes *)
 PontryaginFluxPhase[4, 1, z, {2, 2, 2, 2}] == FluxBraidingPhase[ZNAnyons[4, 1], z]
+
+(* the homology of the little cubes is P_n: three little squares have Betti
+   numbers 1, 3, 2, the Gerstenhaber operad in arity 3 *)
+SimplicialBetti[FacetNerve[SeparationNerve[2, 3]]]    (* {1, 3, 2, 0, 0, 0} *)
+LittleCubesHomologyQ[2, 3]                            (* True *)
 ```
+
+`SeparationNerve[n, k]` is the nerve of a cover of the space of `k` little
+`n`-cubes by convex sets (for each pair of cubes, an axis along which one lies
+before the other), so it has the homotopy type of that space. The nerve grows
+quickly: `k = 2` for any `n`, and `(n, k) = (1, 3), (1, 4), (2, 3)` are feasible.
 
 The last two lines are small instances of the recognition principle: an
 invertible E_n structure on a group is the same thing as a cocycle on its
@@ -247,6 +315,7 @@ python3 reference/gauge_reference.py        # gauge-variation identities
 python3 reference/encategory_reference.py   # pentagon, hexagons, coherence
 python3 reference/operad_reference.py       # symmetric groups, little cubes
 python3 reference/ainfinity_reference.py    # Koszul signs, A-infinity, associahedra
+python3 reference/presented_reference.py    # Lie, Poisson, Gerstenhaber; little-cubes homology
 ```
 
 ## Layout
@@ -260,6 +329,7 @@ Kernel/Rewriting.wl
 Kernel/LittleCubes.wl
 Kernel/Graded.wl
 Kernel/AInfinity.wl
+Kernel/Presented.wl
 Kernel/EnCategories.wl    category layer
 Kernel/Lattice.wl         lattice gauge theory layer
 Kernel/Gauge.wl

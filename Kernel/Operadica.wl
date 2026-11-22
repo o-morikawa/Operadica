@@ -17,6 +17,9 @@
 (*      Operadica`LittleCubes`   the little n-cubes operads E_n           *)
 (*      Operadica`Graded`        graded and differential graded operads   *)
 (*      Operadica`AInfinity`     the A-infinity operad, associahedra      *)
+(*      Operadica`Presented`     symmetric operads by generators and      *)
+(*                               relations: Com, Lie, Ass, Poisson,       *)
+(*                               Gerstenhaber, P_n                        *)
 (*    category layer                                                      *)
 (*      Operadica`EnCategories`  pointed E_n-monoidal categories          *)
 (*    lattice gauge theory layer                                          *)
@@ -36,7 +39,7 @@ With[{dir = DirectoryName[$InputFileName]},
         Get[FileNameJoin[{dir, name <> ".wl"}]]
       ]
     ],
-    {"Trees", "Operads", "Rewriting", "LittleCubes", "Graded", "AInfinity", "Lattice", "Gauge", "EnCategories", "Bridge"}
+    {"Trees", "Operads", "Rewriting", "LittleCubes", "Graded", "AInfinity", "Presented", "Lattice", "Gauge", "EnCategories", "Bridge"}
   ]
 ];
 
@@ -47,6 +50,7 @@ BeginPackage["Operadica`", {
   "Operadica`LittleCubes`",
   "Operadica`Graded`",
   "Operadica`AInfinity`",
+  "Operadica`Presented`",
   "Operadica`Lattice`",
   "Operadica`Gauge`",
   "Operadica`EnCategories`",
@@ -64,6 +68,7 @@ $OperadicaLayers = {
   "Operadica`LittleCubes`",
   "Operadica`Graded`",
   "Operadica`AInfinity`",
+  "Operadica`Presented`",
   "Operadica`Lattice`",
   "Operadica`Gauge`",
   "Operadica`EnCategories`",

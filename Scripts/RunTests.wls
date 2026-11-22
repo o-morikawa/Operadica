@@ -87,7 +87,7 @@ Do[
     Print[
       StringPadRight[FileNameTake[file], 20],
       Length[results] - Length[bad], "/", Length[results], " passed   (",
-      Round[time, 0.1], " s)"
+      ToString[NumberForm[N[Round[10 time] / 10], {8, 1}]], " s)"
     ];
     If[Length[results] === 0 || Length[bad] > 0, allPassed = False];
     Scan[

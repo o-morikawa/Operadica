@@ -12,6 +12,12 @@
 (*                            the arity-2 part of an E-infinity operad;    *)
 (*                            cup_i lies in the E_(i+1) stage              *)
 (*                                                                        *)
+(*   operad <-> operad: geometry and algebra                               *)
+(*     LittleCubesHomologyQ   the Betti numbers of the space C_n(k) of k   *)
+(*                            little n-cubes are the dimensions of the     *)
+(*                            operad P_n in arity k (for n = 2 the         *)
+(*                            Gerstenhaber operad): H_*(E_n) = P_n         *)
+(*                                                                        *)
 (*   operad <-> category                                                   *)
 (*     MacLaneCoherenceQ      the pentagon equation is the confluence of   *)
 (*                            the associativity rewriting with phases:     *)
@@ -23,15 +29,20 @@
 (*     PontryaginFluxPhase    on a 't Hooft flux background equals the     *)
 (*                            mutual braiding of the fluxes                *)
 (*                                                                        *)
-(*  Layer: bridge.  Depends on: Trees, Operads, Lattice, EnCategories.    *)
+(*  Layer: bridge.  Depends on: Trees, Operads, LittleCubes, Presented,   *)
+(*  Lattice, EnCategories.                                                *)
 (* ====================================================================== *)
 
 BeginPackage["Operadica`Bridge`", {
   "Operadica`Trees`",
   "Operadica`Operads`",
+  "Operadica`LittleCubes`",
+  "Operadica`Presented`",
   "Operadica`Lattice`",
   "Operadica`EnCategories`"
 }];
+
+LittleCubesHomologyQ::usage = "LittleCubesHomologyQ[n, k] gives True if the Betti numbers of the space C_n(k) of k little n-cubes, computed from FacetNerve[SeparationNerve[n, k]], are the dimensions by degree of the arity-k part of PoissonOperad[n]. For n >= 2 this is the statement H_*(E_n) = P_n on dimensions; for n = 1 both sides are k! in degree 0. The size of the nerve grows quickly: k = 2 and (n, k) = (1, 3), (1, 4), (2, 3) are feasible.";
 
 OpTensor::usage = "OpTensor is the generator of arity 2 that stands for the tensor product in a parenthesised product, as in OpTensor[OpTensor[OpLeaf, OpLeaf], OpLeaf] for (a b) c.";
 
@@ -170,6 +181,19 @@ EInfinityArityTwoQ[d_Integer?Positive] :=
         ]
       ]
     ]
+  ];
+
+
+(* ---------------------------------------------------------------------- *)
+(* operad <-> operad: the homology of the little cubes                    *)
+(* ---------------------------------------------------------------------- *)
+
+LittleCubesHomologyQ[n_Integer?Positive, k_Integer /; k >= 2] :=
+  Module[{betti, dims, j},
+    betti = SimplicialBetti[FacetNerve[SeparationNerve[n, k]]];
+    dims = OperadDimensionsByDegree[PoissonOperad[n], k];
+    Max[Keys[dims]] <= Length[betti] - 1 &&
+      betti === Table[Lookup[dims, Key[j], 0], {j, 0, Length[betti] - 1}]
   ];
 
 

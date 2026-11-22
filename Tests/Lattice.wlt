@@ -484,3 +484,68 @@ VerificationTest[
   True,
   TestID -> "Lattice-Leibniz-numeric"
 ]
+
+(* ---------------------------------------------------------------------- *)
+(* cup_1 is not a derivation of the cup product                           *)
+(* ---------------------------------------------------------------------- *)
+
+(* For simplicial cochains (a u b) u_1 c = a u (b u_1 c) +- (a u_1 c) u b
+   (the Hirsch formula).  For the cubical cup_1 it fails for every choice of
+   signs, on either side.  For 1-cochains in two dimensions the defect is
+   -a(x; 2) b(x + e_2; 1) (dc)(x; 12): it vanishes when c is closed.
+   Checked in reference/cubical_reference.py, part (6). *)
+
+VerificationTest[
+  With[{a = Cochain[1, al], b = Cochain[1, be], c = Cochain[1, ga], x = {x1, x2}},
+    {
+      AnyTrue[
+        Tuples[{1, -1}, 2],
+        Function[e,
+          CochainEqualQ[
+            HigherCup[1][Cup[a, b], c],
+            e[[1]] Cup[a, HigherCup[1][b, c]] + e[[2]] Cup[HigherCup[1][a, c], b],
+            2
+          ]
+        ]
+      ],
+      AnyTrue[
+        Tuples[{1, -1}, 2],
+        Function[e,
+          CochainEqualQ[
+            HigherCup[1][a, Cup[b, c]],
+            e[[1]] Cup[HigherCup[1][a, b], c] + e[[2]] Cup[b, HigherCup[1][a, c]],
+            2
+          ]
+        ]
+      ],
+      Expand[
+        CochainValue[
+          HigherCup[1][Cup[a, b], c] - Cup[a, HigherCup[1][b, c]] - Cup[HigherCup[1][a, c], b],
+          x, {1, 2}
+        ] +
+          al[x, {2}] be[x + {0, 1}, {1}] CochainValue[Coboundary[c], x, {1, 2}]
+      ]
+    }
+  ],
+  {False, False, 0},
+  TestID -> "Lattice-Hirsch-defect"
+]
+
+(* with c exact the Hirsch formula holds, here in three dimensions *)
+
+VerificationTest[
+  With[{c = Coboundary[Cochain[0, ph]]},
+    Table[
+      With[{a = Cochain[pq[[1]], al], b = Cochain[pq[[2]], be]},
+        CochainEqualQ[
+          HigherCup[1][Cup[a, b], c],
+          Cup[a, HigherCup[1][b, c]] + Cup[HigherCup[1][a, c], b],
+          3
+        ]
+      ],
+      {pq, {{1, 1}, {1, 2}, {2, 1}}}
+    ]
+  ],
+  {True, True, True},
+  TestID -> "Lattice-Hirsch-closed"
+]

@@ -491,6 +491,47 @@ def check_literature(rng):
     return True
 
 
+# --------------------------------------------------------------------------
+# (6) cup_1 is not a derivation of the cup product: no Hirsch formula
+# --------------------------------------------------------------------------
+
+def check_hirsch_defect(rng):
+    """
+    For simplicial cochains  (a u b) u_1 c = a u (b u_1 c) +- (a u_1 c) u b  (Hirsch).
+    For the cubical cup_1 used here this fails for every choice of signs, on
+    either side.  For 1-cochains in two dimensions the defect is
+
+      ((a u b) u_1 c - a u (b u_1 c) - (a u_1 c) u b)(x; 12)
+            = - a(x; 2) b(x + e_2; 1) (dc)(x; 12),
+
+    so it vanishes when c is closed.
+    """
+    signs = list(itertools.product((1, -1), repeat=2))
+    lat = Lattice(2, 3)
+    a, b, c = (lat.random_cochain(1, rng) for _ in range(3))
+    h = lambda u, v: higher_cup(1, u, v)
+    lhs = h(cup(a, b), c)
+    t1, t2 = cup(a, h(b, c)), cup(h(a, c), b)
+    assert not any(equal(lat, lhs, comb(lat, 2, [(e1, t1), (e2, t2)]), 2) for e1, e2 in signs)
+    rhs = h(a, cup(b, c))
+    s1, s2 = cup(h(a, b), c), cup(b, h(a, c))
+    assert not any(equal(lat, rhs, comb(lat, 2, [(e1, s1), (e2, s2)]), 2) for e1, e2 in signs)
+    dc = delta(c)
+    defect = comb(lat, 2, [(1, lhs), (-1, t1), (-1, t2)])
+    for x in itertools.product(range(lat.L), repeat=2):
+        assert defect(x, (1, 2)) == -a(x, (2,)) * b(lat.shift(x, [2]), (1,)) * dc(x, (1, 2))
+    # with c exact the formula holds, also in three dimensions
+    for d, L, degs in ((2, 3, [(1, 1)]), (3, 2, [(1, 1), (1, 2), (2, 1)])):
+        lat = Lattice(d, L)
+        for p, q in degs:
+            a, b = lat.random_cochain(p, rng), lat.random_cochain(q, rng)
+            c = delta(lat.random_cochain(0, rng))
+            lhs = higher_cup(1, cup(a, b), c)
+            rhs = comb(lat, p + q, [(1, cup(a, higher_cup(1, b, c))), (1, cup(higher_cup(1, a, c), b))])
+            assert equal(lat, lhs, rhs, p + q), ("Hirsch with c exact", d, p, q)
+    return True
+
+
 def main():
     rng = random.Random(20261122)
     print("(1) W diagonal is a chain map ............", check_W_diagonal())
@@ -501,6 +542,7 @@ def main():
         total += check_lattice_identities(d, L, rng)
     print("(4) lattice identities, d <= 4 ...........", True, f"({total} instances of (A3))")
     print("(5) literature formulas (2303.06160 App.A)", check_literature(rng))
+    print("(6) no Hirsch formula; defect ~ dc ........", check_hirsch_defect(rng))
     print("ALL CHECKS PASSED")
 
 

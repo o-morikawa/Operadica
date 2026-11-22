@@ -19,6 +19,39 @@ VerificationTest[
 ]
 
 (* ---------------------------------------------------------------------- *)
+(* operad <-> operad: the homology of the little cubes is P_n             *)
+(* ---------------------------------------------------------------------- *)
+
+(* two cubes: the sphere S^(n-1) carries the product (degree 0) and the
+   bracket (degree n - 1); three little squares: 1, 3, 2 is the Gerstenhaber
+   operad in arity 3; little intervals: k! components, the associative operad *)
+
+VerificationTest[
+  {
+    Table[LittleCubesHomologyQ[n, 2], {n, 1, 4}],
+    LittleCubesHomologyQ[2, 3],
+    LittleCubesHomologyQ[1, 3],
+    LittleCubesHomologyQ[1, 4]
+  },
+  {{True, True, True, True}, True, True, True},
+  TestID -> "Bridge-little-cubes-homology"
+]
+
+(* control: the Betti numbers distinguish the operads P_n *)
+
+VerificationTest[
+  With[{betti = SimplicialBetti[FacetNerve[SeparationNerve[2, 3]]]},
+    {
+      Table[Lookup[OperadDimensionsByDegree[GerstenhaberOperad[], 3], Key[j], 0], {j, 0, 5}] === betti,
+      Table[Lookup[OperadDimensionsByDegree[PoissonOperad[3], 3], Key[j], 0], {j, 0, 5}] === betti,
+      Table[Lookup[OperadDimensionsByDegree[PoissonOperad[], 3], Key[j], 0], {j, 0, 5}] === betti
+    }
+  ],
+  {True, False, False},
+  TestID -> "Bridge-little-cubes-homology-control"
+]
+
+(* ---------------------------------------------------------------------- *)
 (* operad <-> category                                                    *)
 (* ---------------------------------------------------------------------- *)
 

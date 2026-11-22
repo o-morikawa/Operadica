@@ -135,3 +135,70 @@ VerificationTest[
   {{2}, {1, 1}, {1, 0, 1}, {1, 0, 0, 1}},
   TestID -> "LittleCubes-arity-two-spheres"
 ]
+
+(* ---------------------------------------------------------------------- *)
+(* arity k: the nerve of the cover of C_n(k) by convex sets               *)
+(* ---------------------------------------------------------------------- *)
+
+(* for two cubes it is the cross-polytope again, each vertex wrapped in a list *)
+
+VerificationTest[
+  {
+    Sort[SeparationNerve[3, 2]] === Sort[Map[Function[f, Sort[Map[List, f]]], SeparationNerve[3]]],
+    Length[SeparationNerve[2, 3]],
+    Length[Union[Flatten[SeparationNerve[2, 3], 1]]],
+    Union[Map[Length, SeparationNerve[2, 3]]],
+    First[SeparationNerve[2, 3]],
+    SeparationNerve[1, 3]
+  },
+  {
+    True,
+    36,
+    60,
+    {8},
+    {
+      {{1, 1}, {1, 1}, {1, 1}}, {{1, 1}, {1, 1}, {2, 1}}, {{1, 1}, {2, 1}, {1, 1}}, {{1, 1}, {2, 1}, {2, 1}},
+      {{2, 1}, {1, 1}, {1, 1}}, {{2, 1}, {1, 1}, {2, 1}}, {{2, 1}, {2, 1}, {1, 1}}, {{2, 1}, {2, 1}, {2, 1}}
+    },
+    {
+      {{{1, 1}, {1, 1}, {1, 1}}}, {{{1, 1}, {1, 1}, {1, -1}}}, {{{1, -1}, {1, 1}, {1, 1}}},
+      {{{1, -1}, {1, -1}, {1, 1}}}, {{{1, 1}, {1, -1}, {1, -1}}}, {{{1, -1}, {1, -1}, {1, -1}}}
+    }
+  },
+  TestID -> "LittleCubes-separation-nerve"
+]
+
+(* the nerve of the cover by the facets has the same homotopy type *)
+
+VerificationTest[
+  {
+    FacetNerve[{{1, 2}, {2, 3}, {1, 3}}],
+    SimplicialBetti[FacetNerve[{{1, 2}, {2, 3}, {1, 3}}]],
+    SimplicialBetti[FacetNerve[{{1, 2, 3}, {1, 2, 4}, {1, 3, 4}, {2, 3, 4}}]],
+    Table[SimplicialBetti[FacetNerve[SeparationNerve[n]]], {n, 1, 4}],
+    Table[SimplicialBetti[FacetNerve[SeparationNerve[n, 2]]], {n, 1, 3}]
+  },
+  {
+    {{1, 2}, {1, 3}, {2, 3}},
+    {1, 1},
+    {1, 0, 1},
+    {{2}, {1, 1}, {1, 0, 1, 0}, {1, 0, 0, 1, 0, 0, 0, 0}},
+    {{2}, {1, 1}, {1, 0, 1, 0}}
+  },
+  TestID -> "LittleCubes-facet-nerve"
+]
+
+(* three little squares: the Betti numbers 1, 3, 2 of the configuration space
+   of three points in the plane; three little intervals: 3! components *)
+
+VerificationTest[
+  {
+    Length[FacetNerve[SeparationNerve[2, 3]]],
+    Union[Map[Length, FacetNerve[SeparationNerve[2, 3]]]],
+    SimplicialBetti[FacetNerve[SeparationNerve[2, 3]]],
+    SimplicialBetti[FacetNerve[SeparationNerve[1, 3]]],
+    SimplicialBetti[FacetNerve[SeparationNerve[1, 4]]]
+  },
+  {60, {3, 6}, {1, 3, 2, 0, 0, 0}, {6}, {24}},
+  TestID -> "LittleCubes-three-cubes"
+]

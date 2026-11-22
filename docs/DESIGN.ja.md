@@ -1,6 +1,6 @@
 # Operadica 設計文書
 
-最終更新: 2026-11-22(v0.3.0)
+最終更新: 2026-11-22(v0.4.0)
 
 ## 1. 目的
 
@@ -28,13 +28,14 @@ operad の標準的な理論を、Mathematica 上で実際に計算しながら�
 | operad | ``Operadica`Trees` `` | なし | 木、接ぎ木、列挙 |
 | operad | ``Operadica`Operads` `` | Trees | operad オブジェクト、公理と同変性の検証器、代数 |
 | operad | ``Operadica`Rewriting` `` | Trees | 書き換えによる商、正規形、合流性 |
-| operad | ``Operadica`LittleCubes` `` | なし | little n-cubes operad(Eₙ)、arity 2 のホモトピー型 |
+| operad | ``Operadica`LittleCubes` `` | なし | little n-cubes operad(Eₙ)、配置の空間の脈体と Betti 数 |
 | operad | ``Operadica`Graded` `` | Trees | 線形結合、Koszul 符号つきの次数付き operad、微分 |
 | operad | ``Operadica`AInfinity` `` | Trees, Graded, Rewriting | A∞ operad、associahedron |
+| operad | ``Operadica`Presented` `` | Graded | 生成元と関係式による対称 operad:Com、Lie、Ass、Poisson、Gerstenhaber、Pₙ |
 | カテゴリ | ``Operadica`EnCategories` `` | なし | 点付き Eₙ モノイダル圏:五角形、六角形、spin |
 | 格子ゲージ理論 | ``Operadica`Lattice` `` | なし | cochain、δ、∪、∪ᵢ |
 | 格子ゲージ理論 | ``Operadica`Gauge` `` | Lattice | 多重線形展開、ゲージ変分、作用 |
-| 橋 | ``Operadica`Bridge` `` | Trees, Operads, Lattice, EnCategories | 層をつなぐ主張 |
+| 橋 | ``Operadica`Bridge` `` | Trees, Operads, LittleCubes, Presented, Lattice, EnCategories | 層をつなぐ主張 |
 
 - 格子ゲージ理論の計算をしたい人は ``Operadica`Gauge` `` だけをロードすればよく、operad を知る必要はない。
 - カテゴリ層と格子層は operad 層に依存しない。三者が同じものであることは橋で初めて述べる。
@@ -95,7 +96,49 @@ A∞ operad は生成元 `OpM[n]`(arity n、次数 n−2)と
 arity n の部分は associahedron Kₙ の胞体鎖複体で、ホモロジーは次数 0 に 1 次元だけ残る
 (A∞ は As の分解)。`DGOperadCheck`、`StasheffRelationsQ`、`AssociahedronBetti`。
 
-### 3.4 点付き Eₙ モノイダル圏
+### 3.4 生成元と関係式による対称 operad
+
+二項の生成元と二次の関係式で与えた対称 operad を、線形代数で計算する(``Operadica`Presented` ``)。
+
+- ラベル付きの木:葉は入力の番号。`OpLie[OpLie[1, 2], 3]` は `[[x₁, x₂], x₃]`。
+- 生成元は対称性 `g[x, y] = ±g'[y, x]` と次数を持つ。木は 3.3 と同じく頂点の前順でのテンソル積で、
+  規則は三つ(`reference/presented_reference.py` で確認):
+  - 入れ替え `g[a, b] = (g の符号)·(−1)^(|a||b|) g'[b, a]`
+  - 接ぎ木 `t ∘ₖ x = (−1)^(|x|·D) (葉 k に x)`。D は t の頂点のうち葉 k より後にあるものの次数の和
+  - 作用 `t·s` は葉のラベル j を s⁻¹(j) に付け替える(3.1 の規約)
+- **shuffle 木**(各頂点で、左の子の最小の葉 < 右の子の最小の葉)が自由対称 operad の基底になる。
+- arity n のイデアルは「関係式の 3 つの入力に shuffle 木を入れ、それをさらに shuffle 木に入れたもの」で
+  張られる。行簡約で、商の次元(`OperadDimension`)、正規形の基底(`OperadBasis`)、
+  正規形への簡約(`OperadReduce`)、恒等式の判定(`OperadZeroQ`)が得られる。
+- 標準例と正規形:
+
+  | operad | 関数 | 正規形 |
+  |---|---|---|
+  | Com | `PresentedCommutativeOperad[]` | 左に寄せた積 |
+  | Lie | `LieOperad[]` | 左ノルムの括弧 `[[[1, a], b], …]`((n−1)! 個) |
+  | Ass | `PresentedAssociativeOperad[]` | 語(n! 個)。`OpAssWord` で語に直す |
+  | Pₙ | `PoissonOperad[n]` | 左ノルムの括弧の積(n! 個) |
+
+- `PoissonOperad[n]` は可換な積 `OpCom`(次数 0)と括弧 `OpLie`(次数 n−1、入れ替えの符号 (−1)ⁿ)を持つ。
+  n = 1 が Poisson operad、n = 2 が Gerstenhaber operad で、n ≥ 2 では Pₙ = H_*(Eₙ)。
+  関係式は n によらず同じ形に書ける:
+
+  - 結合則 `(12)3 = 1(23)`
+  - Jacobi `[[1,2],3] + [[2,3],1] + [[3,1],2] = 0`
+  - Leibniz `[12, 3] = 1[2,3] + [1,3]2`
+
+  n による違いは Koszul 符号だけから出る。たとえば `[1,[2,3]]` の正規形は、Lie と P₃ で
+  `[[1,2],3] − [[1,3],2]`、Gerstenhaber で `−[[1,2],3] − [[1,3],2]`。
+  符号を落として同じ関係式を課すと別の operad になる(次元が 1, 2, 6, 20。正しくは 1, 2, 6, 24)。
+- arity k の成分の次数ごとの次元は `(1+t)(1+2t)…(1+(k−1)t)` の係数(t の次数は n−1)で、
+  ℝⁿ の k 点の配置空間の Betti 数である。`OperadDimensionsByDegree`。
+- 商が operad であること(単位、逐次、並列。並列は符号 `(−1)^(|b||c|)` つき)は、3.3 の
+  `DGOperadCheck` がそのまま検査する。
+- 射は生成元の行き先で与える(`OperadMorphismQ`)。交換子 `xy − yx` が Lie → Ass を与えること、
+  反交換子(Jordan 積)は可換だが結合的でないこと、など。
+- Koszul 双対の対の母関数の関係 `f_P(−f_Q(−x)) = x` は `KoszulSeriesQ`(Com と Lie、Ass と Ass)。
+
+### 3.5 点付き Eₙ モノイダル圏
 
 単純対象は有限アーベル群の元(整数のリスト)。データは associator `w[a, b, c]` と
 braiding `c[a, b]`。通常の圏では E₁ = モノイダル、E₂ = braided、E₃ 以上 = symmetric。
@@ -116,7 +159,7 @@ braid 群の作用:右に寄せた積 `a₁(a₂(a₃…))` の上で、生成�
 標準例:`ZNAnyons[n, p]`(`w = p·a·carry(b,c)/2`、`c = p·a·b/(2n)`。n が偶数か p が偶数のとき成立)、
 `VecZN[n, k]`(H³(Z_n, U(1)) の代表)、`DoubleZN[n]`、`ToricCode[]`、`Semion[]`、`SuperVec[]`。
 
-### 3.5 cochain
+### 3.6 cochain
 
 - `Cochain[p, f]`:cell `LCell[x, s]` 上の値が `f[x, s]` の p-cochain。
   `f` が未定義のシンボルなら「一般の cochain」になる。
@@ -134,6 +177,8 @@ braid 群の作用:右に寄せた積 `a₁(a₂(a₃…))` の上で、生成�
    テストは実装の誤り検出用。
 2. **有限全数検査**:有限な operad・代数・圏は、全組合せを調べる。その範囲では証明である。
    `OperadAxiomCheck`、`PentagonQ`、`HexagonQ`。
+   生成元と関係式による operad では、arity ごとのイデアルの階数の計算がこれにあたる。
+   `OperadZeroQ` が True を返せば、その恒等式は関係式から従う(その arity での証明)。
 3. **記号的恒等式**:一般の cochain の値、一般の little cubes の端点は独立な変数になる。
    cochain 演算は局所的で並進不変なので、記号的な基点 1 か所での検査が、その次元のすべての
    超立方格子・すべての可換な係数環での証明になる。`CochainEqualQ`、`LittleCubesOperad`。
@@ -180,12 +225,26 @@ braid 群の作用:右に寄せた積 `a₁(a₂(a₃…))` の上で、生成�
 - 同じ作用の大きいゲージ変換 `a → a+2πm`、`n → n+δm` での変化は
   `−(k/2) δ(m∪a) − kπ (m∪n + n∪m + m∪₁δn + δm∪m)`。
 
+### ∪₁ は ∪ の導分ではない
+
+単体的 cochain では Hirsch 公式 `(a∪b)∪₁c = a∪(b∪₁c) ± (a∪₁c)∪b` が成り立つが、
+ここで使う立方格子の ∪₁ では、符号をどう選んでも、左右どちらの形でも成り立たない。
+2 次元の 1-cochain では欠損は
+
+`[(a∪b)∪₁c − a∪(b∪₁c) − (a∪₁c)∪b](x; 12) = −a(x; 2) b(x+2̂; 1) (δc)(x; 12)`
+
+で、c が閉じていれば消える。3 次元でも、c が完全な 1-cochain なら、a, b の次数 (1,1)、(1,2)、(2,1) で
+符号 (+, +) の Hirsch 公式が成り立つ。c が 2-cochain のとき(次数 (1,1,2))は、完全でも成り立たない。
+Gerstenhaber operad の Leibniz 則が cochain の上ではホモトピーを除いてしか成り立たないことの、
+具体的な形である。`Tests/Lattice.wlt` の `Lattice-Hirsch-defect`、`Lattice-Hirsch-closed`。
+
 ## 6. 橋
 
 | 主張 | 関数 |
 |---|---|
 | (C*, ∪) は結合 operad As の代数 | `CupAlgebraOverAsQ` |
 | ∪ᵢ は E∞ operad の arity 2 部分 W の作用。∪ᵢ は E_(i+1) の段にある | `EInfinityArityTwoQ` |
+| C_n(k) の Betti 数 = Pₙ の arity k の成分の次数ごとの次元(H_*(Eₙ) = Pₙ の、次元での確認) | `LittleCubesHomologyQ` |
 | 五角形方程式 ⇔ 結合則の書き換えの、位相つきの合流性(Mac Lane の coherence) | `MacLaneCoherenceQ` |
 | 四次元トーラス上の 't Hooft flux での重み `(p/2N)ΣP(B)` = flux の相互 braiding | `PontryaginFluxPhase`, `FluxBraidingPhase` |
 
@@ -198,19 +257,35 @@ Z_N では n = 2 が N·gcd(2,N) 個(二次形式)、n = 3 が gcd(2,N) 個で�
 C_n(2) ≃ S^(n−1) も同じ区別を与える。n = 1 は 2 成分(積が非可換)、n = 2 は円周
 (braiding があり、2 回かけても自明でない)、n = 3 は球面(symmetric)。
 `SimplicialBetti[SeparationNerve[n]]` がこれを計算する。
+S^(n−1) の次数 0 の類が積、次数 n−1 の類が括弧で、これが Pₙ の生成元である。
+
+k 個の立方体では、対ごとに「どの軸に沿って、どちらが先にあるか」を選ぶ。選び方 c ごとに、
+それを満たす配置の集合 V_c は端点の線形不等式で切り出されるので凸で、交わりも凸である。
+V_c は C_n(k) を覆うから、その脈体が C_n(k) のホモトピー型を与える(`SeparationNerve[n, k]`。
+facet は「各軸に沿った立方体の全順序」の n 個組)。計算では、facet による被覆の脈体に移して
+小さくする(`FacetNerve`。facet どうしの交わりは単体か空なので、ホモトピー型は変わらない)。
+C_2(3) の Betti 数は 1, 3, 2 で、Gerstenhaber operad の arity 3
+(積だけの元 1 個、括弧 1 個の元 3 個、括弧 2 個の元 2 個)に一致する。
+この方法で計算できるのは k = 2 と (n, k) = (1, 3)、(1, 4)、(2, 3) まで。
 
 ## 7. 道筋と到達判定
 
 | 段階 | 作るもの | 到達判定 | 状態 |
 |---|---|---|---|
 | 1 | 木、∘ᵢ、自由 operad、書き換えによる商、End、公理検証器。格子層(δ、∪、∪ᵢ) | As の成分が各 arity で 1 個。(C*, δ, ∪) が dg 結合代数。∪ᵢ が文献の成分公式と (A3) を満たす | 実装済み |
-| 1b | 対称群作用と同変性、Com。線形結合と Lie(shuffle 木) | 同変性の検証が通る。Lie の成分次元が (n−1)! | 線形結合まで実装済み、Lie は未着手 |
+| 1b | 対称群作用と同変性、Com。線形結合と Lie(shuffle 木) | 同変性の検証が通る。Lie の成分次元が (n−1)! | 実装済み |
 | 2 | little intervals、A∞ operad(自由 dg operad) | 公理が端点を記号にして通る。d²=0。associahedron の面の総数 1, 3, 11, 45。A∞ が As の分解 | 実装済み |
-| 3 | little 2-cubes、Gerstenhaber operad | C_n(2) ≃ S^(n−1)。k 点成分の Poincaré 多項式が ∏(1+jt) | arity 2 は実装済み |
+| 3 | little 2-cubes、Gerstenhaber operad、Pₙ | C_n(2) ≃ S^(n−1)。k 点成分の Poincaré 多項式が ∏(1+jt) | 実装済み(Pₙ の次元は arity 4 まで、参照実装で arity 5 まで。C_n(k) の Betti 数との照合は k = 2 と (n, k) = (2, 3) まで) |
 | C | 点付き Eₙ モノイダル圏、coherence、braid 群の作用 | 五角形・六角形・分類の個数。coherence が長さ 6 まで | 実装済み(parenthesized braids の coherence は未着手) |
 | G | 多重線形展開、ゲージ変分、作用 | 5 節の恒等式が通る | 実装済み |
 | 4 | surjection operad、Eₙ フィルトレーション、cochain への作用 | (1,2,1,2,…) の作用が ∪ᵢ を再現 | arity 2 のみ実装済み |
 | 5 | 単体的対象、bar 構成 B(Σⁿ, Cₙ, X) | 反復 bar 構成で作った BⁿA のホモトピー群が次数 n の A だけ。近似定理を有理 Poincaré 級数の一致で確認 | 未着手 |
+
+次の候補:
+
+- n ≥ 3 や k ≥ 4 の配置空間の Betti 数(脈体では大きすぎる。より小さい胞体モデルが要る)
+- Koszul 双対の計算(関係式の直交補空間)と bar 構成
+- 段階 4 の arity 3。5 節の Hirsch 公式の欠損は、arity 3 の演算で書けるはずのものである
 
 ## 8. 開発の進め方
 
@@ -228,11 +303,13 @@ C_n(2) ≃ S^(n−1) も同じ区別を与える。n = 1 は 2 成分(積が非�
   単独の層のロードと、8 層すべてのロードも確認済み。
 - v0.3.0:`wolframscript -file Scripts/RunTests.wls` で 156/156 が通過(2026-11-22、Wolfram Language 15.0.1、利用者の環境)。
   単独の層のロードと、10 層すべてのロードも確認済み。`Graded`、`AInfinity`、braid 群の作用を含む。
+- v0.4.0:`wolframscript -file Scripts/RunTests.wls` で 188/188 が通過(2026-11-22、Wolfram Language 15.0.1、利用者の環境)。
+  単独の層のロードと、11 層すべてのロードも確認済み。`Presented`、k 個の立方体の脈体、Hirsch 公式の欠損を含む。
 
 ### Python 参照実装(整数・有理数の厳密計算)
 
 - `cubical_reference.py`:δ²=0、Leibniz 則、∪ の結合則、(A3)(d ≤ 4 の全次数)、
-  Steenrod の規約、arXiv:2303.06160 付録 A の 1〜3 次元の成分公式
+  Steenrod の規約、arXiv:2303.06160 付録 A の 1〜3 次元の成分公式、Hirsch 公式の欠損
 - `gauge_reference.py`:5 節の恒等式、't Hooft flux で ΣP(B) = 2 Pf(z)、相互 braiding との一致
 - `encategory_reference.py`:標準例が公理を満たすこと、ゲージ不変性、符号を変えた六角形が
   落ちること、Z_N 上の構造の個数、coherence(長さ 6 まで)
@@ -240,3 +317,6 @@ C_n(2) ≃ S^(n−1) も同じ区別を与える。n = 1 は 2 成分(積が非�
   分離被覆の脈体の Betti 数
 - `ainfinity_reference.py`:Koszul 符号つきの公理、d²=0 になる符号則(双線形な 128 通りのうち 4 通り)、
   導分であること、associahedron の面の数・Euler 標数・ホモロジー(n ≤ 7)
+- `presented_reference.py`:入れ替えと接ぎ木の整合、自由 operad での同変性、Com・Lie・Ass・Poisson の次元、
+  P₂・P₃ の次数ごとの次元(arity 5 まで)、Koszul 符号を落とすと別の operad になること、正規形、
+  商での operad の公理(符号つき)、語の operad との一致、射、C_n(k) の Betti 数、Koszul 双対の母関数
