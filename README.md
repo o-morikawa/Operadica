@@ -45,8 +45,9 @@ automatically; the lattice and category layers do not need the operad layer.
 | lattice gauge theory | ``Operadica`Lattice` `` | | cochains, coboundary, cup and higher cup products, local multilinear operations |
 | lattice gauge theory | ``Operadica`Gauge` `` | Lattice | multilinear expansion, gauge variations, actions |
 | lattice gauge theory | ``Operadica`Simplicial` `` | Lattice | the same cochain expressions on simplices: Steenrod's cup-i products |
+| lattice gauge theory | ``Operadica`Villain` `` | Lattice | U(1) gauge fields in the modified Villain form, the Deligne-Beilinson product, BF and Chern-Simons actions |
 | bridge | ``Operadica`EInfinity` `` | Graded, BarrattEccles, Lattice | the E-infinity operad acts on lattice cochains: higher cup products and the homotopies between them |
-| bridge | ``Operadica`Bridge` `` | Trees, Operads, LittleCubes, Loops, Graded, Presented, BarrattEccles, BarConstruction, Lattice, Simplicial, EnCategories | statements connecting the layers |
+| bridge | ``Operadica`Bridge` `` | Trees, Operads, LittleCubes, Loops, Graded, Presented, BarrattEccles, BarConstruction, Lattice, Simplicial, Villain, EnCategories | statements connecting the layers |
 
 ```wolfram
 PacletDirectoryLoad["/path/to/Operadica"];
@@ -64,6 +65,8 @@ Requires Wolfram Language 12.1 or later.
 - **My lattice is a triangulation, not a hypercubic lattice.** Load
   ``Operadica`Simplicial` `` and evaluate the same expressions with
   `SimplexValue` and `SimplexCochainEqualQ`.
+- **I want to build a lattice action for U(1) gauge fields from cochains (BF,
+  Chern-Simons) and see how it transforms.** Load ``Operadica`Villain` ``.
 - **I want to check F- and R-symbols of an abelian anyon theory, or see what
   E_1, E_2, E_3 mean concretely.** Load ``Operadica`EnCategories` ``.
 - **I want to learn operads by computing.** Load ``Operadica`Operads` ``,
@@ -189,6 +192,43 @@ SimplexCochainEqualQ[Coboundary[SteenrodSquare[2][c3]],
 If the coboundary of `x` is even, the right-hand side is even: `Sq^k x` is a
 cocycle modulo 2. For even `k` the first term is twice `Sq^(k+1) x`, so that
 `Sq^(k+1)` is the Bockstein of `Sq^k`.
+
+### U(1) gauge fields: the Villain form and the Deligne-Beilinson product
+
+``Operadica`Villain` `` treats abelian gauge fields as differential cohomology
+on the lattice. A field of degree `p` is a pair `(a, n)`: a real `p`-cochain,
+the connection, and an integer `(p+1)`-cochain, the flux, with the curvature
+`F = da - 2 Pi n`. Actions are built with the Deligne-Beilinson product
+`A * B = (a cup F_B / 2 Pi + (-1)^p n cup b, -n cup n')`.
+
+```wolfram
+A = VillainField[Cochain[1, fa], Cochain[2, fn]];
+B = VillainField[Cochain[1, fb], Cochain[2, fn2]];
+m = Cochain[1, fm];
+
+(* large gauge transformations do not change the curvature *)
+CochainEqualQ[VillainCurvature[VillainLargeGaugeTransform[A, m]], VillainCurvature[A], 2]   (* True *)
+
+(* the BF Lagrangian is the connection of A * B *)
+VillainConnection[DeligneProduct[A, B]]
+
+(* a large gauge transformation of A changes it by 2 Pi times an integer cochain
+   and a total derivative: the level of BF theory is an integer *)
+CochainEqualQ[
+  VillainConnection[DeligneProduct[VillainLargeGaugeTransform[A, m], B]],
+  VillainConnection[DeligneProduct[A, B]] - 2 Pi Cup[m, VillainFlux[B]] - Coboundary[Cup[m, VillainConnection[B]]],
+  3]                                                                                        (* True *)
+
+(* Chern-Simons theory is half of A * A with a cup-1 correction: eq. (17) of arXiv:2303.06160 *)
+phi = Cochain[0, fp];
+CochainEqualQ[VillainChernSimons[k][A, phi], ModifiedVillainCS[k][Cochain[1, fa], Cochain[2, fn], phi], 3]   (* True *)
+```
+
+The identities hold for generic cochains, on cubes and on simplices, with the
+terms proportional to `dn` written out; for flat fluxes the product is defined
+on gauge classes. This layer is a first step: the homotopy for the graded
+commutativity of the product, theta terms and the search for correction terms
+are not there yet.
 
 ## Category layer
 
@@ -655,6 +695,17 @@ SteenrodFermionQ /@ {2, 3}                     (* {True, True}: (1/2) B cup B an
 So the three lattice actions `A cup dA`, `P(B)` and `Sq^2 C` are the monoidal,
 the braided and the symmetric structures: E_1, E_2 and E_3.
 
+A flat Z_N field is a flat U(1) field in the Villain form, `(2 Pi At / N,
+d At / N)`. On such fields the U(1) Chern-Simons Lagrangian at an even level
+`k` is the Dijkgraaf-Witten cocycle of level `-k / 2`: differential cohomology
+restricts to group cohomology.
+
+```wolfram
+ChernSimonsWeight[4, 2][x]                     (* 1/4, for the flat Z_4 field x above *)
+ChernSimonsDijkgraafWittenQ[4, 2]              (* True: the class of DijkgraafWittenWeight[4, -1] *)
+ChernSimonsDijkgraafWittenQ[4, 1]              (* False: at an odd level it is not a cocycle *)
+```
+
 This is the recognition principle in its discrete form: an invertible E_n
 structure on a group is a cocycle on its n-fold delooping, and a map from a
 lattice to that delooping is a flat higher-form gauge field. The 't Hooft flux
@@ -691,6 +742,7 @@ python3 reference/loops_reference.py        # the little cubes act on loop space
 python3 reference/braiding_reference.py     # braids of paths of little squares, braiding phases
 python3 reference/steenrod_reference.py     # Steenrod squares of cochains, the fermion on K(Z_2, 3)
 python3 reference/braidgroup_reference.py   # homology of braid groups, unordered configurations
+python3 reference/villain_reference.py      # Villain fields, the Deligne-Beilinson product, Chern-Simons
 ```
 
 ## Layout
@@ -712,6 +764,7 @@ Kernel/EnCategories.wl    category layer
 Kernel/Lattice.wl         lattice gauge theory layer
 Kernel/Gauge.wl
 Kernel/Simplicial.wl
+Kernel/Villain.wl
 Kernel/EInfinity.wl       bridge
 Kernel/Bridge.wl
 Tests/*.wlt               one VerificationTest file per layer file

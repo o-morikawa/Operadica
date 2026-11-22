@@ -1,6 +1,6 @@
 # Operadica 設計文書
 
-最終更新: 2026-11-22(v0.12.0)
+最終更新: 2026-11-22(v0.13.0)
 
 ## 1. 目的
 
@@ -39,8 +39,9 @@ operad の標準的な理論を、Mathematica 上で実際に計算しながら�
 | 格子ゲージ理論 | ``Operadica`Lattice` `` | なし | cochain、δ、∪、∪ᵢ、局所的な多重線形演算 |
 | 格子ゲージ理論 | ``Operadica`Gauge` `` | Lattice | 多重線形展開、ゲージ変分、作用 |
 | 格子ゲージ理論 | ``Operadica`Simplicial` `` | Lattice | 同じ cochain の式を単体の上で評価する:Steenrod の ∪ᵢ |
+| 格子ゲージ理論 | ``Operadica`Villain` `` | Lattice | modified Villain 形式の U(1) ゲージ場、Deligne–Beilinson 積、BF・Chern–Simons の作用 |
 | 橋 | ``Operadica`EInfinity` `` | Graded, BarrattEccles, Lattice | 格子 cochain への E∞ operad の作用:∪ᵢ とその間のホモトピー |
-| 橋 | ``Operadica`Bridge` `` | Trees, Operads, LittleCubes, Loops, Graded, Presented, BarrattEccles, BarConstruction, Lattice, Simplicial, EnCategories | 層をつなぐ主張 |
+| 橋 | ``Operadica`Bridge` `` | Trees, Operads, LittleCubes, Loops, Graded, Presented, BarrattEccles, BarConstruction, Lattice, Simplicial, Villain, EnCategories | 層をつなぐ主張 |
 
 - 格子ゲージ理論の計算をしたい人は ``Operadica`Gauge` `` だけをロードすればよく、operad を知る必要はない。
 - カテゴリ層と格子層は operad 層に依存しない。三者が同じものであることは橋で初めて述べる。
@@ -332,6 +333,49 @@ braid 群の作用:右に寄せた積 `a₁(a₂(a₃…))` の上で、生成�
   `SimplexCochainZeroQ`、`SimplexCochainEqualQ` は恒等式を単体 {0, …, p} の上の 1 回の評価で確かめる
   (頂点に順序のついたすべての単体複体での証明)。規約は 5 節。
 
+### 3.9 Villain 形式の U(1) ゲージ場と Deligne–Beilinson 積
+
+可換なゲージ場を、格子の上の微分コホモロジーとして扱う(``Operadica`Villain` ``、`reference/villain_reference.py` で確認)。
+Wilson 流の link 変数ではなく cochain の組を基本の対象にし、作用は cochain の演算で組み立てる。
+
+次数 p の Villain 場は組 `A = (a, n)`(`VillainField[a, n]`):a は実数値の p-cochain(接続)、n は整数値の (p+1)-cochain(flux)。
+
+- 曲率 `F = δa − 2πn`(`VillainCurvature`)
+- ゲージ変換 `a → a + δλ`(`VillainGaugeTransform`)
+- 大きいゲージ変換 `a → a + 2πm`、`n → n + δm`(m は整数値の p-cochain。`VillainLargeGaugeTransform`)
+
+どちらの変換でも F は変わらない。`δn = 0`(monopole がない)の場を平坦と呼ぶ。作用の中では Lagrange 乗数で課す。
+
+**Deligne–Beilinson 積**(`DeligneProduct`):次数 p の `A = (a, n)` と次数 q の `B = (b, n′)` の積は、次数 p+q+1 の Villain 場
+
+`A ∗ B = ( a∪F_B/2π + (−1)^p n∪b ,  −n∪n′ )`
+
+である。一般の cochain について次が厳密に成り立つ(立方格子と単体の両方。δn、δn′ を含む項は平坦な場で消える):
+
+- 曲率 `F(A∗B) = F_A∪F_B/2π + (−1)^p (δn∪b − a∪δn′)`
+- A のゲージ変換 λ:接続が `δ(λ∪F_B/2π) + (−1)^(p−1) λ∪δn′` だけ変わる
+- B のゲージ変換 μ:接続が `−δ(n∪μ) + δn∪μ` だけ変わる
+- A の大きいゲージ変換 m:接続が `2π(−m∪n′) + (−1)^p δ(m∪b)`、flux が `δ(−m∪n′) + (−1)^p m∪δn′` だけ変わる
+- B の大きいゲージ変換 l:接続が `2π(−1)^p n∪l`、flux が `(−1)^p (δ(n∪l) − δn∪l)` だけ変わる
+
+したがって、平坦な場の積はゲージ同値類の上で定まる(積の側でもゲージ変換と大きいゲージ変換になる)。
+
+**作用**:
+
+- BF 理論(相互 Chern–Simons)のラグランジアンは積の接続そのもの:`A ∗ B` の接続は `a∪δb/2π − a∪n′ − n∪b`。
+  大きいゲージ変換での変化は 2π × 整数 cochain(と全微分)なので、level は整数でよい。
+- Chern–Simons 理論は積の半分に ∪₁ の補正を加えたもの(`VillainChernSimons[k][A, φ]`):
+
+  `(k/2)·(A ∗ A の接続) − (k/2) a∪₁δn + φ∪δn`
+
+  これは arXiv:2303.06160 式 (17) の modified Villain のラグランジアン(``Operadica`Gauge` `` の `ModifiedVillainCS`)と一致する。
+  「半分」を取るので大きいゲージ変換での変化は kπ × 整数 cochain になり、level k は偶数に限られる(5 節の恒等式)。
+  ∪₁ の項は、n が平坦でないときにもゲージ不変にするための補正である。
+- 4 次元では `F(A∗A)/4π = F∪F/8π²` が位相電荷の密度で、平坦な n について `F∪F/8π² = n∪n/2 + 全微分` になる
+  (曲率の恒等式の p = q = 1 の場合)。
+
+今あるのは最初の一歩で、積の次数付き可換性(∪₁ を使うホモトピー)、高次の積、θ 項や Witten 効果、補正項の自動探索はまだない(7 節)。
+
 ## 4. 自動検証の4つの強さ
 
 検証結果には、どの強さで通ったかを `"Strength"` に残す。
@@ -457,6 +501,7 @@ Gerstenhaber operad の Leibniz 則が cochain の上ではホモトピーを除
 | `(p/2N) P(B)` は K(Z_N, 2) の 4-cocycle で、その類の位数は `ZNAnyons[N, p]` の spin p/2N の分母 | `PontryaginWeight`、`PontryaginSpinQ` |
 | 平坦な Z₂ 場の Steenrod 平方:`Sq¹B` は Bockstein `δB/2`(cochain として)。`(1/2) Sq^k B` は K(Z₂, n) の R/Z 値の cocycle | `SteenrodBocksteinQ`、`SteenrodWeight` |
 | `(1/2) Sq²` の類は K(Z₂, 2)(`(1/2) B∪B`)と K(Z₂, 3)(`(1/2) C∪₁C`)で位数 2。braided な構造、symmetric な構造としての fermion | `SteenrodFermionQ` |
+| 平坦な Z_N 場は平坦な Villain 場。偶数 level k の U(1) Chern–Simons のラグランジアン/2π は K(Z_N, 1) の cocycle で、level −k/2 の Dijkgraaf–Witten の類 | `FlatVillainField`、`ChernSimonsWeight`、`ChernSimonsDijkgraafWittenQ` |
 | 近似定理 CₙX ≃ ΩⁿΣⁿX(X 連結)の、有理 Poincaré 級数での確認:H̃_*(X) の上の自由 Pₙ-代数 = H_*(ΩⁿΣⁿX; Q) | `ApproximationTheoremQ` |
 | 近似定理の Z₂ 係数・n = 2 の場合:braid 群の Z₂ 係数 Betti 数 = Kudo–Araki の多項式代数 x, Qx, QQx, … の次元 | `ApproximationTheoremModTwoQ` |
 | braided な圏は、対象を載せた little squares の配置の道に位相を与える。反時計回りの入れ替えが braiding c(a, b) | `PathBraidingPhase` |
@@ -585,6 +630,12 @@ K(Z_N, n) の k-単体は、k-単体の上の平坦な Z_N 値 n-form 場であ�
   n = 2、k = 2 は `(1/2) B∪B` で、p = 2 の重み `(2/4) P(B)` と値として一致する(fermion、位数 2)。
   k = 1 は `δ(B/4)` で、類は自明(n = 1, 2, 3 で確認)。
 
+- **U(1) から Z_N へ**:平坦な Z_N 場(整数への持ち上げ Ã)は、Villain 場 `(2πÃ/N, δÃ/N)` として曲率 0 の U(1) 場である
+  (`FlatVillainField`)。この上で 3.9 の Chern–Simons のラグランジアンは `2π × (−k/2N²) δÃ∪Ã` になる(`ChernSimonsWeight`)。
+  k が偶数なら K(Z_N, 1) の 3-cocycle で、その類は level −k/2(mod N)の Dijkgraaf–Witten の類、つまり `VecZN[N, −k/2]` の associator である
+  (`ChernSimonsDijkgraafWittenQ`。N ≤ 5 で確認)。k が奇数なら cocycle にならない(spin 構造のない格子では level は偶数)。
+  微分コホモロジー(Deligne)の作用が、平坦な場の上で群コホモロジー(K(A, n) の cocycle)に落ちることの、最初の例である。
+
 n = 2、3 では、cocycle を cochain として bar 構成の (w, c) と比べること(Eilenberg–MacLane の比較写像)はまだしていない。
 比べているのは類の位数である。
 
@@ -662,10 +713,18 @@ c(a, b) とする。これは平面の向きの選び方で、逆に取ると `c
 | 3 | little 2-cubes、Gerstenhaber operad、Pₙ | C_n(2) ≃ S^(n−1)。k 点成分の Poincaré 多項式が ∏(1+jt) | 実装済み(Pₙ の次元は arity 4 まで、参照実装で arity 5 まで。Betti 数との照合は、脈体で k = 2 と (n, k) = (2, 3)、Barratt–Eccles の段で (3, 3) まで、参照実装で (2, 4) と (4, 3) まで) |
 | C | 点付き Eₙ モノイダル圏、coherence、braid 群の作用 | 五角形・六角形・分類の個数。coherence が長さ 6 まで | 実装済み(little squares の道の braid とその位相、六角形 = operad の合成との両立まで。parenthesized braids を operad として扱う一般の coherence は未着手) |
 | G | 多重線形展開、ゲージ変分、作用 | 5 節の恒等式が通る | 実装済み |
+| V | Villain 形式の U(1) 場、Deligne–Beilinson 積、構成的な格子作用 | 積がゲージ同値類の上で定まる。BF と Chern–Simons が積から出る。平坦な Z_N 場の上で Dijkgraaf–Witten になる | 最初の一歩を実装済み(対象、ゲージ変換、積、BF、Chern–Simons、Z_N への制限)。可換性のホモトピー、θ 項、補正項の探索は未着手 |
 | 4 | E∞ operad(Barratt–Eccles、table reduction で surjection へ)、Eₙ フィルトレーション、cochain への作用 | eᵢ ↦ (1,2,1,2,…) の作用が ∪ᵢ を再現。三つの法則 (L)・(C)・(E)。Hirsch 公式のホモトピー | 実装済み(surjection operad の合成は未実装) |
 | 5 | 単体的対象、bar 構成 B(Σⁿ, Cₙ, X) | 反復 bar 構成で作った BⁿA のホモトピー群が次数 n の A だけ。近似定理を有理 Poincaré 級数の一致で確認 | 離散群の場合を実装済み(BⁿA のホモロジーとホモトピー群、Eₙ 構造 = BⁿA の cocycle、格子の作用 = K(A, n) の cocycle)。ΩⁿY への little cubes の作用と近似写像 α は実装済み。近似定理は、球面の楔について有理 Poincaré 級数の一致を arity 4 まで確認済み。n = 2 の Z₂ 係数では球面 1 個について重み 8 まで(braid 群のホモロジーと Kudo–Araki の多項式代数)。両側 bar 構成 B(Σⁿ, Cₙ, X) そのものは未着手 |
 
-次の候補:
+次の候補(研究で使う計算機としての方向。cochain の式を入れると、ゲージ変分・補正項・アノマリーの類が出てくること):
+
+- **補正項の探索**:`δX = Y` を解いて X を返すこと。コホモロジーで成り立つ等式の cochain での補正項を、∪ᵢ と E∞ の演算の線形結合の中から探す
+- Deligne–Beilinson 積の次数付き可換性のホモトピー(∪₁)、3 つ以上の場の積、θ 項と Witten 効果、Z_N の背景場との結合
+- 混合アノマリー(K(A, n) の積の上の cocycle)と 2-group(`δB = β(A)`)
+- 非可逆な対称性:fusion 圏の F・R 記号を厳密に扱う層
+
+operad の側の候補:
 
 - arity 4 のホモトピー:Cartan 公式、∪₁ の結合性のずれ、Steenrod 平方の関係式(Sq¹Sq^(2m) = Sq^(2m+1) だけは 5 節の式として入っている)
 - Pontryagin 平方や高次 cup 積を含む作用のゲージ変分を、E∞ の演算で系統的に書くこと
@@ -714,6 +773,8 @@ c(a, b) とする。これは平面の向きの選び方で、逆に取ると `c
   単独の層のロードと、16 層すべてのロードも確認済み。`SteenrodSquare` の拡張、`SteenrodWeight`、`SteenrodBocksteinQ`、`SteenrodFermionQ` を含む。
 - v0.12.0:`wolframscript -file Scripts/RunTests.wls` で 322/322 が通過(2026-11-22、Wolfram Language 15.0.1、利用者の環境)。
   単独の層のロードと、16 層すべてのロードも確認済み。`ModularBetti`、`BarrattEcclesOrbitHomology`、`BraidGroupHomology`、`BraidGroupCohomology`、`KudoArakiDimensions`、`ApproximationTheoremModTwoQ` を含む。
+- v0.13.0:`wolframscript -file Scripts/RunTests.wls` で 327/327 が通過(2026-11-22、Wolfram Language 15.0.1、利用者の環境)。
+  単独の層のロードと、17 層すべてのロードも確認済み。`Villain` の層(`VillainField`、`DeligneProduct`、`VillainChernSimons`)と、橋の `FlatVillainField`、`ChernSimonsWeight`、`ChernSimonsDijkgraafWittenQ` を含む。
 
 ### Python 参照実装(整数・有理数の厳密計算)
 
@@ -753,3 +814,6 @@ c(a, b) とする。これは平面の向きの選び方で、逆に取ると `c
 - `braidgroup_reference.py`:Fuks–Vainshtein の複体の d² = 0(k ≤ 10)、H_*(Br_k; Z)(k ≤ 8)とコホモロジーとの整合(普遍係数定理)、
   Z₂ 係数の Betti 数 = 2 の冪への分割の数、Barratt–Eccles operad の軌道の複体(k = 2 で実射影空間、F₂ で braid 群(k = 3, 4)、
   F₃E(3) と operad 全体で H₁ = Z₂)
+- `villain_reference.py`:Deligne–Beilinson 積の曲率とゲージ変換・大きいゲージ変換の恒等式(立方格子と単体、次数 (1,1)、(1,2)、(2,1)、(2,2)。
+  2π を 3 通りの整数に置き換えて確認)、modified Villain の Chern–Simons が積の半分と ∪₁ の補正であること、
+  平坦な Z_N 場の上で偶数 level の Chern–Simons が level −k/2 の Dijkgraaf–Witten の類になること(N ≤ 5)、奇数 level では cocycle にならないこと

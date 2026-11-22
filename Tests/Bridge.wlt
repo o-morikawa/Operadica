@@ -849,3 +849,40 @@ VerificationTest[
   {{{0}, {0}, {0}, {0}, {0}}, {{2}, {2}, {2}}, {2}, 3/4, True},
   TestID -> "Bridge-statistics"
 ]
+
+(* ---------------------------------------------------------------------- *)
+(* lattice <-> delooping <-> category: U(1) Chern-Simons on flat fields    *)
+(*   expected values: reference/villain_reference.py                      *)
+(* ---------------------------------------------------------------------- *)
+
+(* a flat Z_N field is a flat Villain field.  At an even level k the
+   Chern-Simons Lagrangian over 2 Pi is a cocycle on K(Z_N, 1) in the
+   Dijkgraaf-Witten class of level - k / 2; at an odd level it is not a
+   cocycle (on a lattice without spin structure the level is even) *)
+
+VerificationTest[
+  With[{x = EMSimplex[3, {{3}, {1}, {0}, {2}, {1}, {3}}]},
+    {
+      SimplexCochainZeroQ[VillainCurvature[FlatVillainField[4, 1][x]]],
+      ChernSimonsWeight[4, 2][x],
+      Mod[-(2 / (2 * 16)) *
+        SimplexValue[Cup[Coboundary[FlatFieldCochain[1][x]], FlatFieldCochain[1][x]], {0, 1, 2, 3}], 1],
+      Table[ChernSimonsDijkgraafWittenQ[nn, k], {nn, 2, 4}, {k, {0, 2, 4, 6}}],
+      Table[CharacteristicCocycleQ[{nn}, 1, 3, ChernSimonsWeight[nn, 1]], {nn, 2, 4}],
+      Table[
+        CharacteristicClassOrder[{nn}, 1, 3,
+          Function[y, ChernSimonsWeight[nn, 2][y] - DijkgraafWittenWeight[nn, 1][y]]] === 1,
+        {nn, 2, 4}
+      ]
+    }
+  ],
+  {
+    True,
+    1/4,
+    1/4,
+    {{True, True, True, True}, {True, True, True, True}, {True, True, True, True}},
+    {False, False, False},
+    {True, False, False}
+  },
+  TestID -> "Bridge-Chern-Simons-on-flat-fields"
+]

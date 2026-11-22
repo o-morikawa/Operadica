@@ -34,6 +34,8 @@
 (*      Operadica`Gauge`         expansion, gauge variations, actions     *)
 (*      Operadica`Simplicial`    the same cochain expressions on simplices: *)
 (*                               Steenrod's cup-i products                *)
+(*      Operadica`Villain`       U(1) gauge fields in the modified Villain *)
+(*                               form, the Deligne-Beilinson product      *)
 (*    bridge                                                              *)
 (*      Operadica`EInfinity`     the E-infinity operad acts on lattice    *)
 (*                               cochains: higher cup products and the    *)
@@ -51,7 +53,7 @@ With[{dir = DirectoryName[$InputFileName]},
         Get[FileNameJoin[{dir, name <> ".wl"}]]
       ]
     ],
-    {"Trees", "Operads", "Rewriting", "LittleCubes", "Loops", "Graded", "AInfinity", "Presented", "BarrattEccles", "BarConstruction", "Lattice", "Gauge", "Simplicial", "EnCategories", "EInfinity", "Bridge"}
+    {"Trees", "Operads", "Rewriting", "LittleCubes", "Loops", "Graded", "AInfinity", "Presented", "BarrattEccles", "BarConstruction", "Lattice", "Gauge", "Simplicial", "Villain", "EnCategories", "EInfinity", "Bridge"}
   ]
 ];
 
@@ -69,6 +71,7 @@ BeginPackage["Operadica`", {
   "Operadica`Lattice`",
   "Operadica`Gauge`",
   "Operadica`Simplicial`",
+  "Operadica`Villain`",
   "Operadica`EnCategories`",
   "Operadica`EInfinity`",
   "Operadica`Bridge`"
@@ -92,6 +95,7 @@ $OperadicaLayers = {
   "Operadica`Lattice`",
   "Operadica`Gauge`",
   "Operadica`Simplicial`",
+  "Operadica`Villain`",
   "Operadica`EnCategories`",
   "Operadica`EInfinity`",
   "Operadica`Bridge`"

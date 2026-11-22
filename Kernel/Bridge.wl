@@ -91,13 +91,20 @@
 (*                            K(Z_2, 2) and on K(Z_2, 3), where it is      *)
 (*                            (1/2) C cup_1 C: the fermion, as a braided   *)
 (*                            and as a symmetric structure.                *)
+(*     FlatVillainField,      a flat Z_N field is the flat Villain field   *)
+(*     ChernSimonsWeight,     (2 Pi At / N, d At / N).  On it the U(1)     *)
+(*     ChernSimonsDijkgraafWittenQ  Chern-Simons Lagrangian at an even     *)
+(*                            level k, over 2 Pi, is a cocycle on          *)
+(*                            K(Z_N, 1) in the class of the Dijkgraaf-     *)
+(*                            Witten weight of level - k / 2: the          *)
+(*                            associator of Vec_(Z_N).                     *)
 (*                                                                        *)
 (*  The action of an E-infinity operad on lattice cochains is in          *)
 (*  Operadica`EInfinity`.                                                 *)
 (*                                                                        *)
 (*  Layer: bridge.  Depends on: Trees, Operads, LittleCubes, Loops,       *)
 (*  Graded, Presented, BarrattEccles, BarConstruction, Lattice,           *)
-(*  Simplicial, EnCategories.                                             *)
+(*  Simplicial, Villain, EnCategories.                                    *)
 (* ====================================================================== *)
 
 BeginPackage["Operadica`Bridge`", {
@@ -111,6 +118,7 @@ BeginPackage["Operadica`Bridge`", {
   "Operadica`BarConstruction`",
   "Operadica`Lattice`",
   "Operadica`Simplicial`",
+  "Operadica`Villain`",
   "Operadica`EnCategories`"
 }];
 
@@ -171,6 +179,12 @@ SteenrodBocksteinQ::usage = "SteenrodBocksteinQ[n] gives True if, on every (n+1)
 SteenrodFermionQ::usage = "SteenrodFermionQ[n], for n = 2 or 3, gives True if the weight SteenrodWeight[n, 2], which is (1/2) B cup B for n = 2 and (1/2) C cup_1 C for n = 3, vanishes on the degenerate simplices of K(Z_2, n) and the order of its class in H^(n+2)(K(Z_2, n); U(1)) is the denominator of the spin 1/2 of the fermion SuperVec[]. For n = 3 the class generates H^5(K(Z_2, 3); U(1)) = Z_2, the symmetric structures on Z_2. That the weight is a cocycle follows from the formula for the coboundary of SteenrodSquare.";
 
 ApproximationTheoremModTwoQ::usage = "ApproximationTheoremModTwoQ[d, kmax] gives True if, for k = 1, ..., kmax, the Betti numbers modulo 2 of the braid group on k strands, shifted up by d k, are KudoArakiDimensions[d, kmax] in the weight k. The left side is the homology modulo 2 of the part of C_2 X with k points for X the sphere of dimension d (by the Thom isomorphism, which holds modulo 2 for every vector bundle); the right side is, for d >= 1, the homology modulo 2 of the double loop space of the sphere of dimension d + 2: the approximation theorem C_2 X ~ Omega^2 Sigma^2 X modulo 2, with the Kudo-Araki operation in place of the bracket.";
+
+FlatVillainField::usage = "FlatVillainField[nn, n][x] gives the Villain field of degree n of the flat Z_nn field x, a simplex of K(Z_nn, n): with the integer lift At = FlatFieldCochain[n][x], the connection is (2 Pi / nn) At and the flux Coboundary[At] / nn, an integer cochain. Its curvature vanishes.";
+
+ChernSimonsWeight::usage = "ChernSimonsWeight[nn, k][x] gives the value modulo 1 of the U(1) Chern-Simons Lagrangian VillainChernSimons[k] over 2 Pi on the tetrahedron, for the flat Z_nn gauge field x, a 3-simplex of K(Z_nn, 1), as the Villain field FlatVillainField[nn, 1][x]. It equals -(k / (2 nn^2)) times Cup[Coboundary[At], At].";
+
+ChernSimonsDijkgraafWittenQ::usage = "ChernSimonsDijkgraafWittenQ[nn, k] gives True if k is even, ChernSimonsWeight[nn, k] is a cocycle on K(Z_nn, 1), and its class is that of DijkgraafWittenWeight[nn, -k / 2]: the U(1) Chern-Simons theory at level k, restricted to flat Z_nn fields, is the Dijkgraaf-Witten theory of level -k / 2 modulo nn. For odd k the weight is not a cocycle and the result is False.";
 
 Begin["`Private`"];
 
@@ -505,6 +519,31 @@ PontryaginSpinQ[nn_Integer?Positive, p_Integer] :=
   CharacteristicCocycleQ[{nn}, 2, 4, PontryaginWeight[nn, p]] &&
     CharacteristicClassOrder[{nn}, 2, 4, PontryaginWeight[nn, p]] ===
       Denominator[TopologicalSpin[ZNAnyons[nn, p], {1}]];
+
+(* U(1) Chern-Simons theory on flat Z_N fields *)
+FlatVillainField[nn_Integer?Positive, n_Integer?Positive][x_EMSimplex] :=
+  With[{at = FlatFieldCochain[n][x]},
+    VillainField[(2 Pi / nn) at, (1 / nn) Coboundary[at]]
+  ];
+
+ChernSimonsWeight[nn_Integer?Positive, k_Integer][x_EMSimplex] :=
+  Mod[
+    Expand[
+      (1 / (2 Pi)) *
+        SimplexValue[
+          VillainChernSimons[k][FlatVillainField[nn, 1][x], Cochain[0, Function[v, 0]]],
+          Range[0, 3]
+        ]
+    ],
+    1
+  ];
+
+ChernSimonsDijkgraafWittenQ[nn_Integer?Positive, k_Integer] :=
+  EvenQ[k] &&
+    CharacteristicCocycleQ[{nn}, 1, 3, ChernSimonsWeight[nn, k]] &&
+    CharacteristicClassOrder[{nn}, 1, 3,
+      Function[x, ChernSimonsWeight[nn, k][x] - DijkgraafWittenWeight[nn, -k / 2][x]]
+    ] === 1;
 
 (* Steenrod squares of a flat Z_2 field *)
 SteenrodWeight[n_Integer?Positive, k_Integer?NonNegative][x_EMSimplex] :=
