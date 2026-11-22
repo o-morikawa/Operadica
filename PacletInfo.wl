@@ -1,6 +1,6 @@
 PacletObject[<|
   "Name" -> "Operadica",
-  "Version" -> "0.2.0",
+  "Version" -> "0.3.0",
   "WolframVersion" -> "12.1+",
   "Description" -> "Operads, E_n-monoidal categories and lattice cochains, computed: trees, operad axioms, little cubes, pentagon and hexagon equations, cup and higher cup products, gauge variations.",
   "Extensions" -> {
@@ -13,6 +13,8 @@ PacletObject[<|
         "Operadica`Operads`",
         "Operadica`Rewriting`",
         "Operadica`LittleCubes`",
+        "Operadica`Graded`",
+        "Operadica`AInfinity`",
         "Operadica`Lattice`",
         "Operadica`Gauge`",
         "Operadica`EnCategories`",

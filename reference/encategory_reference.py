@@ -28,6 +28,11 @@ Checked here:
   (3) counts of braided / symmetric structures on Z_N by their quadratic forms;
   (4) Mac Lane coherence: the reassociation phase of a parenthesised product
       is independent of the path, for words of length <= 6, iff the pentagon holds.
+  (5) the braid group: on the right-nested product a1 (a2 (a3 ...)) the
+      generator sigma_i has the phase  -w(a,b,x) + c(a,b) + w(b,a,x)  (x the
+      product of the objects that follow; c(a,b) alone for the last two);
+      sigma_i^2 is the mutual braiding, and the braid relation holds.  For
+      pointed categories the braid relation already follows from the pentagon.
 
 Run:  python3 reference/encategory_reference.py
 """
@@ -188,6 +193,34 @@ def coherent(cat, n, rng=None, samples=None):
     return True
 
 
+def braid(cat, word, i):
+    """sigma_i (1-based) on the right-nested product of word: (phase, new word)"""
+    G = cat.G
+    a, b = word[i - 1], word[i]
+    new = word[:i - 1] + (b, a) + word[i + 1:]
+    if i == len(word) - 1:
+        return cat.c(a, b), new
+    x = G.zero
+    for g in word[i + 1:]:
+        x = G.add(x, g)
+    return -cat.w(a, b, x) + cat.c(a, b) + cat.w(b, a, x), new
+
+
+def braid_relation(cat, n):
+    G = cat.G
+    for word in itertools.product(G.elements, repeat=n):
+        for i in range(1, n - 1):
+            p1, w1 = braid(cat, word, i)
+            p2, w2 = braid(cat, w1, i + 1)
+            p3, w3 = braid(cat, w2, i)
+            q1, v1 = braid(cat, word, i + 1)
+            q2, v2 = braid(cat, v1, i)
+            q3, v3 = braid(cat, v2, i + 1)
+            if w3 != v3 or mod1(p1 + p2 + p3 - q1 - q2 - q3) != 0:
+                return False
+    return True
+
+
 def main():
     rng = random.Random(5)
 
@@ -255,6 +288,22 @@ def main():
     assert not pentagon(notcocycle)
     assert coherent(notcocycle, 3) and not coherent(notcocycle, 4)
     print("(4) coherence up to length 6 ..............  True")
+
+    # (5) braid group
+    z41 = zn_anyons(4, 1)
+    w = ((1,), (3,), (2,))
+    assert mod1(braid(z41, w, 1)[0]) == Fr(7, 8) and mod1(braid(z41, w, 2)[0]) == Fr(3, 4)
+    p1, w1 = braid(z41, w, 1)
+    p2, _ = braid(z41, w1, 1)
+    assert mod1(p1 + p2) == mutual(z41, (1,), (3,)) == Fr(3, 4)
+    sem = zn_anyons(2, 1)
+    assert mod1(braid(sem, ((1,), (1,), (1,)), 1)[0]) == Fr(1, 4)
+    for cat in (z41, zn_anyons(4, 3), double_zn(2), sem):
+        assert braid_relation(cat, 3) and braid_relation(cat, 4)
+        G = cat.G
+        f = {(a, b): Fr(rng.randint(0, 11), 12) for a in G.elements for b in G.elements}
+        assert braid_relation(gauge(cat, f), 4), "braid relation is gauge invariant"
+    print("(5) braid phases and braid relation .......  True")
     print("ALL CHECKS PASSED")
 
 

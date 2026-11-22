@@ -1,6 +1,6 @@
 # Operadica 設計文書
 
-最終更新: 2026-11-22(v0.2.0)
+最終更新: 2026-11-22(v0.3.0)
 
 ## 1. 目的
 
@@ -29,6 +29,8 @@ operad の標準的な理論を、Mathematica 上で実際に計算しながら�
 | operad | ``Operadica`Operads` `` | Trees | operad オブジェクト、公理と同変性の検証器、代数 |
 | operad | ``Operadica`Rewriting` `` | Trees | 書き換えによる商、正規形、合流性 |
 | operad | ``Operadica`LittleCubes` `` | なし | little n-cubes operad(Eₙ)、arity 2 のホモトピー型 |
+| operad | ``Operadica`Graded` `` | Trees | 線形結合、Koszul 符号つきの次数付き operad、微分 |
+| operad | ``Operadica`AInfinity` `` | Trees, Graded, Rewriting | A∞ operad、associahedron |
 | カテゴリ | ``Operadica`EnCategories` `` | なし | 点付き Eₙ モノイダル圏:五角形、六角形、spin |
 | 格子ゲージ理論 | ``Operadica`Lattice` `` | なし | cochain、δ、∪、∪ᵢ |
 | 格子ゲージ理論 | ``Operadica`Gauge` `` | Lattice | 多重線形展開、ゲージ変分、作用 |
@@ -75,7 +77,25 @@ operad は次のキーを持つ Association。すべての operad がこの一�
 対称群はラベルの付け替え `(c·s)_j = c_{s(j)}`。
 公理は端点の多項式恒等式なので、端点を記号にした一般の配置で検証する(全配置に対する証明)。
 
-### 3.3 点付き Eₙ モノイダル圏
+### 3.3 次数付き operad と A∞
+
+線形結合は `LBasis[x]` のスカラー倍の和で表す。自由な次数付き operad では、木の単項式を
+頂点のラベルの**前順**(式として書いたときに頭部が現れる順)でのテンソル積とみなす。
+部分合成は Koszul 符号を持つ:
+
+- `s ∘ᵢ t = (−1)^(|t|·D) (接ぎ木)`。D は s の頂点のうち葉 i より後にあるものの次数の和。
+- 公理は、逐次 `(a∘ᵢb)∘_(i+j−1)c = a∘ᵢ(b∘ⱼc)`、並列 `(a∘ᵢb)∘_(k+m−1)c = (−1)^(|b||c|)(a∘ₖc)∘ᵢb`。
+- 次数 −1 の導分 d は生成元での値で決まる。
+
+A∞ operad は生成元 `OpM[n]`(arity n、次数 n−2)と
+
+`d mₙ = Σ_{p+q=n+1} Σ_{i=1}^{p} (−1)^(i+q(p−i)) m_p ∘ᵢ m_q`
+
+で与える(Loday–Vallette の符号)。`d² = 0` が Stasheff の関係式である。
+arity n の部分は associahedron Kₙ の胞体鎖複体で、ホモロジーは次数 0 に 1 次元だけ残る
+(A∞ は As の分解)。`DGOperadCheck`、`StasheffRelationsQ`、`AssociahedronBetti`。
+
+### 3.4 点付き Eₙ モノイダル圏
 
 単純対象は有限アーベル群の元(整数のリスト)。データは associator `w[a, b, c]` と
 braiding `c[a, b]`。通常の圏では E₁ = モノイダル、E₂ = braided、E₃ 以上 = symmetric。
@@ -88,10 +108,15 @@ braiding `c[a, b]`。通常の圏では E₁ = モノイダル、E₂ = braided�
 - ゲージ変換 `w' = w + δf`、`c'(a,b) = c(a,b) + f(b,a) − f(a,b)`
 - 不変量:spin `q(a) = c(a,a)`、相互 braiding `b(a,b) = c(a,b) + c(b,a)`
 
+braid 群の作用:右に寄せた積 `a₁(a₂(a₃…))` の上で、生成元 σᵢ の位相は
+`−w(a,b,x) + c(a,b) + w(b,a,x)`(x は後ろに続く対象の積。最後の 2 つでは `c(a,b)` だけ)。
+σᵢ を 2 回かけると相互 braiding になる。点付きの圏では braid 関係式は五角形から従い、
+六角形は「積を越える braiding は braiding の合成である」という主張にあたる。`BraidPhase`、`BraidRelationQ`。
+
 標準例:`ZNAnyons[n, p]`(`w = p·a·carry(b,c)/2`、`c = p·a·b/(2n)`。n が偶数か p が偶数のとき成立)、
 `VecZN[n, k]`(H³(Z_n, U(1)) の代表)、`DoubleZN[n]`、`ToricCode[]`、`Semion[]`、`SuperVec[]`。
 
-### 3.4 cochain
+### 3.5 cochain
 
 - `Cochain[p, f]`:cell `LCell[x, s]` 上の値が `f[x, s]` の p-cochain。
   `f` が未定義のシンボルなら「一般の cochain」になる。
@@ -179,10 +204,10 @@ C_n(2) ≃ S^(n−1) も同じ区別を与える。n = 1 は 2 成分(積が非�
 | 段階 | 作るもの | 到達判定 | 状態 |
 |---|---|---|---|
 | 1 | 木、∘ᵢ、自由 operad、書き換えによる商、End、公理検証器。格子層(δ、∪、∪ᵢ) | As の成分が各 arity で 1 個。(C*, δ, ∪) が dg 結合代数。∪ᵢ が文献の成分公式と (A3) を満たす | 実装済み |
-| 1b | 対称群作用と同変性、Com。線形結合と Lie(shuffle 木) | 同変性の検証が通る。Lie の成分次元が (n−1)! | 前半を実装済み、Lie は未着手 |
-| 2 | little intervals、A∞ operad(自由 dg operad) | 公理が端点を記号にして通る。d²=0。associahedron の面の総数 1, 3, 11, 45 | little cubes と面の数え上げは実装済み、dg は未着手 |
+| 1b | 対称群作用と同変性、Com。線形結合と Lie(shuffle 木) | 同変性の検証が通る。Lie の成分次元が (n−1)! | 線形結合まで実装済み、Lie は未着手 |
+| 2 | little intervals、A∞ operad(自由 dg operad) | 公理が端点を記号にして通る。d²=0。associahedron の面の総数 1, 3, 11, 45。A∞ が As の分解 | 実装済み |
 | 3 | little 2-cubes、Gerstenhaber operad | C_n(2) ≃ S^(n−1)。k 点成分の Poincaré 多項式が ∏(1+jt) | arity 2 は実装済み |
-| C | 点付き Eₙ モノイダル圏、coherence | 五角形・六角形・分類の個数。coherence が長さ 6 まで | 実装済み |
+| C | 点付き Eₙ モノイダル圏、coherence、braid 群の作用 | 五角形・六角形・分類の個数。coherence が長さ 6 まで | 実装済み(parenthesized braids の coherence は未着手) |
 | G | 多重線形展開、ゲージ変分、作用 | 5 節の恒等式が通る | 実装済み |
 | 4 | surjection operad、Eₙ フィルトレーション、cochain への作用 | (1,2,1,2,…) の作用が ∪ᵢ を再現 | arity 2 のみ実装済み |
 | 5 | 単体的対象、bar 構成 B(Σⁿ, Cₙ, X) | 反復 bar 構成で作った BⁿA のホモトピー群が次数 n の A だけ。近似定理を有理 Poincaré 級数の一致で確認 | 未着手 |
@@ -195,14 +220,23 @@ C_n(2) ≃ S^(n−1) も同じ区別を与える。n = 1 は 2 成分(積が非�
 - 符号や規約が関わる公式は、先に `reference/*.py` の参照実装で確かめてから
   Wolfram Language に移す。
 
-## 9. v0.2.0 時点の検証状況
+## 9. 検証状況
 
-- Python 参照実装(整数・有理数の厳密計算)で確認済み:
-  - `cubical_reference.py`:δ²=0、Leibniz 則、∪ の結合則、(A3)(d ≤ 4 の全次数)、
-    Steenrod の規約、arXiv:2303.06160 付録 A の 1〜3 次元の成分公式
-  - `gauge_reference.py`:5 節の恒等式、't Hooft flux で ΣP(B) = 2 Pf(z)、相互 braiding との一致
-  - `encategory_reference.py`:標準例が公理を満たすこと、ゲージ不変性、符号を変えた六角形が
-    落ちること、Z_N 上の構造の個数、coherence(長さ 6 まで)
-  - `operad_reference.py`:対称群の規約と同変性(End、語、little cubes)、
-    分離被覆の脈体の Betti 数
-- Wolfram Language のコードとテストは、この文書を書いた時点では未実行。
+### Wolfram Language での実行
+
+- v0.2.0:`wolframscript -file Scripts/RunTests.wls` で 134/134 が通過(2026-11-22、利用者の環境)。
+  単独の層のロードと、8 層すべてのロードも確認済み。
+- v0.3.0:`wolframscript -file Scripts/RunTests.wls` で 156/156 が通過(2026-11-22、Wolfram Language 15.0.1、利用者の環境)。
+  単独の層のロードと、10 層すべてのロードも確認済み。`Graded`、`AInfinity`、braid 群の作用を含む。
+
+### Python 参照実装(整数・有理数の厳密計算)
+
+- `cubical_reference.py`:δ²=0、Leibniz 則、∪ の結合則、(A3)(d ≤ 4 の全次数)、
+  Steenrod の規約、arXiv:2303.06160 付録 A の 1〜3 次元の成分公式
+- `gauge_reference.py`:5 節の恒等式、't Hooft flux で ΣP(B) = 2 Pf(z)、相互 braiding との一致
+- `encategory_reference.py`:標準例が公理を満たすこと、ゲージ不変性、符号を変えた六角形が
+  落ちること、Z_N 上の構造の個数、coherence(長さ 6 まで)
+- `operad_reference.py`:対称群の規約と同変性(End、語、little cubes)、
+  分離被覆の脈体の Betti 数
+- `ainfinity_reference.py`:Koszul 符号つきの公理、d²=0 になる符号則(双線形な 128 通りのうち 4 通り)、
+  導分であること、associahedron の面の数・Euler 標数・ホモロジー(n ≤ 7)

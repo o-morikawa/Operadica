@@ -154,3 +154,43 @@ VerificationTest[
   {{4, 2}, {3, 1}, {8, 2}, {5, 1}, {12, 2}},
   TestID -> "EnCategories-classification-ZN"
 ]
+
+(* ---------------------------------------------------------------------- *)
+(* the braid groups                                                       *)
+(* ---------------------------------------------------------------------- *)
+
+VerificationTest[
+  {
+    BraidPhase[ZNAnyons[4, 1], {{1}, {3}, {2}}, 1],
+    BraidPhase[ZNAnyons[4, 1], {{1}, {3}, {2}}, 2],
+    BraidPhase[Semion[], {{1}, {1}, {1}}, 1],
+    BraidPhase[Semion[], {{1}, {1}, {1}}, 2],
+    BraidWord[{{1}, {3}, {2}}, 1]
+  },
+  {7/8, 3/4, 1/4, 1/4, {{3}, {1}, {2}}},
+  TestID -> "EnCategories-braid-phase"
+]
+
+(* braiding twice is the mutual braiding; in a symmetric category it is trivial *)
+
+VerificationTest[
+  With[{cat = ZNAnyons[4, 1], word = {{1}, {3}, {2}}},
+    {
+      Mod[BraidPhase[cat, word, 1] + BraidPhase[cat, BraidWord[word, 1], 1], 1],
+      MutualBraiding[cat, {1}, {3}],
+      Mod[2 BraidPhase[SuperVec[], {{1}, {1}}, 1], 1],
+      BraidPhase[SuperVec[], {{1}, {1}}, 1]
+    }
+  ],
+  {3/4, 3/4, 0, 1/2},
+  TestID -> "EnCategories-double-braiding"
+]
+
+VerificationTest[
+  {
+    BraidRelationQ[ZNAnyons[4, 1], 3], BraidRelationQ[ZNAnyons[4, 3], 4],
+    BraidRelationQ[ToricCode[], 3], BraidRelationQ[Semion[], 5]
+  },
+  {True, True, True, True},
+  TestID -> "EnCategories-braid-relation"
+]

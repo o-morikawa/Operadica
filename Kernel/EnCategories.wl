@@ -57,6 +57,12 @@ MugerCenter::usage = "MugerCenter[cat] lists the objects of cat whose double bra
 
 ModularQ::usage = "ModularQ[cat] gives True if the Mueger center of the braided category cat consists of the unit object only.";
 
+BraidPhase::usage = "BraidPhase[cat, word, i] gives the phase, modulo 1, of the braid generator sigma_i that exchanges the i-th and (i+1)-th objects of the right-nested product of the objects in word: for the last two objects it is the braiding c(a, b), and otherwise -w(a, b, x) + c(a, b) + w(b, a, x) with x the product of the objects that follow.";
+
+BraidWord::usage = "BraidWord[word, i] gives the word with its i-th and (i+1)-th objects exchanged.";
+
+BraidRelationQ::usage = "BraidRelationQ[cat, n] gives True if the phases of the braid generators satisfy sigma_i sigma_(i+1) sigma_i = sigma_(i+1) sigma_i sigma_(i+1) on all products of n objects. For a pointed category this follows from the pentagon equation; the hexagon equations are the statements that braiding past a product is the composite of the braidings.";
+
 GaugeTransformCategory::usage = "GaugeTransformCategory[cat, f] gives the category obtained from cat by the gauge transformation with the 2-cochain f[a, b]: w' = w + df and c'(a, b) = c(a, b) + f(b, a) - f(a, b). It is equivalent to cat.";
 
 ZNAnyons::usage = "ZNAnyons[n, p] gives the braided category Z_n^(p): associator w(a, b, c) = p a carry(b, c) / 2 and braiding c(a, b) = p a b / (2 n), with carry(b, c) = 1 if b + c >= n and 0 otherwise. It satisfies the axioms when n is even or p is even; the spin of a is p a^2 / (2 n).";
@@ -175,6 +181,47 @@ MugerCenter[cat_Association] :=
   ];
 
 ModularQ[cat_Association] := Length[MugerCenter[cat]] === 1;
+
+
+(* ---------------------------------------------------------------------- *)
+(* the braid groups                                                       *)
+(*   the product of a word is nested to the right: a1 (a2 (a3 ...))       *)
+(*   sigma_i:  a (b X) -> (a b) X -> (b a) X -> b (a X)                   *)
+(* ---------------------------------------------------------------------- *)
+
+BraidWord[word_List, i_Integer] :=
+  ReplacePart[word, {i -> word[[i + 1]], i + 1 -> word[[i]]}];
+
+BraidPhase[cat_Association, word_List, i_Integer] /; 1 <= i < Length[word] :=
+  With[{w = cat["Associator"], br = cat["Braiding"], g1 = word[[i]], g2 = word[[i + 1]]},
+    If[i === Length[word] - 1,
+      Mod[br[g1, g2], 1],
+      With[{tail = Mod[Total[Drop[word, i + 1]], cat["Group"]]},
+        Mod[-w[g1, g2, tail] + br[g1, g2] + w[g2, g1, tail], 1]
+      ]
+    ]
+  ];
+
+braidPathPhase[cat_Association, word_List, {}] := 0;
+
+braidPathPhase[cat_Association, word_List, {i_Integer, rest___}] :=
+  BraidPhase[cat, word, i] + braidPathPhase[cat, BraidWord[word, i], {rest}];
+
+BraidRelationQ[cat_Association, n_Integer /; n >= 3] :=
+  AllTrue[
+    Tuples[CategoryObjects[cat], n],
+    Function[word,
+      AllTrue[
+        Range[n - 2],
+        Function[i,
+          Mod[
+            braidPathPhase[cat, word, {i, i + 1, i}] - braidPathPhase[cat, word, {i + 1, i, i + 1}],
+            1
+          ] === 0
+        ]
+      ]
+    ]
+  ];
 
 
 (* ---------------------------------------------------------------------- *)

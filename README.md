@@ -23,6 +23,8 @@ automatically; the lattice and category layers do not need the operad layer.
 | operad | ``Operadica`Operads` `` | Trees | operad objects, axiom and equivariance verifiers, algebras |
 | operad | ``Operadica`Rewriting` `` | Trees | quotient operads, normal forms, confluence |
 | operad | ``Operadica`LittleCubes` `` | | the little n-cubes operads (E_n), arity-two homotopy type |
+| operad | ``Operadica`Graded` `` | Trees | linear combinations, graded operads with Koszul signs, differentials |
+| operad | ``Operadica`AInfinity` `` | Trees, Graded, Rewriting | the A-infinity operad, associahedra |
 | category | ``Operadica`EnCategories` `` | | pointed E_n-monoidal categories: pentagon, hexagons, spins |
 | lattice gauge theory | ``Operadica`Lattice` `` | | cochains, coboundary, cup and higher cup products |
 | lattice gauge theory | ``Operadica`Gauge` `` | Lattice | multilinear expansion, gauge variations, actions |
@@ -44,7 +46,7 @@ Requires Wolfram Language 12.1 or later.
 - **I want to check F- and R-symbols of an abelian anyon theory, or see what
   E_1, E_2, E_3 mean concretely.** Load ``Operadica`EnCategories` ``.
 - **I want to learn operads by computing.** Load ``Operadica`Operads` ``,
-  ``Operadica`Rewriting` `` and ``Operadica`LittleCubes` ``.
+  ``Operadica`Rewriting` ``, ``Operadica`LittleCubes` `` and ``Operadica`AInfinity` ``.
 - **I want to see why these are the same subject.** Load ``Operadica`Bridge` ``.
 
 ## Lattice gauge theory layer
@@ -141,6 +143,10 @@ EnLevel /@ {VecZN[3, 1], Semion[], ToricCode[], SuperVec[]}
 (* {1, 2, 2, Infinity} *)
 
 MutualBraiding[ToricCode[], {1, 0}, {0, 1}]   (* 1/2: e and m braid with -1 *)
+
+(* the braid group acts on a product of objects *)
+BraidPhase[cat, {{1}, {3}, {2}}, 1]           (* 7/8: exchange the first two *)
+BraidRelationQ[cat, 3]                        (* True *)
 ```
 
 Your own data go into `PointedCategory[{N1, ..., Nr}, w, c]`. Gauge
@@ -178,6 +184,17 @@ OperadEquivariantQ[LittleCubesOperad[2], 3]
 (* C_n(2) is a sphere of dimension n - 1 *)
 Table[SimplicialBetti[SeparationNerve[n]], {n, 1, 3}]
 (* {{2}, {1, 1}, {1, 0, 1}} *)
+
+(* the A-infinity operad: generators OpM[n] of degree n - 2 *)
+AInfinityDifferential[3]
+(* -LBasis[OpM[2][OpM[2][OpLeaf, OpLeaf], OpLeaf]] + LBasis[OpM[2][OpLeaf, OpM[2][OpLeaf, OpLeaf]]] *)
+StasheffRelationsQ[7]                      (* True: d d = 0 *)
+DGOperadCheck[AInfinityOperad[4], 4]       (* axioms with Koszul signs, d d = 0, Leibniz *)
+
+(* its arity-n part is the chain complex of the associahedron K_n *)
+AssociahedronFVector[5]                    (* {14, 21, 9, 1} *)
+AssociahedronBetti[5]                      (* {1, 0, 0, 0}: A-infinity resolves As *)
+AssociahedronGraph[4]                      (* the pentagon *)
 ```
 
 An operad is an `Association` with the keys `"Elements"`, `"Compose"`,
@@ -229,6 +246,7 @@ python3 reference/cubical_reference.py      # d, cup, higher cup products
 python3 reference/gauge_reference.py        # gauge-variation identities
 python3 reference/encategory_reference.py   # pentagon, hexagons, coherence
 python3 reference/operad_reference.py       # symmetric groups, little cubes
+python3 reference/ainfinity_reference.py    # Koszul signs, A-infinity, associahedra
 ```
 
 ## Layout
@@ -240,6 +258,8 @@ Kernel/Trees.wl           operad layer
 Kernel/Operads.wl
 Kernel/Rewriting.wl
 Kernel/LittleCubes.wl
+Kernel/Graded.wl
+Kernel/AInfinity.wl
 Kernel/EnCategories.wl    category layer
 Kernel/Lattice.wl         lattice gauge theory layer
 Kernel/Gauge.wl
