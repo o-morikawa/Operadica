@@ -3,8 +3,8 @@
 (* ====================================================================== *)
 (*  Operadica`Graded`                                                      *)
 (*                                                                        *)
-(*  Linear combinations, free graded operads with Koszul signs, and        *)
-(*  differential graded operads.                                           *)
+(*  Linear combinations, free graded operads with Koszul signs,            *)
+(*  differential graded operads, and the homology of chain complexes.      *)
 (*                                                                        *)
 (*  A linear combination is a sum of scalar multiples of LBasis[x].        *)
 (*                                                                        *)
@@ -54,6 +54,10 @@ DGOperadCheck::usage = "DGOperadCheck[op, maxArity] checks the axioms of a grade
 DGOperadQ::usage = "DGOperadQ[op, maxArity] gives True if DGOperadCheck finds no violation.";
 
 ChainBetti::usage = "ChainBetti[{basis0, basis1, ...}, d] gives the Betti numbers of the chain complex with the given bases in degrees 0, 1, ... and the differential d of degree -1, a function from basis labels to linear combinations.";
+
+SmithInvariants::usage = "SmithInvariants[m] gives the non-zero diagonal entries d1, d2, ... of the Smith normal form of the integer matrix m, each dividing the next. The cokernel of m is the sum of the cyclic groups Z_di and of a free group.";
+
+ChainHomology::usage = "ChainHomology[{basis0, basis1, ...}, d] gives the integral homology of the chain complex with the given bases in degrees 0, 1, ... and the differential d of degree -1, a function from basis labels to linear combinations with integer coefficients. Each group is given as the list of its cyclic summands: 0 for Z and t for Z_t, so that {0, 0, 2} is Z + Z + Z_2 and {} is the trivial group. In the top degree the chains of the next degree are taken to be absent.";
 
 Begin["`Private`"];
 
@@ -344,6 +348,83 @@ ChainBetti[bases_List, d_] :=
       {0}
     ];
     Table[Length[bases[[k + 1]]] - rk[[k + 1]] - rk[[k + 2]], {k, 0, top}]
+  ];
+
+
+(* ---------------------------------------------------------------------- *)
+(* integral homology                                                      *)
+(*   the Smith normal form by row and column operations.  The corner is   *)
+(*   an entry of smallest absolute value; a remainder left in its row or  *)
+(*   column, or an entry that it does not divide, gives a smaller corner. *)
+(* ---------------------------------------------------------------------- *)
+
+SmithInvariants[m0_?MatrixQ] :=
+  Module[{m = m0, nr, nc, out = {}, t = 1, block, pos, p, q, rows, cols, bad, done},
+    {nr, nc} = Dimensions[m];
+    While[t <= Min[nr, nc] && Max[Abs[m[[t ;; nr, t ;; nc]]]] > 0,
+      block = Abs[m[[t ;; nr, t ;; nc]]];
+      pos = First[Position[block, Min[DeleteCases[Flatten[block], 0]], {2}, 1]] + (t - 1);
+      m[[{t, pos[[1]]}]] = m[[{pos[[1]], t}]];
+      m[[All, {t, pos[[2]]}]] = m[[All, {pos[[2]], t}]];
+      done = False;
+      While[! done,
+        p = m[[t, t]];
+        (* clear the column below the corner *)
+        If[t < nr,
+          q = Quotient[m[[t + 1 ;; nr, t]], p];
+          m[[t + 1 ;; nr]] = m[[t + 1 ;; nr]] - Outer[Times, q, m[[t]]]
+        ];
+        rows = Select[Range[t + 1, nr], Function[r, m[[r, t]] =!= 0], 1];
+        If[rows =!= {},
+          m[[{t, First[rows]}]] = m[[{First[rows], t}]],
+          (* clear the row to the right of the corner *)
+          If[t < nc,
+            q = Quotient[m[[t, t + 1 ;; nc]], p];
+            m[[All, t + 1 ;; nc]] = m[[All, t + 1 ;; nc]] - Outer[Times, m[[All, t]], q]
+          ];
+          cols = Select[Range[t + 1, nc], Function[c, m[[t, c]] =!= 0], 1];
+          If[cols =!= {},
+            m[[All, {t, First[cols]}]] = m[[All, {First[cols], t}]],
+            (* the corner must divide all the remaining entries *)
+            bad = Select[
+              Range[t + 1, nr],
+              Function[r, AnyTrue[m[[r]], Function[v, Mod[v, p] =!= 0]]],
+              1
+            ];
+            If[bad =!= {},
+              m[[t]] = m[[t]] + m[[First[bad]]],
+              done = True
+            ]
+          ]
+        ]
+      ];
+      out = Append[out, Abs[m[[t, t]]]];
+      t = t + 1
+    ];
+    out
+  ];
+
+ChainHomology[bases_List, d_] :=
+  Module[{top = Length[bases] - 1, inv},
+    (* inv[[k + 1]] holds the invariants of d from degree k to degree k - 1 *)
+    inv = Join[
+      {{}},
+      Table[
+        If[bases[[k]] === {} || bases[[k + 1]] === {},
+          {},
+          SmithInvariants[differentialMatrix[bases[[k]], bases[[k + 1]], d]]
+        ],
+        {k, 1, top}
+      ],
+      {{}}
+    ];
+    Table[
+      Join[
+        ConstantArray[0, Length[bases[[k + 1]]] - Length[inv[[k + 1]]] - Length[inv[[k + 2]]]],
+        Sort[Select[inv[[k + 2]], Function[x, x > 1]]]
+      ],
+      {k, 0, top}
+    ]
   ];
 
 End[];

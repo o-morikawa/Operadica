@@ -142,3 +142,310 @@ VerificationTest[
   {1/4, 1/4, 1/4},
   TestID -> "Bridge-flux-braiding-unit"
 ]
+
+(* ---------------------------------------------------------------------- *)
+(* delooping <-> category                                                 *)
+(*   the associator and the braiding are a cochain on the iterated bar    *)
+(*   construction: phi[a|b|c] = w(a, b, c), phi[a || b] = c(a, b)         *)
+(* ---------------------------------------------------------------------- *)
+
+VerificationTest[
+  With[{cat = ZNAnyons[4, 1]},
+    {
+      BarCochainValue[cat, BarWord[{3}, {3}, {3}]],
+      BarCochainValue[cat, BarWord[BarWord[{3}, {3}, {3}]]],
+      BarCochainValue[cat, BarWord[BarWord[{1}], BarWord[{3}]]],
+      BarCochainValue[cat, BarWord[BarWord[BarWord[{1}], BarWord[{3}]]]],
+      BarCochainValue[cat, BarWord[BarWord[BarWord[{3}, {3}, {3}]]]],
+      BarCochainValue[cat,
+        2 LBasis[BarWord[BarWord[{1}], BarWord[{3}]]] - LBasis[BarWord[BarWord[{3}], BarWord[{3}]]] +
+          LBasis[BarWord[BarWord[{3}, {3}, {3}]]]
+      ],
+      BarCochainValue[cat, 0]
+    }
+  ],
+  {1/2, 1/2, 3/8, 3/8, 1/2, 1/8, 0},
+  TestID -> "Bridge-bar-cochain"
+]
+
+(* the coboundary of the cochain is made of the pentagon and hexagon
+   expressions (left side minus right side) and of the double braiding.
+   The data are generic, so that all of them are non-zero somewhere:
+     B^1  [a|b|c|d]    pentagon
+     B^2  [[a|b|c|d]]  - pentagon,   [a|b || c]  hexagon 2,   [a || b|c]  hexagon 1
+     B^3  the suspensions of these with the opposite signs, and
+          [a ||| b]    - (c(a, b) + c(b, a))
+   Each entry: the number of generators, the number of vanishing values, and
+   the agreement of all values *)
+
+VerificationTest[
+  Table[
+    Module[{w, c, plus, pent, hex1, hex2, cat, expected},
+      w = Function[{x, y, z},
+        If[x[[1]] y[[1]] z[[1]] === 0,
+          0,
+          (x[[1]]^2 y[[1]] + 2 y[[1]] z[[1]]^2 + 3 x[[1]] z[[1]] + 1) / 7
+        ]
+      ];
+      c = Function[{x, y},
+        If[x[[1]] y[[1]] === 0, 0, (x[[1]] y[[1]]^2 + 2 x[[1]] + 1) / 5]
+      ];
+      plus = Function[{x, y}, Mod[x + y, {nn}]];
+      pent = Function[{h1, h2, h3, h4},
+        w[h2, h3, h4] - w[plus[h1, h2], h3, h4] + w[h1, plus[h2, h3], h4] -
+          w[h1, h2, plus[h3, h4]] + w[h1, h2, h3]
+      ];
+      hex1 = Function[{h1, h2, h3},
+        (w[h2, h3, h1] + c[h1, plus[h2, h3]] + w[h1, h2, h3]) -
+          (c[h1, h3] + w[h2, h1, h3] + c[h1, h2])
+      ];
+      hex2 = Function[{h1, h2, h3},
+        (-w[h3, h1, h2] + c[plus[h1, h2], h3] - w[h1, h2, h3]) -
+          (c[h1, h3] - w[h1, h3, h2] + c[h2, h3])
+      ];
+      cat = PointedCategory[{nn}, w, c];
+      expected = Function[g,
+        Mod[
+          Replace[g, {
+            BarWord[u1_List, u2_List, u3_List, u4_List] :> pent[u1, u2, u3, u4],
+            BarWord[BarWord[u1_List, u2_List, u3_List, u4_List]] :> -pent[u1, u2, u3, u4],
+            BarWord[BarWord[u1_List, u2_List], BarWord[u3_List]] :> hex2[u1, u2, u3],
+            BarWord[BarWord[u1_List], BarWord[u2_List, u3_List]] :> hex1[u1, u2, u3],
+            BarWord[BarWord[BarWord[u1_List, u2_List, u3_List, u4_List]]] :> pent[u1, u2, u3, u4],
+            BarWord[BarWord[BarWord[u1_List, u2_List], BarWord[u3_List]]] :> -hex2[u1, u2, u3],
+            BarWord[BarWord[BarWord[u1_List], BarWord[u2_List, u3_List]]] :> -hex1[u1, u2, u3],
+            BarWord[BarWord[BarWord[u1_List]], BarWord[BarWord[u2_List]]] :> -c[u1, u2] - c[u2, u1]
+          }],
+          1
+        ]
+      ];
+      Table[
+        With[{table = BarCoboundaryTable[cat, n]},
+          {
+            Length[table],
+            Count[Values[table], 0],
+            AllTrue[Keys[table], Function[g, Lookup[table, Key[g]] === expected[g]]]
+          }
+        ],
+        {n, 1, 3}
+      ]
+    ],
+    {nn, {3, 4}}
+  ],
+  {
+    {{16, 5, True}, {32, 5, True}, {36, 5, True}},
+    {{81, 11, True}, {135, 13, True}, {144, 13, True}}
+  },
+  TestID -> "Bridge-bar-coboundary-pentagon-hexagon"
+]
+
+(* an E_n-monoidal structure is a cocycle of degree n + 2 on B^n: monoidal,
+   braided and symmetric are the cases n = 1, 2, 3 *)
+
+VerificationTest[
+  Map[
+    Function[cat, {BarCocycleQ[cat, 1], BarCocycleQ[cat, 2], BarCocycleQ[cat, 3]}],
+    {
+      SuperVec[],
+      Semion[],
+      ToricCode[],
+      VecZN[3, 1],
+      PointedCategory[{3}, VecZN[3, 1]["Associator"], Function[{x, y}, 0]],
+      ZNAnyons[3, 1]
+    }
+  ],
+  {
+    {True, True, True},
+    {True, True, False},
+    {True, True, False},
+    {True, False, False},
+    {True, False, False},
+    {False, False, False}
+  },
+  TestID -> "Bridge-bar-cocycle"
+]
+
+VerificationTest[
+  With[{
+      family = Join[
+        Table[ZNAnyons[2, p], {p, 0, 3}],
+        Table[ZNAnyons[3, p], {p, 0, 5}],
+        Table[ZNAnyons[4, p], {p, 0, 3}],
+        {
+          VecZN[2, 1], VecZN[3, 1], VecZN[4, 2], ToricCode[],
+          PointedCategory[{3}, VecZN[3, 1]["Associator"], Function[{x, y}, 0]]
+        }
+      ]
+    },
+    {
+      AllTrue[family, DeloopingClassificationQ],
+      Map[EnLevel, family]
+    }
+  ],
+  {
+    True,
+    {
+      Infinity, 2, Infinity, 2,
+      Infinity, 0, 2, 0, 2, 0,
+      Infinity, 2, 2, 2,
+      1, 1, 1, 2,
+      1
+    }
+  },
+  TestID -> "Bridge-delooping-classification"
+]
+
+(* the number of structures is the order of H_(n+2)(K(A, n)): on Z_N there
+   are N monoidal, N gcd(2, N) braided and gcd(2, N) symmetric structures,
+   and nothing changes after n = 3.  For n = 2 this is the count by the
+   quadratic form of the spins *)
+
+VerificationTest[
+  {
+    Table[EnStructureCount[{nn}, n], {n, 1, 4}, {nn, 2, 4}],
+    Table[EnStructureCount[{2, 2}, n], {n, 1, 3}],
+    Table[
+      With[{valid = Select[Range[0, 2 nn - 1], Function[p, EvenQ[nn] || EvenQ[p]]]},
+        Length[Union[Map[Function[p, Values[SpinTable[ZNAnyons[nn, p]]]], valid]]] ===
+          EnStructureCount[{nn}, 2]
+      ],
+      {nn, 2, 4}
+    ]
+  },
+  {
+    {{2, 3, 4}, {4, 3, 8}, {2, 1, 2}, {2, 1, 2}},
+    {8, 32, 4},
+    {True, True, True}
+  },
+  TestID -> "Bridge-En-structure-count"
+]
+
+(* [a || a] and [a || b] + [b || a] are cycles of B^2, and the cocycle of a
+   braided category takes on them the spin and the mutual braiding *)
+
+VerificationTest[
+  Table[
+    With[{orders = cat["Group"], els = Rest[CategoryObjects[cat]]},
+      {
+        AllTrue[
+          els,
+          Function[a,
+            BarDifferential[orders][BarWord[BarWord[a], BarWord[a]]] === 0 &&
+              BarCochainValue[cat, BarWord[BarWord[a], BarWord[a]]] === TopologicalSpin[cat, a]
+          ]
+        ],
+        AllTrue[
+          Subsets[els, {2}],
+          Function[ab,
+            With[{
+                cyc = LBasis[BarWord[BarWord[ab[[1]]], BarWord[ab[[2]]]]] +
+                  LBasis[BarWord[BarWord[ab[[2]]], BarWord[ab[[1]]]]]
+              },
+              BarDifferential[orders][cyc] === 0 &&
+                BarCochainValue[cat, cyc] === MutualBraiding[cat, ab[[1]], ab[[2]]]
+            ]
+          ]
+        ]
+      }
+    ],
+    {cat, {ZNAnyons[4, 1], ZNAnyons[3, 2], ToricCode[]}}
+  ],
+  {{True, True}, {True, True}, {True, True}},
+  TestID -> "Bridge-spin-and-braiding-on-cycles"
+]
+
+(* in B^3 these cycles bound: d[a ||| b] = -[[a || b] + [b || a]] and
+   d[a ||| a] = -2 [[a || a]].  A symmetric structure has no mutual braiding,
+   and twice its spin vanishes: bosons and fermions *)
+
+VerificationTest[
+  {
+    BarDifferential[{4}][BarWord[BarWord[BarWord[{1}]], BarWord[BarWord[{3}]]]],
+    BarDifferential[{4}][BarWord[BarWord[BarWord[{1}]], BarWord[BarWord[{1}]]]],
+    Values[SpinTable[SuperVec[]]],
+    Values[SpinTable[Semion[]]]
+  },
+  {
+    -LBasis[BarWord[BarWord[BarWord[{1}], BarWord[{3}]]]] -
+      LBasis[BarWord[BarWord[BarWord[{3}], BarWord[{1}]]]],
+    -2 LBasis[BarWord[BarWord[BarWord[{1}], BarWord[{1}]]]],
+    {0, 1/2},
+    {0, 1/4}
+  },
+  TestID -> "Bridge-symmetric-means-boson-or-fermion"
+]
+
+(* the spin of the generator of Z_N has the denominator N gcd(2, N): the
+   class of [1 || 1] generates H_4(K(Z_N, 2)) *)
+
+VerificationTest[
+  Table[
+    {
+      BarCochainValue[
+        ZNAnyons[nn, If[EvenQ[nn], 1, 2]],
+        BarWord[BarWord[{1}], BarWord[{1}]]
+      ],
+      EnStructureCount[{nn}, 2]
+    },
+    {nn, 2, 4}
+  ],
+  {{1/4, 4}, {1/3, 3}, {1/8, 8}},
+  TestID -> "Bridge-spin-generates-H4"
+]
+
+(* equivalent categories are cohomologous cocycles: a gauge transformation by
+   f changes the cochain by (-1)^(n-1) times the coboundary of the cochain
+   psi[a|b] = f(a, b) *)
+
+VerificationTest[
+  Table[
+    Module[{f, cat, cat2, psi, orders},
+      f = Function[{x, y},
+        If[x[[1]] y[[1]] === 0, 0, (x[[1]]^2 + 3 y[[1]] + x[[1]] y[[1]]) / 11]
+      ];
+      cat = ZNAnyons[np[[1]], np[[2]]];
+      cat2 = GaugeTransformCategory[cat, f];
+      orders = cat["Group"];
+      psi = Function[g,
+        Replace[g, {
+          BarWord[u1_List, u2_List] :> f[u1, u2],
+          BarWord[BarWord[u1_List, u2_List]] :> f[u1, u2],
+          BarWord[BarWord[BarWord[u1_List, u2_List]]] :> f[u1, u2]
+        }]
+      ];
+      {
+        Table[
+          AllTrue[
+            BarGenerators[orders, n, n + 2],
+            Function[g,
+              Mod[
+                BarCochainValue[cat2, g] - BarCochainValue[cat, g] -
+                  (-1)^(n - 1) Total[
+                    Map[
+                      Function[tm, tm[[1]] psi[tm[[2]]]],
+                      LinearTerms[BarDifferential[orders][g]]
+                    ]
+                  ],
+                1
+              ] === 0
+            ]
+          ],
+          {n, 1, 3}
+        ],
+        (* the values change, the class does not *)
+        Count[
+          BarGenerators[orders, 2, 4],
+          _?(Function[g, BarCochainValue[cat2, g] =!= BarCochainValue[cat, g]])
+        ],
+        {BarCocycleQ[cat2, 1], BarCocycleQ[cat2, 2], BarCocycleQ[cat2, 3]},
+        SpinTable[cat2] === SpinTable[cat]
+      }
+    ],
+    {np, {{4, 1}, {3, 2}}}
+  ],
+  {
+    {{True, True, True}, 26, {True, True, False}, True},
+    {{True, True, True}, 4, {True, True, False}, True}
+  },
+  TestID -> "Bridge-gauge-transformations-are-coboundaries"
+]

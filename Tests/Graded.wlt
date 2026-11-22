@@ -130,3 +130,90 @@ VerificationTest[
   {1, 0, 0},
   TestID -> "Graded-ChainBetti-disc"
 ]
+
+(* ---------------------------------------------------------------------- *)
+(* integral homology                                                      *)
+(* ---------------------------------------------------------------------- *)
+
+(* the invariant factors of an integer matrix; the expected values are those
+   of reference/bar_reference.py *)
+
+VerificationTest[
+  {
+    SmithInvariants[{{2, 4, 4}, {-6, 6, 12}, {10, 4, 16}}],
+    SmithInvariants[{{2, 0}, {0, 3}}],
+    SmithInvariants[{{4, 0}, {0, 6}}],
+    SmithInvariants[{{12, 0, 0}, {0, 6, 0}, {0, 0, 2}}],
+    SmithInvariants[{{4, 6}, {6, 10}, {2, 2}}],
+    SmithInvariants[{{1, 2, 3, 4}, {2, 4, 6, 8}, {3, 6, 9, 13}}],
+    SmithInvariants[{{-3, 1, 7}, {5, -2, 1}, {1, 0, 15}, {2, -1, -6}}],
+    SmithInvariants[{{6, 10, 15}}],
+    SmithInvariants[{{6}, {10}, {15}}],
+    SmithInvariants[{{0, 0, 0}, {0, 0, 0}}]
+  },
+  {{2, 2, 156}, {1, 6}, {2, 12}, {2, 6, 12}, {2, 2}, {1, 1}, {1, 1, 2}, {1}, {1}, {}},
+  TestID -> "Graded-SmithInvariants"
+]
+
+(* the same from the built-in Smith decomposition *)
+
+VerificationTest[
+  AllTrue[
+    {
+      {{2, 4, 4}, {-6, 6, 12}, {10, 4, 16}},
+      {{12, 0, 0}, {0, 6, 0}, {0, 0, 2}},
+      {{4, 6}, {6, 10}, {2, 2}},
+      {{1, 2, 3, 4}, {2, 4, 6, 8}, {3, 6, 9, 13}},
+      {{-3, 1, 7}, {5, -2, 1}, {1, 0, 15}, {2, -1, -6}},
+      {{6, 10, 15}}
+    },
+    Function[m,
+      SmithInvariants[m] === DeleteCases[Abs[Diagonal[SmithDecomposition[m][[2]]]], 0]
+    ]
+  ],
+  True,
+  TestID -> "Graded-SmithInvariants-builtin"
+]
+
+(* a circle: Z in degrees 0 and 1.  A disc: a point.  An edge glued to its
+   vertex twice, and a face glued to a loop three times: torsion *)
+
+VerificationTest[
+  {
+    ChainHomology[
+      {{v1, v2, v3}, {e12, e23, e13}},
+      Function[e,
+        Replace[e, {
+          e12 -> LBasis[v2] - LBasis[v1],
+          e23 -> LBasis[v3] - LBasis[v2],
+          e13 -> LBasis[v3] - LBasis[v1],
+          _ -> 0
+        }]
+      ]
+    ],
+    ChainHomology[
+      {{v1, v2, v3}, {e12, e23, e13}, {f123}},
+      Function[e,
+        Replace[e, {
+          e12 -> LBasis[v2] - LBasis[v1],
+          e23 -> LBasis[v3] - LBasis[v2],
+          e13 -> LBasis[v3] - LBasis[v1],
+          f123 -> LBasis[e23] - LBasis[e13] + LBasis[e12],
+          _ -> 0
+        }]
+      ]
+    ],
+    ChainHomology[{{v1}, {e12}}, Function[e, Replace[e, {e12 -> 2 LBasis[v1], _ -> 0}]]],
+    ChainHomology[
+      {{v1}, {e12}, {f123}},
+      Function[e, Replace[e, {f123 -> 3 LBasis[e12], _ -> 0}]]
+    ]
+  },
+  {
+    {{0}, {0}},
+    {{0}, {}, {}},
+    {{2}, {}},
+    {{0}, {3}, {}}
+  },
+  TestID -> "Graded-ChainHomology"
+]

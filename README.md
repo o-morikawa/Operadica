@@ -24,15 +24,16 @@ automatically; the lattice and category layers do not need the operad layer.
 | operad | ``Operadica`Operads` `` | Trees | operad objects, axiom and equivariance verifiers, algebras |
 | operad | ``Operadica`Rewriting` `` | Trees | quotient operads, normal forms, confluence |
 | operad | ``Operadica`LittleCubes` `` | | the little n-cubes operads (E_n), nerves and Betti numbers of their spaces |
-| operad | ``Operadica`Graded` `` | Trees | linear combinations, graded operads with Koszul signs, differentials |
+| operad | ``Operadica`Graded` `` | Trees | linear combinations, graded operads with Koszul signs, differentials, integral homology of chain complexes |
 | operad | ``Operadica`AInfinity` `` | Trees, Graded, Rewriting | the A-infinity operad, associahedra |
 | operad | ``Operadica`Presented` `` | Graded | symmetric operads by generators and relations: Com, Lie, Ass, Poisson, Gerstenhaber, P_n |
 | operad | ``Operadica`BarrattEccles` `` | Graded | the Barratt-Eccles operad (E-infinity), its E_n stages, its action on cubes |
+| operad | ``Operadica`BarConstruction` `` | Graded | delooping: the iterated bar construction of an abelian group, the Eilenberg-MacLane spaces K(A, n) |
 | category | ``Operadica`EnCategories` `` | | pointed E_n-monoidal categories: pentagon, hexagons, spins |
 | lattice gauge theory | ``Operadica`Lattice` `` | | cochains, coboundary, cup and higher cup products, local multilinear operations |
 | lattice gauge theory | ``Operadica`Gauge` `` | Lattice | multilinear expansion, gauge variations, actions |
 | bridge | ``Operadica`EInfinity` `` | Graded, BarrattEccles, Lattice | the E-infinity operad acts on lattice cochains: higher cup products and the homotopies between them |
-| bridge | ``Operadica`Bridge` `` | Trees, Operads, LittleCubes, Presented, BarrattEccles, Lattice, EnCategories | statements connecting the layers |
+| bridge | ``Operadica`Bridge` `` | Trees, Operads, LittleCubes, Graded, Presented, BarrattEccles, BarConstruction, Lattice, EnCategories | statements connecting the layers |
 
 ```wolfram
 PacletDirectoryLoad["/path/to/Operadica"];
@@ -57,6 +58,10 @@ Requires Wolfram Language 12.1 or later.
 - **I use higher cup products and want the identities beyond arity two: what
   replaces the Leibniz rule for the cup-1 product, and where the correction
   terms come from.** Load ``Operadica`EInfinity` ``.
+- **I want the homology of an Eilenberg-MacLane space K(A, n), or the reason
+  why Z_N carries N gcd(2, N) braided structures and gcd(2, N) symmetric ones.**
+  Load ``Operadica`BarConstruction` ``, and ``Operadica`Bridge` `` for the
+  comparison with categories.
 - **I want to see why these are the same subject.** Load ``Operadica`Bridge` ``.
 
 ## Lattice gauge theory layer
@@ -299,6 +304,42 @@ BarrattEcclesBetti[3, 3]                       (* {1, 0, 3, 0, 2, 0, 0} *)
 TableReduction[HigherCupElement[3]]            (* LBasis[{1, 2, 1, 2, 1}] *)
 ```
 
+### Delooping: the bar construction and Eilenberg-MacLane spaces
+
+``Operadica`BarConstruction` `` computes with the n-fold bar construction of a
+finite abelian group `A` (given by the orders of its cyclic factors). Its
+generators are words in words: `BarWord[{1}, {2}]` is `[a|b]` in the first bar
+construction, and `BarWord[BarWord[{1}], BarWord[{2}]]` is `[a || b]` in the
+second. Its homology is the integral homology of the Eilenberg-MacLane space
+`K(A, n)`, given as a list of cyclic summands (`0` for Z, `t` for Z_t).
+
+```wolfram
+d = BarDifferential[{3}];
+d[BarWord[{1}, {2}]]                       (* [b] - [a+b] + [a], and [0] is dropped:
+                                              LBasis[BarWord[{2}]] + LBasis[BarWord[{1}]] *)
+d[BarWord[BarWord[{1}], BarWord[{2}]]]     (* LBasis[BarWord[BarWord[{1}, {2}]]] -
+                                              LBasis[BarWord[BarWord[{2}, {1}]]] *)
+
+Table[BarHomology[{2}, 2, k], {k, 1, 6}]   (* K(Z_2, 2): {{}, {2}, {}, {4}, {2}, {2}} *)
+BarHomology[{4}, 2, 4]                     (* {8}: H_4(K(Z_4, 2)) = Z_8 *)
+BarHomology[{2, 2}, 2, 4]                  (* {2, 4, 4} *)
+BarHomology[{4}, 3, 5]                     (* {2} *)
+```
+
+The space itself is there as a simplicial set. A `k`-simplex of `K(A, n)` is a
+flat `n`-form gauge field on a simplex, so a flat `n`-form gauge field on a
+triangulated space is a simplicial map to `K(A, n)`.
+
+```wolfram
+EilenbergMacLaneSimplices[{2}, 1, 2]       (* the four flat Z_2 gauge fields on a triangle *)
+EilenbergMacLaneHomotopy[{2}, 2, 3]        (* {1, 1, 2, 1}: the only homotopy group is pi_2 = Z_2 *)
+EilenbergMacLaneHomology[{2}, 2, 4]        (* {4}, from 41 and 768 nondegenerate simplices *)
+```
+
+`ChainHomology[bases, d]` in ``Operadica`Graded` `` does the same for any finite
+chain complex with integer coefficients, torsion included; `ChainBetti` gives
+the rational Betti numbers.
+
 ## E-infinity structure of lattice cochains
 
 ``Operadica`EInfinity` `` lets the Barratt-Eccles operad act on lattice cochains.
@@ -374,9 +415,37 @@ quickly: `k = 2` for any `n`, and `(n, k) = (1, 3), (1, 4), (2, 3)` are feasible
 The stages of the Barratt-Eccles operad reach further:
 `BarrattEcclesHomologyQ[3, 3]` compares `1, 0, 3, 0, 2` with `PoissonOperad[3]`.
 
-The last two lines are small instances of the recognition principle: an
-invertible E_n structure on a group is the same thing as a cocycle on its
-n-fold delooping, which on the lattice is a higher-form gauge field.
+### E_n structures are cocycles on the n-fold delooping
+
+The associator and the braiding of a pointed category on `A` are a cochain on
+the iterated bar construction: `w(a, b, c)` on `[a|b|c]` and `c(a, b)` on
+`[a || b]`. Its coboundary consists of the pentagon and hexagon expressions,
+and in the third bar construction of the double braiding as well. So a
+monoidal, braided or symmetric structure is a cocycle of degree `n + 2` on
+`K(A, n)` for `n = 1, 2, 3`.
+
+```wolfram
+BarCocycleQ[Semion[], 2]                       (* True: braided *)
+BarCocycleQ[Semion[], 3]                       (* False: not symmetric *)
+BarCoboundaryTable[ZNAnyons[3, 1], 2]          (* which pentagons and hexagons fail, generator by generator *)
+DeloopingClassificationQ[ToricCode[]]          (* True: cocycle on B^n <=> E_n-monoidal, n = 1, 2, 3 *)
+
+(* the number of structures is the order of H_(n+2)(K(A, n)) *)
+Table[EnStructureCount[{4}, n], {n, 1, 4}]     (* {4, 8, 2, 2} *)
+
+(* the spin is the value of the cocycle on the cycle [a || a] *)
+BarCochainValue[Semion[], BarWord[BarWord[{1}], BarWord[{1}]]]     (* 1/4 *)
+```
+
+In the third bar construction `[a || a]` taken twice is a boundary, which is
+why a symmetric structure only has bosons and fermions.
+
+This is the recognition principle in its discrete form: an invertible E_n
+structure on a group is a cocycle on its n-fold delooping, and a map from a
+lattice to that delooping is a flat higher-form gauge field. The 't Hooft flux
+line above is the lattice side of it: the Pontryagin square is the pull-back
+of such a cocycle along the gauge field. (The comparison of the two at the
+level of cochains is not implemented yet; the test compares the values.)
 
 ## Tests
 
@@ -399,6 +468,7 @@ python3 reference/operad_reference.py       # symmetric groups, little cubes
 python3 reference/ainfinity_reference.py    # Koszul signs, A-infinity, associahedra
 python3 reference/presented_reference.py    # Lie, Poisson, Gerstenhaber; little-cubes homology
 python3 reference/einfinity_reference.py    # Barratt-Eccles operad and its action on cochains
+python3 reference/bar_reference.py          # bar construction, K(A, n), E_n structures as cocycles
 ```
 
 ## Layout
@@ -414,6 +484,7 @@ Kernel/Graded.wl
 Kernel/AInfinity.wl
 Kernel/Presented.wl
 Kernel/BarrattEccles.wl
+Kernel/BarConstruction.wl
 Kernel/EnCategories.wl    category layer
 Kernel/Lattice.wl         lattice gauge theory layer
 Kernel/Gauge.wl

@@ -32,19 +32,40 @@
 (*     PontryaginFluxPhase    on a 't Hooft flux background equals the     *)
 (*                            mutual braiding of the fluxes                *)
 (*                                                                        *)
+(*   delooping <-> category                                                *)
+(*     BarCochainValue,       the associator and the braiding of a pointed *)
+(*     BarCoboundaryTable,    category on A are a cochain of degree n + 2  *)
+(*     BarCocycleQ,           on the n-fold bar construction B^n:          *)
+(*     DeloopingClassificationQ   phi[a|b|c] = w(a, b, c),                 *)
+(*     EnStructureCount           phi[a || b] = c(a, b).                   *)
+(*                            Its coboundary has the values                *)
+(*                              B^1  [a|b|c|d]    pentagon                 *)
+(*                              B^2  [[a|b|c|d]]  - pentagon               *)
+(*                                   [a|b || c]   hexagon 2                *)
+(*                                   [a || b|c]   hexagon 1                *)
+(*                              B^3  the same with the opposite signs, and *)
+(*                                   [a ||| b]    - (c(a,b) + c(b,a))      *)
+(*                            so that an E_n-monoidal structure on A is a  *)
+(*                            cocycle of degree n + 2 on K(A, n) = B^n A:  *)
+(*                            a category that can be delooped n times.     *)
+(*                            (pentagon and hexagons: left side minus      *)
+(*                            right side, as in Operadica`EnCategories`.)  *)
+(*                                                                        *)
 (*  The action of an E-infinity operad on lattice cochains is in          *)
 (*  Operadica`EInfinity`.                                                 *)
 (*                                                                        *)
-(*  Layer: bridge.  Depends on: Trees, Operads, LittleCubes, Presented,   *)
-(*  BarrattEccles, Lattice, EnCategories.                                 *)
+(*  Layer: bridge.  Depends on: Trees, Operads, LittleCubes, Graded,      *)
+(*  Presented, BarrattEccles, BarConstruction, Lattice, EnCategories.     *)
 (* ====================================================================== *)
 
 BeginPackage["Operadica`Bridge`", {
   "Operadica`Trees`",
   "Operadica`Operads`",
   "Operadica`LittleCubes`",
+  "Operadica`Graded`",
   "Operadica`Presented`",
   "Operadica`BarrattEccles`",
+  "Operadica`BarConstruction`",
   "Operadica`Lattice`",
   "Operadica`EnCategories`"
 }];
@@ -68,6 +89,16 @@ FluxBraidingPhase::usage = "FluxBraidingPhase[cat, z] gives b(z12, z34) - b(z13,
 PontryaginFluxPhase::usage = "PontryaginFluxPhase[n, p, z, dims] gives p / (2 n) times the sum of the Pontryagin square of the 't Hooft flux cochain of z over the four-torus with side lengths dims, modulo 1.";
 
 BarrattEcclesHomologyQ::usage = "BarrattEcclesHomologyQ[n, k] gives True if the Betti numbers of the stage F_n of the Barratt-Eccles operad in arity k are the dimensions by degree of the arity-k part of PoissonOperad[n]: H_*(E_n) = P_n on dimensions, for a combinatorial E_n operad. (n, k) = (2, 3), (3, 3) are fast; (2, 4) and (4, 3) need matrices with several thousand rows.";
+
+BarCochainValue::usage = "BarCochainValue[cat, x] gives the value, modulo 1, of the cochain of the pointed category cat on a generator x of an iterated bar construction, or on a linear combination of generators: the associator w(a, b, c) on [a | b | c], the braiding c(a, b) on [a || b], and the value on x for a suspended generator [x]. The data of cat must be normalized: they vanish when an argument is the unit object.";
+
+BarCoboundaryTable::usage = "BarCoboundaryTable[cat, n] gives the Association from the generators of degree n + 3 of the n-fold bar construction of the group of cat to the value of the cochain of cat on their differentials, modulo 1. For n = 1 these are the pentagon expressions; for n = 2 the pentagon and the two hexagon expressions; for n = 3 the double braidings as well.";
+
+BarCocycleQ::usage = "BarCocycleQ[cat, n] gives True if the cochain of the pointed category cat is a cocycle on the n-fold bar construction: all the values of BarCoboundaryTable[cat, n] vanish. For n >= 2 a category without braiding gives False.";
+
+DeloopingClassificationQ::usage = "DeloopingClassificationQ[cat] gives True if, for n = 1, 2, 3, the data of the pointed category cat are a cocycle on the n-fold bar construction exactly when cat is E_n-monoidal: PentagonQ for n = 1, with HexagonQ for n = 2, and with SymmetricBraidingQ for n = 3. The data of cat must be normalized.";
+
+EnStructureCount::usage = "EnStructureCount[orders, n] gives the order of the homology group H_(n+2)(K(A, n)) of the group A with the given orders, computed with the n-fold bar construction: the number of E_n-monoidal structures on the pointed category with the group A, up to equivalence (monoidal for n = 1, braided for n = 2, symmetric for n >= 3).";
 
 Begin["`Private`"];
 
@@ -212,6 +243,59 @@ BarrattEcclesHomologyQ[n_Integer?Positive, k_Integer?Positive] :=
     dims = OperadDimensionsByDegree[PoissonOperad[n], k];
     Max[Keys[dims]] <= Length[betti] - 1 &&
       betti === Table[Lookup[dims, Key[j], 0], {j, 0, Length[betti] - 1}]
+  ];
+
+
+(* ---------------------------------------------------------------------- *)
+(* delooping <-> category                                                 *)
+(* ---------------------------------------------------------------------- *)
+
+(* a one-letter word [x] with x in B^2 or higher is a suspension *)
+barValue[cat_Association][BarWord[x_BarWord]] /; BarLevel[x] >= 2 := barValue[cat][x];
+
+barValue[cat_Association][BarWord[g1_List, g2_List, g3_List]] :=
+  cat["Associator"][g1, g2, g3];
+
+barValue[cat_Association][BarWord[BarWord[g1_List, g2_List, g3_List]]] :=
+  cat["Associator"][g1, g2, g3];
+
+barValue[cat_Association][BarWord[BarWord[g1_List], BarWord[g2_List]]] :=
+  cat["Braiding"][g1, g2];
+
+
+BarCochainValue[cat_Association, x_BarWord] := Mod[barValue[cat][x], 1];
+
+BarCochainValue[cat_Association, chain_] :=
+  Mod[
+    Total[Map[Function[tm, tm[[1]] barValue[cat][tm[[2]]]], LinearTerms[chain]]],
+    1
+  ];
+
+BarCoboundaryTable[cat_Association, n_Integer?Positive] :=
+  With[{orders = cat["Group"]},
+    Association[
+      Map[
+        Function[g, g -> BarCochainValue[cat, BarDifferential[orders][g]]],
+        BarGenerators[orders, n, n + 3]
+      ]
+    ]
+  ];
+
+BarCocycleQ[cat_Association, n_Integer?Positive] :=
+  (n === 1 || Lookup[cat, "Braiding", None] =!= None) &&
+    AllTrue[Values[BarCoboundaryTable[cat, n]], Function[v, v === 0]];
+
+DeloopingClassificationQ[cat_Association] :=
+  With[{monoidal = PentagonQ[cat]},
+    With[{braided = monoidal && HexagonQ[cat]},
+      {BarCocycleQ[cat, 1], BarCocycleQ[cat, 2], BarCocycleQ[cat, 3]} ===
+        {monoidal, braided, braided && SymmetricBraidingQ[cat]}
+    ]
+  ];
+
+EnStructureCount[orders : {__Integer}, n_Integer?Positive] :=
+  With[{h = BarHomology[orders, n, n + 2]},
+    If[MemberQ[h, 0], Infinity, Times @@ h]
   ];
 
 

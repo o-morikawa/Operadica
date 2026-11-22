@@ -22,6 +22,9 @@
 (*                               Gerstenhaber, P_n                        *)
 (*      Operadica`BarrattEccles` the Barratt-Eccles operad (E-infinity),  *)
 (*                               its E_n stages, its action on cubes      *)
+(*      Operadica`BarConstruction` delooping: the iterated bar          *)
+(*                               construction of an abelian group, and    *)
+(*                               the Eilenberg-MacLane spaces K(A, n)     *)
 (*    category layer                                                      *)
 (*      Operadica`EnCategories`  pointed E_n-monoidal categories          *)
 (*    lattice gauge theory layer                                          *)
@@ -44,7 +47,7 @@ With[{dir = DirectoryName[$InputFileName]},
         Get[FileNameJoin[{dir, name <> ".wl"}]]
       ]
     ],
-    {"Trees", "Operads", "Rewriting", "LittleCubes", "Graded", "AInfinity", "Presented", "BarrattEccles", "Lattice", "Gauge", "EnCategories", "EInfinity", "Bridge"}
+    {"Trees", "Operads", "Rewriting", "LittleCubes", "Graded", "AInfinity", "Presented", "BarrattEccles", "BarConstruction", "Lattice", "Gauge", "EnCategories", "EInfinity", "Bridge"}
   ]
 ];
 
@@ -57,6 +60,7 @@ BeginPackage["Operadica`", {
   "Operadica`AInfinity`",
   "Operadica`Presented`",
   "Operadica`BarrattEccles`",
+  "Operadica`BarConstruction`",
   "Operadica`Lattice`",
   "Operadica`Gauge`",
   "Operadica`EnCategories`",
@@ -77,6 +81,7 @@ $OperadicaLayers = {
   "Operadica`AInfinity`",
   "Operadica`Presented`",
   "Operadica`BarrattEccles`",
+  "Operadica`BarConstruction`",
   "Operadica`Lattice`",
   "Operadica`Gauge`",
   "Operadica`EnCategories`",

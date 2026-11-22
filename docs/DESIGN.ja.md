@@ -1,6 +1,6 @@
 # Operadica 設計文書
 
-最終更新: 2026-11-22(v0.5.0)
+最終更新: 2026-11-22(v0.6.0)
 
 ## 1. 目的
 
@@ -29,15 +29,16 @@ operad の標準的な理論を、Mathematica 上で実際に計算しながら�
 | operad | ``Operadica`Operads` `` | Trees | operad オブジェクト、公理と同変性の検証器、代数 |
 | operad | ``Operadica`Rewriting` `` | Trees | 書き換えによる商、正規形、合流性 |
 | operad | ``Operadica`LittleCubes` `` | なし | little n-cubes operad(Eₙ)、配置の空間の脈体と Betti 数 |
-| operad | ``Operadica`Graded` `` | Trees | 線形結合、Koszul 符号つきの次数付き operad、微分 |
+| operad | ``Operadica`Graded` `` | Trees | 線形結合、Koszul 符号つきの次数付き operad、微分、鎖複体の整係数ホモロジー |
 | operad | ``Operadica`AInfinity` `` | Trees, Graded, Rewriting | A∞ operad、associahedron |
 | operad | ``Operadica`Presented` `` | Graded | 生成元と関係式による対称 operad:Com、Lie、Ass、Poisson、Gerstenhaber、Pₙ |
 | operad | ``Operadica`BarrattEccles` `` | Graded | Barratt–Eccles operad(E∞)、Eₙ の段、区間と立方体への作用 |
+| operad | ``Operadica`BarConstruction` `` | Graded | delooping:アーベル群の反復 bar 構成、Eilenberg–MacLane 空間 K(A, n) |
 | カテゴリ | ``Operadica`EnCategories` `` | なし | 点付き Eₙ モノイダル圏:五角形、六角形、spin |
 | 格子ゲージ理論 | ``Operadica`Lattice` `` | なし | cochain、δ、∪、∪ᵢ、局所的な多重線形演算 |
 | 格子ゲージ理論 | ``Operadica`Gauge` `` | Lattice | 多重線形展開、ゲージ変分、作用 |
 | 橋 | ``Operadica`EInfinity` `` | Graded, BarrattEccles, Lattice | 格子 cochain への E∞ operad の作用:∪ᵢ とその間のホモトピー |
-| 橋 | ``Operadica`Bridge` `` | Trees, Operads, LittleCubes, Presented, BarrattEccles, Lattice, EnCategories | 層をつなぐ主張 |
+| 橋 | ``Operadica`Bridge` `` | Trees, Operads, LittleCubes, Graded, Presented, BarrattEccles, BarConstruction, Lattice, EnCategories | 層をつなぐ主張 |
 
 - 格子ゲージ理論の計算をしたい人は ``Operadica`Gauge` `` だけをロードすればよく、operad を知る必要はない。
 - カテゴリ層と格子層は operad 層に依存しない。三者が同じものであることは橋で初めて述べる。
@@ -97,6 +98,10 @@ A∞ operad は生成元 `OpM[n]`(arity n、次数 n−2)と
 で与える(Loday–Vallette の符号)。`d² = 0` が Stasheff の関係式である。
 arity n の部分は associahedron Kₙ の胞体鎖複体で、ホモロジーは次数 0 に 1 次元だけ残る
 (A∞ は As の分解)。`DGOperadCheck`、`StasheffRelationsQ`、`AssociahedronBetti`。
+
+有限な鎖複体のホモロジーは、有理数係数の Betti 数(`ChainBetti`)と、整数係数の群(`ChainHomology`)の
+両方を計算できる。後者は微分の行列の Smith 標準形(`SmithInvariants`)から求め、群を巡回群の直和として返す
+(0 は Z、t は Z_t。`{0, 2}` は Z + Z₂、`{}` は 0)。ねじれ(torsion)が見えるのは整数係数だけである。
 
 ### 3.4 生成元と関係式による対称 operad
 
@@ -166,7 +171,44 @@ E∞ operad の、計算できる具体的なモデル(``Operadica`BarrattEccles
   項は `{係数, {row₁, …, row_r}}` で、rowⱼ は方向ごとに 2(j 番目の因子がその方向に伸びる)、
   1(上端にいる)、0(下端にいる)を持つ。
 
-### 3.6 点付き Eₙ モノイダル圏
+### 3.6 反復 bar 構成と Eilenberg–MacLane 空間
+
+delooping の、計算できる具体的なモデル(``Operadica`BarConstruction` ``)。`reference/bar_reference.py` で確認。
+
+有限アーベル群 A = Z_N1 × … × Z_Nr の群環 Z[A] の n 重 bar 構成 Bⁿ は鎖複体で、そのホモロジーは
+Eilenberg–MacLane 空間 K(A, n) = BⁿA(ホモトピー群が次数 n の A だけである空間)の整数係数ホモロジーである。
+
+- 生成元:レベル 0 は A の 0 でない元(整数のリスト、次数 0)。レベル n は、レベル n−1 の生成元を文字とする
+  語 `BarWord[x1, …, xm]`(m ≥ 1)で、`[x1|…|xm]` と書く。次数は `Σ(deg xᵢ + 1)`。
+  `[a‖b]` は `[[a]|[b]]`(B² の次数 4 の元)、`[a|||b]` は `[[[a]]|[[b]]]`(B³ の次数 6 の元)。
+- 積:レベル 0 は群の和(0 になる項は落とす。正規化した複体)。レベル n は shuffle 積で、
+  文字の次数を deg + 1 として Koszul 符号をつける。結合的で、次数付き可換。`BarProduct`。
+- 微分:`d[x1|…|xm] = −Σᵢ (−1)^(e_(i−1)) […|d xᵢ|…] + Σᵢ (−1)^(eᵢ) […|xᵢ·x_(i+1)|…]`、`eᵢ = Σ_(j≤i)(deg xⱼ + 1)`。
+  レベル 1 では両端の項 `[x2|…|xm] + (−1)^m [x1|…|x_(m−1)]` が加わる。
+  レベル 1 は群ホモロジーの複体で、`d[a|b] = [b] − [a+b] + [a]`。`BarDifferential`。
+- d は積の導分である。可換な dg 代数の bar 構成はまた可換な dg 代数になるので、bar 構成を繰り返せる。
+  群が可換であることはここで使う(非可換な群は 1 回しか deloop できない)。
+- 懸垂 `x ↦ [x]`(`BarSuspension`)はレベルと次数を 1 上げ、`d[x] = −[dx]`。
+- `BarHomology[orders, n, k]` は H_k(K(A, n)) を巡回群の直和として返す(`{4}` は Z₄、`{2, 4, 4}` は Z₂ + Z₄ + Z₄)。
+
+  | | H_n | H_(n+1) | H_(n+2) |
+  |---|---|---|---|
+  | K(Z_N, 1) | Z_N | 0 | Z_N |
+  | K(Z_N, 2) | Z_N | 0 | Z_(N·gcd(2,N)) |
+  | K(Z_N, n)、n ≥ 3 | Z_N | 0 | Z_gcd(2,N) |
+
+  N = 2, 3, 4 と n ≤ 4 で確認している(参照実装では n ≤ 3 で N ≤ 6)。Z₂ × Z₂ では H₄(K(A, 2)) = Z₂ + Z₄ + Z₄。
+
+**単体的集合としての K(A, n)**:k-単体は、頂点 0, …, k の単体の上の A 値 n-cocycle、つまり
+単体の上の平坦な n-form ゲージ場である(`EMSimplex[k, values]`。values は n 次元の面の上の値)。
+面写像は場の制限、退化写像は辺をつぶす写像による引き戻しで、三角形分割された空間の上の
+平坦な n-form ゲージ場は、K(A, n) への単体写像と同じものである。
+
+- `EilenbergMacLaneHomotopy`:Moore 複体から計算したホモトピー群の位数。次数 n で |A|、ほかは 1。
+- `EilenbergMacLaneHomology`:退化していない単体の鎖複体のホモロジー。bar 構成のホモロジーと一致する。
+  K(Z₂, 2) は次元 4 と 5 に退化していない単体を 41 個と 768 個持ち、H₄ = Z₄。
+
+### 3.7 点付き Eₙ モノイダル圏
 
 単純対象は有限アーベル群の元(整数のリスト)。データは associator `w[a, b, c]` と
 braiding `c[a, b]`。通常の圏では E₁ = モノイダル、E₂ = braided、E₃ 以上 = symmetric。
@@ -187,7 +229,7 @@ braid 群の作用:右に寄せた積 `a₁(a₂(a₃…))` の上で、生成�
 標準例:`ZNAnyons[n, p]`(`w = p·a·carry(b,c)/2`、`c = p·a·b/(2n)`。n が偶数か p が偶数のとき成立)、
 `VecZN[n, k]`(H³(Z_n, U(1)) の代表)、`DoubleZN[n]`、`ToricCode[]`、`Semion[]`、`SuperVec[]`。
 
-### 3.7 cochain
+### 3.8 cochain
 
 - `Cochain[p, f]`:cell `LCell[x, s]` 上の値が `f[x, s]` の p-cochain。
   `f` が未定義のシンボルなら「一般の cochain」になる。
@@ -207,7 +249,7 @@ braid 群の作用:右に寄せた積 `a₁(a₂(a₃…))` の上で、生成�
 1. **構成による保証**:自由 operad は接ぎ木なので公理が構造的に成り立つ。
    テストは実装の誤り検出用。
 2. **有限全数検査**:有限な operad・代数・圏は、全組合せを調べる。その範囲では証明である。
-   `OperadAxiomCheck`、`PentagonQ`、`HexagonQ`。
+   `OperadAxiomCheck`、`PentagonQ`、`HexagonQ`、`BarCocycleQ`。
    生成元と関係式による operad では、arity ごとのイデアルの階数の計算がこれにあたる。
    `OperadZeroQ` が True を返せば、その恒等式は関係式から従う(その arity での証明)。
 3. **記号的恒等式**:一般の cochain の値、一般の little cubes の端点は独立な変数になる。
@@ -281,6 +323,8 @@ Gerstenhaber operad の Leibniz 則が cochain の上ではホモトピーを除
 | C_n(k) の Betti 数 = Pₙ の arity k の成分の次数ごとの次元(H_*(Eₙ) = Pₙ の、次元での確認) | `LittleCubesHomologyQ` |
 | 同じことを Barratt–Eccles operad の段 F_n で(組合せ的な Eₙ operad) | `BarrattEcclesHomologyQ` |
 | 五角形方程式 ⇔ 結合則の書き換えの、位相つきの合流性(Mac Lane の coherence) | `MacLaneCoherenceQ` |
+| 圏のデータ (w, c) は Bⁿ の次数 n+2 の cochain。Eₙ 構造 ⇔ cocycle(n = 1, 2, 3 がモノイダル、braided、symmetric) | `BarCochainValue`、`BarCoboundaryTable`、`BarCocycleQ`、`DeloopingClassificationQ` |
+| A 上の Eₙ 構造の個数 = H_(n+2)(K(A, n)) の位数 | `EnStructureCount` |
 | 四次元トーラス上の 't Hooft flux での重み `(p/2N)ΣP(B)` = flux の相互 braiding | `PontryaginFluxPhase`, `FluxBraidingPhase` |
 
 ### 格子 cochain は E∞ 代数
@@ -322,7 +366,7 @@ recognition theorem の物理的な中身:p-form 対称性の欠陥は余次元 
 融合が E_(p+1) 構造を持つ。可逆なら Ω^(p+1)B^(p+1)A と同値で、背景場は格子上の
 (p+1)-cocycle になる。群 A 上の Eₙ 構造は H^(n+2)(K(A, n); U(1)) で分類される。
 Z_N では n = 2 が N·gcd(2,N) 個(二次形式)、n = 3 が gcd(2,N) 個で、
-`Tests/EnCategories.wlt` がこの個数を数えている。
+`Tests/EnCategories.wlt` がこの個数を数えている。同じ個数を、この節の最後の小節で bar 構成から直接計算する。
 
 C_n(2) ≃ S^(n−1) も同じ区別を与える。n = 1 は 2 成分(積が非可換)、n = 2 は円周
 (braiding があり、2 回かけても自明でない)、n = 3 は球面(symmetric)。
@@ -338,6 +382,42 @@ C_2(3) の Betti 数は 1, 3, 2 で、Gerstenhaber operad の arity 3
 (積だけの元 1 個、括弧 1 個の元 3 個、括弧 2 個の元 2 個)に一致する。
 この方法で計算できるのは k = 2 と (n, k) = (1, 3)、(1, 4)、(2, 3) まで。
 
+### Eₙ 構造は BⁿA の上の cocycle
+
+点付きの圏のデータは、反復 bar 構成(3.6)の上の、位相に値を持つ cochain になる:
+
+`φ[a|b|c] = w(a, b, c)`、`φ[a‖b] = c(a, b)`(懸垂した生成元 `[x]` の上では x の上の値)
+
+その余境界、つまり次数 n+3 の生成元の微分の上の値は、五角形と六角形の式(3.7 の式の左辺 − 右辺)そのものである:
+
+- B¹:`[a|b|c|d]` の上で五角形
+- B²:`[[a|b|c|d]]` の上で −五角形、`[a|b‖c]` の上で六角形 2、`[a‖b|c]` の上で六角形 1
+- B³:B² の生成元の懸垂の上で、符号が逆の同じ式。`[a|||b]` の上で `−(c(a,b) + c(b,a))`
+- B⁴:次数 7 に新しい生成元がないので、条件は B³ と同じ
+
+したがって、単位対象で消えるように正規化したデータについて
+
+- モノイダル(E₁)⇔ B¹ の 3-cocycle
+- braided(E₂)⇔ B² の 4-cocycle
+- symmetric(E₃ 以上)⇔ B³ の 5-cocycle
+
+が成り立つ(`BarCocycleQ`、`DeloopingClassificationQ`)。A 上の Eₙ 構造は K(A, n) の (n+2)-cocycle であり、
+「n 回 deloop できる圏」である。recognition theorem(群的な Eₙ 代数は n 重ループ空間)の、この設定での中身がこれである。
+
+- **同値は coboundary**:`ψ[a|b] = f(a, b)` と置くと、f によるゲージ変換(3.7)で φ は `(−1)^(n−1) δψ` だけ変わる。
+  同値な圏は同じコホモロジー類を与える。
+- **個数**:U(1) は可除なので H^(n+2)(K(A, n); U(1)) = Hom(H_(n+2)(K(A, n)), U(1))。構造の個数は H_(n+2) の位数で、
+  Z_N では N、N·gcd(2,N)、gcd(2,N)(`EnStructureCount`)。Z₂ × Z₂ では 8、32、4。
+- **spin と相互 braiding は cycle の上の値**:`[a‖a]` と `[a‖b] + [b‖a]` は B² の cycle で、cocycle の値は
+  spin `c(a,a)` と相互 braiding である。Z_N の生成元の spin の分母は N·gcd(2,N) まで取れて、
+  `[1‖1]` の類が H₄(K(Z_N, 2)) を生成する(二次形式による分類)。semion(spin 1/4)は H⁴(K(Z₂, 2); U(1)) = Z₄ の生成元である。
+- **symmetric なら boson か fermion**:B³ ではこれらの cycle が境界になる。
+  `d[a|||b] = −[[a‖b] + [b‖a]]`、`d[a|||a] = −2[[a‖a]]`。
+  5-cocycle の上では相互 braiding が消え、spin の 2 倍が 0 になる。H₅(K(Z_N, 3)) = Z_gcd(2,N) で、N が偶数のときの自明でない 5-cocycle が fermion(`SuperVec[]`)である。
+- **物理**:K(A, n) への写像は n-form の A ゲージ場(背景場)で、(n+2)-cocycle の引き戻しは n+2 次元の位相的作用、
+  すなわち (n−1)-form 対称性のアノマリーの inflow 作用である。n = 2、A = Z_N では Pontryagin 平方 `(p/2N)·P(B)` で、
+  p は 2N を法とする整数(N が奇数なら偶数だけ)、あわせて N·gcd(2,N) 個。`ZNAnyons[N, p]` の p と同じものである。
+
 ## 7. 道筋と到達判定
 
 | 段階 | 作るもの | 到達判定 | 状態 |
@@ -349,13 +429,16 @@ C_2(3) の Betti 数は 1, 3, 2 で、Gerstenhaber operad の arity 3
 | C | 点付き Eₙ モノイダル圏、coherence、braid 群の作用 | 五角形・六角形・分類の個数。coherence が長さ 6 まで | 実装済み(parenthesized braids の coherence は未着手) |
 | G | 多重線形展開、ゲージ変分、作用 | 5 節の恒等式が通る | 実装済み |
 | 4 | E∞ operad(Barratt–Eccles、table reduction で surjection へ)、Eₙ フィルトレーション、cochain への作用 | eᵢ ↦ (1,2,1,2,…) の作用が ∪ᵢ を再現。三つの法則 (L)・(C)・(E)。Hirsch 公式のホモトピー | 実装済み(surjection operad の合成は未実装) |
-| 5 | 単体的対象、bar 構成 B(Σⁿ, Cₙ, X) | 反復 bar 構成で作った BⁿA のホモトピー群が次数 n の A だけ。近似定理を有理 Poincaré 級数の一致で確認 | 未着手 |
+| 5 | 単体的対象、bar 構成 B(Σⁿ, Cₙ, X) | 反復 bar 構成で作った BⁿA のホモトピー群が次数 n の A だけ。近似定理を有理 Poincaré 級数の一致で確認 | 離散群の場合を実装済み(BⁿA のホモロジーとホモトピー群、Eₙ 構造 = BⁿA の cocycle)。両側 bar 構成 B(Σⁿ, Cₙ, X) と近似定理は未着手 |
 
 次の候補:
 
 - arity 4 のホモトピー:Cartan 公式、∪₁ の結合性のずれ、Steenrod 平方の関係式
 - Pontryagin 平方や高次 cup 積を含む作用のゲージ変分を、E∞ の演算で系統的に書くこと
-- Koszul 双対の計算(関係式の直交補空間)と bar 構成(段階 5)
+- 単体的 cochain と Steenrod の ∪ᵢ(単体の上の公式)。K(A, n) の上の特性類を cochain で書き、
+  bar 構成の cocycle と比べる(Pontryagin 平方が H⁴(K(Z_N, 2); U(1)) の生成元であること)
+- 両側 bar 構成 B(Σⁿ, Cₙ, X) と近似定理 CₙX ≃ ΩⁿΣⁿX(有理 Poincaré 級数の一致)
+- Koszul 双対の計算(関係式の直交補空間)と operad の bar 構成
 
 ## 8. 開発の進め方
 
@@ -377,6 +460,8 @@ C_2(3) の Betti 数は 1, 3, 2 で、Gerstenhaber operad の arity 3
   単独の層のロードと、11 層すべてのロードも確認済み。`Presented`、k 個の立方体の脈体、Hirsch 公式の欠損を含む。
 - v0.5.0:`wolframscript -file Scripts/RunTests.wls` で 222/222 が通過(2026-11-22、Wolfram Language 15.0.1、利用者の環境)。
   単独の層のロードと、13 層すべてのロードも確認済み。`BarrattEccles`、`EInfinity`、`LocalOperation` を含む。
+- v0.6.0:`wolframscript -file Scripts/RunTests.wls` で 258/258 が通過(2026-11-22、Wolfram Language 15.0.1、利用者の環境)。
+  単独の層のロードと、14 層すべてのロードも確認済み。`BarConstruction`、`SmithInvariants`、`ChainHomology`、橋の delooping の主張を含む。
 
 ### Python 参照実装(整数・有理数の厳密計算)
 
@@ -395,3 +480,7 @@ C_2(3) の Betti 数は 1, 3, 2 で、Gerstenhaber operad の arity 3
 - `einfinity_reference.py`:Barratt–Eccles operad の公理(Koszul 符号つき)、F_nE(k) の Betti 数と Pₙ の次元の一致、
   table reduction が鎖写像であること、立方体(n ≤ 3)の上での (L)・(C)・(E)、格子上での三つの法則、
   arity 2 が ∪ᵢ であること(d ≤ 4)、Hirsch 公式(d ≤ 4)
+- `bar_reference.py`:反復 bar 構成の d² = 0(レベル 4 まで)、積の結合則・次数付き可換性・導分であること、懸垂、
+  K(Z_N, n) のホモロジー(n ≤ 3 で N ≤ 6、n = 4 で N ≤ 4)と Z₂ × Z₂、単体的な K(A, n) のホモトピー群とホモロジー、
+  余境界が五角形・六角形・二重 braiding の式であること、cocycle ⇔ Eₙ 構造(102 個の圏)、cycle の上の値が spin と
+  相互 braiding であること、構造の個数
