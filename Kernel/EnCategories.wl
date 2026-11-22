@@ -53,9 +53,9 @@ MutualBraiding::usage = "MutualBraiding[cat, a, b] gives the double braiding c(a
 
 SpinTable::usage = "SpinTable[cat] gives the Association from the objects of cat to their spins: the quadratic form of the braided category.";
 
-MugerCenter::usage = "MugerCenter[cat] lists the objects of cat whose double braiding with every object is trivial.";
+MugerCenter::usage = "MugerCenter[cat] lists the objects of cat whose double braiding with every object is trivial. It is computed from the braiding data alone and does not check the pentagon and hexagon equations.";
 
-ModularQ::usage = "ModularQ[cat] gives True if the Mueger center of the braided category cat consists of the unit object only.";
+ModularQ::usage = "ModularQ[cat] gives True if cat is a braided category (the pentagon and hexagon equations hold) whose Mueger center consists of the unit object only. For data that are not a braided category it gives False.";
 
 BraidPhase::usage = "BraidPhase[cat, word, i] gives the phase, modulo 1, of the braid generator sigma_i that exchanges the i-th and (i+1)-th objects of the right-nested product of the objects in word: for the last two objects it is the braiding c(a, b), and otherwise -w(a, b, x) + c(a, b) + w(b, a, x) with x the product of the objects that follow.";
 
@@ -180,7 +180,10 @@ MugerCenter[cat_Association] :=
     Select[els, Function[a, AllTrue[els, Function[b, MutualBraiding[cat, a, b] === 0]]]]
   ];
 
-ModularQ[cat_Association] := Length[MugerCenter[cat]] === 1;
+(* the double braiding of data that fail the hexagons can be non-degenerate
+   without there being any braided category *)
+ModularQ[cat_Association] :=
+  PentagonQ[cat] && HexagonQ[cat] && Length[MugerCenter[cat]] === 1;
 
 
 (* ---------------------------------------------------------------------- *)

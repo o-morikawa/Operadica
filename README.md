@@ -13,6 +13,17 @@ by computation.
 
 The design and the roadmap are in [docs/DESIGN.ja.md](docs/DESIGN.ja.md) (Japanese).
 
+## Start here
+
+Open [Examples/Operadica-Tour.nb](Examples/Operadica-Tour.nb) in Mathematica and
+evaluate it from the top. It loads the package from the folder above it and
+walks through the three parts with pictures: operads by computation (trees,
+associahedra, rewriting, little squares), categories by running them (the
+pentagon with phases, braiding tables), and lattice computations (the terms of
+the cup and higher cup products as cell pictures, gauge variations, 't Hooft
+flux). [Examples/ZnAnyons.nb](Examples/ZnAnyons.nb) is a minimal example: for
+which `n` and `p` the anyons `Z_n^(p)` satisfy the hexagon equations.
+
 ## Layers
 
 Each layer is its own context and can be loaded alone. Dependencies are loaded
@@ -576,6 +587,8 @@ Kernel/EInfinity.wl       bridge
 Kernel/Bridge.wl
 Tests/*.wlt               one VerificationTest file per layer file
 Scripts/RunTests.wls      test runner
+Scripts/RunExamples.wls   evaluates the input cells of Examples/*.nb in a plain kernel
+Examples/*.nb             notebooks: start with Operadica-Tour.nb
 reference/*.py            Python references for the conventions
 docs/DESIGN.ja.md         design and roadmap
 ```

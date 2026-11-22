@@ -194,3 +194,22 @@ VerificationTest[
   {True, True, True, True},
   TestID -> "EnCategories-braid-relation"
 ]
+
+(* modular means: a braided category with a non-degenerate double braiding.
+   For n odd and p odd the data of ZNAnyons[n, p] fail the pentagon equation;
+   their double braiding is non-degenerate all the same, but there is no
+   category to call modular.  The same for data that fail the hexagons *)
+
+VerificationTest[
+  {
+    EnLevel[ZNAnyons[5, 3]],
+    MugerCenter[ZNAnyons[5, 3]],
+    ModularQ[ZNAnyons[5, 3]],
+    ModularQ[ZNAnyons[5, 2]],
+    ModularQ[ZNAnyons[3, 1]],
+    ModularQ[VecZN[3, 1]],
+    ModularQ[PointedCategory[{3}, VecZN[3, 1]["Associator"], Function[{x, y}, x[[1]] y[[1]] / 3]]]
+  },
+  {0, {{0}}, False, True, False, False, False},
+  TestID -> "EnCategories-modular-requires-braided"
+]

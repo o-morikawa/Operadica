@@ -290,8 +290,10 @@ VerificationTest[
   TestID -> "EInfinity-Hirsch-four-dimensions"
 ]
 
-(* the homotopy in components: on a plaquette it has one term, on a 3-cell nine;
-   it is an operation of the E_2 stage *)
+(* the homotopy in components: on a plaquette it has one term, for the degrees
+   (1, 1, 2); on a 3-cell three terms for each of the degrees (1, 1, 3),
+   (1, 2, 2), (2, 1, 2).  It vanishes when c is a 1-cochain.  It is an
+   operation of the E_2 stage *)
 
 VerificationTest[
   With[{a = Cochain[1, al], b = Cochain[1, be], c = Cochain[2, ga], x = {x1, x2}},

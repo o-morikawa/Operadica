@@ -1,6 +1,6 @@
 # Operadica 設計文書
 
-最終更新: 2026-11-22(v0.8.0)
+最終更新: 2026-11-22(v0.8.1)
 
 ## 1. 目的
 
@@ -240,6 +240,10 @@ braiding `c[a, b]`。通常の圏では E₁ = モノイダル、E₂ = braided�
 - 六角形2 `−w(c,a,b) + c(a+b,c) − w(a,b,c) = c(a,c) − w(a,c,b) + c(b,c)`
 - ゲージ変換 `w' = w + δf`、`c'(a,b) = c(a,b) + f(b,a) − f(a,b)`
 - 不変量:spin `q(a) = c(a,a)`、相互 braiding `b(a,b) = c(a,b) + c(b,a)`
+- `MugerCenter` は相互 braiding がすべて自明な対象のリスト(braiding のデータだけから計算する)。
+  `ModularQ` は「braided な圏であって(五角形と六角形が成り立ち)、Müger 中心が単位対象だけ」のとき True。
+  公理を満たさないデータでも相互 braiding は非退化になりうる(`ZNAnyons[5, 3]` は五角形を満たさない)ので、
+  公理の検査を含めている。
 
 braid 群の作用:右に寄せた積 `a₁(a₂(a₃…))` の上で、生成元 σᵢ の位相は
 `−w(a,b,x) + c(a,b) + w(b,a,x)`(x は後ろに続く対象の積。最後の 2 つでは `c(a,b)` だけ)。
@@ -404,7 +408,8 @@ Barratt–Eccles operad の元 s(arity r、次数 m)と cochain a₁, …, a_r(�
 
 `H(a,b,c)(x; 12) = −a(x; 2) b(x+2̂; 1) c(x; 12)`(次数 (1,1,2))
 
-で、3-cell 上では 9 項。5 節の欠損の式はこの特別な場合である。
+で、3-cell 上では次数 (1,1,3)、(1,2,2)、(2,1,2) のそれぞれに 3 項(Ξ の作用の項は合わせて 9 個)。
+c が 1-cochain のときは H = 0。5 節の欠損の式はこの特別な場合である。
 Ξ の table reduction は 0 なので、surjection operad が作用する場合(単体的 cochain)には H = 0 で、
 Hirsch 公式は厳密に成り立つ。立方格子ではテンソル積を通して作用するので H が残る。
 
@@ -532,6 +537,9 @@ May の近似定理は、連結な X に対して CₙX ≃ ΩⁿΣⁿX を主�
   渡すと、その層だけを回す。
 - 符号や規約が関わる公式は、先に `reference/*.py` の参照実装で確かめてから
   Wolfram Language に移す。
+- `Examples/*.nb` は入口のノートブック(`Operadica-Tour.nb` が全体の案内、`ZnAnyons.nb` が最小の例)。
+  `wolframscript -file Scripts/RunExamples.wls` は、ノートブックの入力セルをカーネルだけで上から順に評価し、
+  メッセージを出したセルを報告する。描画はしないので、図の見た目はノートブックを開いて確かめる。
 
 ## 9. 検証状況
 
@@ -551,6 +559,8 @@ May の近似定理は、連結な X に対して CₙX ≃ ΩⁿΣⁿX を主�
   単独の層のロードと、15 層すべてのロードも確認済み。`Simplicial`、`IntegerKernel`、`EilenbergMacLaneCycles`、`CharacteristicCocycleQ`、`CharacteristicClassOrder`、橋の格子作用の主張を含む。
 - v0.8.0:`wolframscript -file Scripts/RunTests.wls` で 288/288 が通過(2026-11-22、Wolfram Language 15.0.1、利用者の環境)。
   単独の層のロードと、15 層すべてのロードも確認済み。`OperadCharacter`、`FreeAlgebraDimensions`、`FreeLieDimensions`、`LoopSuspensionDimensions`、`ApproximationTheoremQ` を含む。
+- v0.8.1:`wolframscript -file Scripts/RunTests.wls` で 289/289 が通過(2026-11-22、Wolfram Language 15.0.1、利用者の環境)。
+  `Scripts/RunExamples.wls` で `Examples/` の 2 つのノートブックの入力セルがメッセージなしで評価されることも確認済み。`ModularQ` の修正を含む。
 
 ### Python 参照実装(整数・有理数の厳密計算)
 

@@ -304,6 +304,18 @@ def main():
         f = {(a, b): Fr(rng.randint(0, 11), 12) for a in G.elements for b in G.elements}
         assert braid_relation(gauge(cat, f), 4), "braid relation is gauge invariant"
     print("(5) braid phases and braid relation .......  True")
+    # modular = braided with a non-degenerate double braiding.  The double braiding of
+    # data that are not a braided category can be non-degenerate as well
+    def muger(cat):
+        return [a for a in cat.G.elements if all(mutual(cat, a, b) == 0 for b in cat.G.elements)]
+    bad = zn_anyons(5, 3)
+    assert not pentagon(bad) and muger(bad) == [(0,)]
+    good = zn_anyons(5, 2)
+    assert pentagon(good) and hexagons(good) and muger(good) == [(0,)]
+    v = vec_zn(3, 1)
+    twisted = Cat(Group([3]), v.w, lambda a, b: Fr(a[0] * b[0], 3))
+    assert pentagon(twisted) and not hexagons(twisted) and muger(twisted) == [(0,)]
+    print("a non-degenerate double braiding does not make the data a braided category  True")
     print("ALL CHECKS PASSED")
 
 
