@@ -35,6 +35,7 @@ automatically; the lattice and category layers do not need the operad layer.
 | operad | ``Operadica`Operads` `` | Trees | operad objects, axiom and equivariance verifiers, algebras |
 | operad | ``Operadica`Rewriting` `` | Trees | quotient operads, normal forms, confluence |
 | operad | ``Operadica`LittleCubes` `` | | the little n-cubes operads (E_n), nerves and Betti numbers of their spaces |
+| operad | ``Operadica`Loops` `` | LittleCubes | the action of the little n-cubes on n-fold loop spaces, the approximation map |
 | operad | ``Operadica`Graded` `` | Trees | linear combinations, graded operads with Koszul signs, differentials, integral homology of chain complexes |
 | operad | ``Operadica`AInfinity` `` | Trees, Graded, Rewriting | the A-infinity operad, associahedra |
 | operad | ``Operadica`Presented` `` | Graded | symmetric operads by generators and relations: Com, Lie, Ass, Poisson, Gerstenhaber, P_n |
@@ -333,6 +334,34 @@ FreeAlgebraDimensions[LieOperad[], {2, 2}, 4]
 FreeAlgebraDimensions[GerstenhaberOperad[], {2}, 2]   (* <|1 -> <|2 -> 1|>, 2 -> <|4 -> 1, 5 -> 1|>|> *)
 ```
 
+### Loop spaces
+
+``Operadica`Loops` `` makes the starting point of the recognition theorem
+executable: an n-fold loop space is an algebra over the little n-cubes. A loop
+is anything that can be applied to a point of the unit cube; a configuration of
+little cubes acts by running each loop inside its cube.
+
+```wolfram
+half = {{{0, 1/2}}, {{1/2, 1}}};                       (* two little intervals *)
+prod = LoopAction[half][GenericLoop[g1], GenericLoop[g2]];
+{prod[{1/4}], prod[{7/8}], prod[{1/2}]}                (* {g1[{1/2}], g2[{3/4}], LoopBase} *)
+
+(* (g1 g2) g3 and g1 (g2 g3) are two different configurations of three intervals *)
+LittleCubesCompose[half, 1, half]                      (* {{{0, 1/4}}, {{1/4, 1/2}}, {{1/2, 1}}} *)
+LittleCubesCompose[half, 2, half]                      (* {{{0, 1/2}}, {{1/2, 3/4}}, {{3/4, 1}}} *)
+
+(* in two dimensions the two squares can move around each other: a b ~ b a *)
+SwapPath[2][1] === LittleCubesAct[SwapPath[2][0], {2, 1}]            (* True *)
+
+(* May's map C_n X -> Omega^n Sigma^n X *)
+ApproximationMap[half, {x, y}][{1/4}]                  (* SuspensionPoint[{1/2}, x] *)
+```
+
+`LoopEqualQ` compares two such maps at enough points of every cell of the grid
+of endpoints to prove that they agree, for the given configurations; the tests
+use it for the axioms of an algebra and for the statement that the
+approximation map is a map of algebras.
+
 ### The Barratt-Eccles operad
 
 ``Operadica`BarrattEccles` `` is an E-infinity operad small enough to compute
@@ -563,6 +592,7 @@ python3 reference/einfinity_reference.py    # Barratt-Eccles operad and its acti
 python3 reference/bar_reference.py          # bar construction, K(A, n), E_n structures as cocycles
 python3 reference/simplicial_reference.py   # cochains on simplices, characteristic classes (30 s)
 python3 reference/approximation_reference.py   # characters, free algebras, loop spaces of suspensions
+python3 reference/loops_reference.py        # the little cubes act on loop spaces
 ```
 
 ## Layout
@@ -574,6 +604,7 @@ Kernel/Trees.wl           operad layer
 Kernel/Operads.wl
 Kernel/Rewriting.wl
 Kernel/LittleCubes.wl
+Kernel/Loops.wl
 Kernel/Graded.wl
 Kernel/AInfinity.wl
 Kernel/Presented.wl

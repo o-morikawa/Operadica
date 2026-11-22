@@ -1,6 +1,6 @@
 # Operadica 設計文書
 
-最終更新: 2026-11-22(v0.8.1)
+最終更新: 2026-11-22(v0.9.0)
 
 ## 1. 目的
 
@@ -29,6 +29,7 @@ operad の標準的な理論を、Mathematica 上で実際に計算しながら�
 | operad | ``Operadica`Operads` `` | Trees | operad オブジェクト、公理と同変性の検証器、代数 |
 | operad | ``Operadica`Rewriting` `` | Trees | 書き換えによる商、正規形、合流性 |
 | operad | ``Operadica`LittleCubes` `` | なし | little n-cubes operad(Eₙ)、配置の空間の脈体と Betti 数 |
+| operad | ``Operadica`Loops` `` | LittleCubes | little cubes の n 重ループ空間への作用、近似写像 CₙX → ΩⁿΣⁿX |
 | operad | ``Operadica`Graded` `` | Trees | 線形結合、Koszul 符号つきの次数付き operad、微分、鎖複体の整係数ホモロジー |
 | operad | ``Operadica`AInfinity` `` | Trees, Graded, Rewriting | A∞ operad、associahedron |
 | operad | ``Operadica`Presented` `` | Graded | 生成元と関係式による対称 operad:Com、Lie、Ass、Poisson、Gerstenhaber、Pₙ |
@@ -81,6 +82,27 @@ operad は次のキーを持つ Association。すべての operad がこの一�
 配置は立方体のリスト、立方体は区間 `{a, b}` のリスト。合成はアフィン写像による挿入、
 対称群はラベルの付け替え `(c·s)_j = c_{s(j)}`。
 公理は端点の多項式恒等式なので、端点を記号にした一般の配置で検証する(全配置に対する証明)。
+
+**ループ空間への作用**(``Operadica`Loops` ``、`reference/loops_reference.py` で確認)。
+recognition theorem の出発点は「n 重ループ空間は little n-cubes の代数である」ことで、これを実行できる形にする。
+ΩⁿY の点は、単位 n-立方体から Y への写像で境界を基点に送るもの(ここでは点 t に適用できて、境界で `LoopBase` を返すもの)。
+k 個の立方体の配置 c は
+
+`θ(c; g₁, …, g_k)(t) = gᵢ(cᵢ⁻¹(t))`(t が i 番目の立方体の内部にあるとき。それ以外は基点)
+
+で作用する(`LoopAction[c][g1, …, gk]`)。`GenericLoop[name]` は内部の点 t で `name[t]` を返す一般のループ。
+
+- 代数の公理(単位、合成 `θ(c∘ᵢd; …) = θ(c; …, θ(d; …), …)`、同変性)は点ごとの等式である。両辺は端点の作る格子の上で
+  区分的にアフィンなので、格子の各 cell の n+1 個の点で比べれば、その配置については格子の外のすべての点での証明になる
+  (`LoopSamplePoints`、`LoopEqualQ`)。配置は有理数の端点を持つ具体的なものを使う(検証の強さは「与えた配置について」)。
+- n = 1 では `{[0, 1/2], [1/2, 1]}` がループの合成。3 つのループの 2 通りの合成は、3 つの区間の異なる配置
+  (したがって異なる写像)で、配置を直線でつなぐ道が operad の中にある:結合則はホモトピーを除いて成り立つ。
+- n ≥ 2 では、2 つの立方体が互いのまわりを回る道 `SwapPath[n][s]` があり、s = 1 で 2 つが入れ替わる:
+  積はホモトピーを除いて可換(Eckmann–Hilton)。s = 2 まで行くと元に戻り、これが二重 braiding にあたる
+  (n = 2 では C₂(2) ≃ S¹ の生成元、n ≥ 3 では可縮)。
+- **近似写像**:単位 `η(x)(t) = [t, x]`(`SuspensionUnit`)から `α(c; x₁, …, x_k) = θ(c; η(x₁), …, η(x_k))` が
+  May の写像 CₙX → ΩⁿΣⁿX である(`ApproximationMap`)。α は代数の射で、合成した配置の像は、像への作用に等しい。
+  ホモロジーでの帰結(自由 Pₙ-代数との一致)は 6 節の近似定理の小節。
 
 ### 3.3 次数付き operad と A∞
 
@@ -506,7 +528,8 @@ May の近似定理は、連結な X に対して CₙX ≃ ΩⁿΣⁿX を主�
 - n = 1, 2, 3、球面 1 個(d ≤ 4)と楔(次元 (1,1)、(1,2)、(2,3)、(1,1,1)、(1,2,3))で arity 4 まで確認している。
 - n を取り違えると一致しない(次数 2 の類の上の自由 Gerstenhaber 代数は `[x, x]` を持つが、Ω³S⁵ にはない)。
 
-確かめているのは次元の一致で、写像 CₙX → ΩⁿΣⁿX そのもの(両側 bar 構成)は作っていない。
+写像 α: CₙX → ΩⁿΣⁿX そのものは 3.2 の `ApproximationMap` で、代数の射であることまで確かめている。
+ここで確かめているのは次元の一致で、α が弱同値であること(両側 bar 構成を使う証明)は計算の外にある。
 
 ## 7. 道筋と到達判定
 
@@ -519,7 +542,7 @@ May の近似定理は、連結な X に対して CₙX ≃ ΩⁿΣⁿX を主�
 | C | 点付き Eₙ モノイダル圏、coherence、braid 群の作用 | 五角形・六角形・分類の個数。coherence が長さ 6 まで | 実装済み(parenthesized braids の coherence は未着手) |
 | G | 多重線形展開、ゲージ変分、作用 | 5 節の恒等式が通る | 実装済み |
 | 4 | E∞ operad(Barratt–Eccles、table reduction で surjection へ)、Eₙ フィルトレーション、cochain への作用 | eᵢ ↦ (1,2,1,2,…) の作用が ∪ᵢ を再現。三つの法則 (L)・(C)・(E)。Hirsch 公式のホモトピー | 実装済み(surjection operad の合成は未実装) |
-| 5 | 単体的対象、bar 構成 B(Σⁿ, Cₙ, X) | 反復 bar 構成で作った BⁿA のホモトピー群が次数 n の A だけ。近似定理を有理 Poincaré 級数の一致で確認 | 離散群の場合を実装済み(BⁿA のホモロジーとホモトピー群、Eₙ 構造 = BⁿA の cocycle、格子の作用 = K(A, n) の cocycle)。近似定理は、球面の楔について有理 Poincaré 級数の一致を arity 4 まで確認済み。両側 bar 構成 B(Σⁿ, Cₙ, X) そのものは未着手 |
+| 5 | 単体的対象、bar 構成 B(Σⁿ, Cₙ, X) | 反復 bar 構成で作った BⁿA のホモトピー群が次数 n の A だけ。近似定理を有理 Poincaré 級数の一致で確認 | 離散群の場合を実装済み(BⁿA のホモロジーとホモトピー群、Eₙ 構造 = BⁿA の cocycle、格子の作用 = K(A, n) の cocycle)。ΩⁿY への little cubes の作用と近似写像 α は実装済み。近似定理は、球面の楔について有理 Poincaré 級数の一致を arity 4 まで確認済み。両側 bar 構成 B(Σⁿ, Cₙ, X) そのものは未着手 |
 
 次の候補:
 
@@ -561,6 +584,8 @@ May の近似定理は、連結な X に対して CₙX ≃ ΩⁿΣⁿX を主�
   単独の層のロードと、15 層すべてのロードも確認済み。`OperadCharacter`、`FreeAlgebraDimensions`、`FreeLieDimensions`、`LoopSuspensionDimensions`、`ApproximationTheoremQ` を含む。
 - v0.8.1:`wolframscript -file Scripts/RunTests.wls` で 289/289 が通過(2026-11-22、Wolfram Language 15.0.1、利用者の環境)。
   `Scripts/RunExamples.wls` で `Examples/` の 2 つのノートブックの入力セルがメッセージなしで評価されることも確認済み。`ModularQ` の修正を含む。
+- v0.9.0:`wolframscript -file Scripts/RunTests.wls` で 298/298 が通過(2026-11-22、Wolfram Language 15.0.1、利用者の環境)。
+  単独の層のロードと、16 層すべてのロードも確認済み。`Loops`(little cubes のループ空間への作用、近似写像)を含む。
 
 ### Python 参照実装(整数・有理数の厳密計算)
 
@@ -588,3 +613,5 @@ May の近似定理は、連結な X に対して CₙX ≃ ΩⁿΣⁿX を主�
   `(p/2N) P(B)` が cocycle でその類の位数が spin の分母であること(N ≤ 4)、∪₁ の項が必要であること。実行に 30 秒ほどかかる
 - `approximation_reference.py`:Com・Ass・Lie の指標、その自由代数(次数付きの Witt の公式)、Pₙ の指標(arity 4 まで)、
   自由 Pₙ-代数と H_*(ΩⁿΣⁿX; Q) の一致(n ≤ 3、球面 1 個と楔 7 通り、arity 4 まで)
+- `loops_reference.py`:little cubes のループ空間への作用の単位・合成・同変性(n ≤ 3、乱数で作った有理数の配置)、
+  近似写像が代数の射であること、n ≥ 2 で 2 つの立方体を入れ替える道
