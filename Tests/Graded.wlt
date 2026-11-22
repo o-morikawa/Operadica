@@ -250,3 +250,19 @@ VerificationTest[
   {{{-2, 1, 0}, {-3, 0, 1}}, {}, {{1, 0}, {0, 1}}, True},
   TestID -> "Graded-IntegerKernel"
 ]
+
+(* Betti numbers with coefficients in Z_p from the integral homology: a
+   summand Z_t with p dividing t counts in its own degree and in the next *)
+
+VerificationTest[
+  {
+    ModularBetti[{{0}, {0}, {2}, {}}, 2],
+    ModularBetti[{{0}, {0}, {2}, {2}, {3}, {}}, 2],
+    ModularBetti[{{0}, {0}, {2}, {2}, {3}, {}}, 3],
+    ModularBetti[{{0}, {2}, {}, {0}}, 2],
+    ModularBetti[{{0}, {2}, {}, {0}}, 3],
+    ModularBetti[{{0, 0}, {4, 6}}, 2]
+  },
+  {{1, 1, 1, 1}, {1, 1, 1, 2, 1, 0}, {1, 1, 0, 0, 1, 1}, {1, 1, 1, 1}, {1, 0, 0, 1}, {2, 2}},
+  TestID -> "Graded-modular-Betti"
+]

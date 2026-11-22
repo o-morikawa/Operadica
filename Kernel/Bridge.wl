@@ -56,6 +56,11 @@
 (*                            wedge of spheres X has the Poincare series   *)
 (*                            of Omega^n Sigma^n X: the approximation      *)
 (*                            theorem C_n X ~ Omega^n Sigma^n X, rationally *)
+(*     ApproximationTheoremModTwoQ  modulo 2 and for n = 2: the homology   *)
+(*                            of the braid groups (the free E_2-algebra on *)
+(*                            a point) is the polynomial algebra on x,     *)
+(*                            Q x, Q Q x, ... of Kudo and Araki, the       *)
+(*                            homology of the double loop space of a sphere *)
 (*                                                                        *)
 (*   loop spaces <-> category: paths of little squares and the braiding    *)
 (*     PathBraidingPhase,     a braided category gives a phase to a path   *)
@@ -164,6 +169,8 @@ SteenrodWeight::usage = "SteenrodWeight[n, k][x] gives the value modulo 1 of (1/
 SteenrodBocksteinQ::usage = "SteenrodBocksteinQ[n] gives True if, on every (n+1)-simplex of K(Z_2, n), the cochain SteenrodSquare[1][B] equals half of the coboundary of B modulo 2, for the lift B = FlatFieldCochain[n][x] of the flat field to the values 0 and 1: Sq^1 is the Bockstein, as cochains.";
 
 SteenrodFermionQ::usage = "SteenrodFermionQ[n], for n = 2 or 3, gives True if the weight SteenrodWeight[n, 2], which is (1/2) B cup B for n = 2 and (1/2) C cup_1 C for n = 3, vanishes on the degenerate simplices of K(Z_2, n) and the order of its class in H^(n+2)(K(Z_2, n); U(1)) is the denominator of the spin 1/2 of the fermion SuperVec[]. For n = 3 the class generates H^5(K(Z_2, 3); U(1)) = Z_2, the symmetric structures on Z_2. That the weight is a cocycle follows from the formula for the coboundary of SteenrodSquare.";
+
+ApproximationTheoremModTwoQ::usage = "ApproximationTheoremModTwoQ[d, kmax] gives True if, for k = 1, ..., kmax, the Betti numbers modulo 2 of the braid group on k strands, shifted up by d k, are KudoArakiDimensions[d, kmax] in the weight k. The left side is the homology modulo 2 of the part of C_2 X with k points for X the sphere of dimension d (by the Thom isomorphism, which holds modulo 2 for every vector bundle); the right side is, for d >= 1, the homology modulo 2 of the double loop space of the sphere of dimension d + 2: the approximation theorem C_2 X ~ Omega^2 Sigma^2 X modulo 2, with the Kudo-Araki operation in place of the bracket.";
 
 Begin["`Private`"];
 
@@ -371,6 +378,25 @@ EnStructureCount[orders : {__Integer}, n_Integer?Positive] :=
 ApproximationTheoremQ[n_Integer?Positive, degrees : {__Integer}, kmax_Integer?Positive] :=
   FreeAlgebraDimensions[PoissonOperad[n], degrees, kmax] ===
     LoopSuspensionDimensions[n, degrees, kmax];
+
+ApproximationTheoremModTwoQ[d_Integer?NonNegative, kmax_Integer?Positive] :=
+  With[{expected = KudoArakiDimensions[d, kmax]},
+    AllTrue[
+      Range[kmax],
+      Function[k,
+        With[{betti = ModularBetti[BraidGroupHomology[k], 2]},
+          KeySort[
+            Association[
+              Table[
+                If[betti[[j + 1]] > 0, j + d k -> betti[[j + 1]], Nothing],
+                {j, 0, k - 1}
+              ]
+            ]
+          ] === Lookup[expected, Key[k]]
+        ]
+      ]
+    ]
+  ];
 
 
 (* ---------------------------------------------------------------------- *)

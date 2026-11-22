@@ -1,6 +1,6 @@
 # Operadica 設計文書
 
-最終更新: 2026-11-22(v0.11.0)
+最終更新: 2026-11-22(v0.12.0)
 
 ## 1. 目的
 
@@ -33,7 +33,7 @@ operad の標準的な理論を、Mathematica 上で実際に計算しながら�
 | operad | ``Operadica`Graded` `` | Trees | 線形結合、Koszul 符号つきの次数付き operad、微分、鎖複体の整係数ホモロジー |
 | operad | ``Operadica`AInfinity` `` | Trees, Graded, Rewriting | A∞ operad、associahedron |
 | operad | ``Operadica`Presented` `` | Graded | 生成元と関係式による対称 operad:Com、Lie、Ass、Poisson、Gerstenhaber、Pₙ |
-| operad | ``Operadica`BarrattEccles` `` | Graded | Barratt–Eccles operad(E∞)、Eₙ の段、区間と立方体への作用 |
+| operad | ``Operadica`BarrattEccles` `` | Graded | Barratt–Eccles operad(E∞)、Eₙ の段、区間と立方体への作用、無順序の配置と braid 群のホモロジー |
 | operad | ``Operadica`BarConstruction` `` | Graded | delooping:アーベル群の反復 bar 構成、Eilenberg–MacLane 空間 K(A, n) |
 | カテゴリ | ``Operadica`EnCategories` `` | なし | 点付き Eₙ モノイダル圏:五角形、六角形、spin |
 | 格子ゲージ理論 | ``Operadica`Lattice` `` | なし | cochain、δ、∪、∪ᵢ、局所的な多重線形演算 |
@@ -140,6 +140,8 @@ arity n の部分は associahedron Kₙ の胞体鎖複体で、ホモロジー�
 両方を計算できる。後者は微分の行列の Smith 標準形(`SmithInvariants`)から求め、群を巡回群の直和として返す
 (0 は Z、t は Z_t。`{0, 2}` は Z + Z₂、`{}` は 0)。ねじれ(torsion)が見えるのは整数係数だけである。
 `IntegerKernel` は整数行列の核の、整数の上での基底を返す(cycle の基底。`NullSpace` は有理数の上の基底しか返さない)。
+`ModularBetti[groups, p]` は、整数係数のホモロジー群から Z_p 係数の Betti 数を普遍係数定理で求める
+(Z は 1 回、p で割れる位数の巡回群はその次数と次の次数で 1 回ずつ数える)。
 
 ### 3.4 生成元と関係式による対称 operad
 
@@ -218,6 +220,24 @@ E∞ operad の、計算できる具体的なモデル(``Operadica`BarrattEccles
   項は `{係数, {row₁, …, row_r}}` で、rowⱼ は方向ごとに 2(j 番目の因子がその方向に伸びる)、
   1(上端にいる)、0(下端にいる)を持つ。
 
+**無順序の配置**(`reference/braidgroup_reference.py` で確認)。対称群 S_k の F_nE(k) への作用は自由なので、
+余不変(軌道)の複体は、k 個の無順序の little n-cubes の空間 C_n(k)/S_k のホモロジーを計算する。
+これは「1 点の上の自由 Eₙ-代数」の arity k の部分である。軌道の代表は最初の語が恒等置換である元で取る
+(`BarrattEcclesOrbits`、`BarrattEcclesOrbitHomology`)。
+
+- k = 2 では n−1 次元の実射影空間のホモロジー(n = 2 で S¹、n = 3 で Z, Z₂, 0、n = 4 で Z, Z₂, 0, Z)。
+- n = 2 では C₂(k)/S_k は braid 群 Br_k の分類空間で、ホモロジーは braid 群のホモロジーである。
+- operad 全体(n = ∞)では対称群のホモロジー。次数を打ち切って低い次数を計算する。H₁(S_k) = Z₂。
+- **Fuks–Vainshtein の複体**:n = 2 にはずっと小さい複体がある。cell は k の composition `(n₁, …, n_s)`
+  (点が s 本の縦線の上に n₁, …, n_s 個ずつ載っている配置)で次数は k − s、余境界は隣り合う 2 本の線を合わせる:
+
+  `δ(n₁, …, n_s) = Σⱼ (−1)^(j−1) [nⱼ + nⱼ₊₁ ; nⱼ] (…, nⱼ + nⱼ₊₁, …)`
+
+  係数は q = −1 での Gauss 二項係数で、a, b がともに奇数なら 0、それ以外は `Binomial[⌊(a+b)/2⌋, ⌊a/2⌋]`。
+  `BraidGroupCohomology[k]`、`BraidGroupHomology[k]`(双対の複体)。cell は 2^(k−1) 個しかない。
+- 結果(k ≤ 8):H₀ = H₁ = Z、それより上はねじれだけ。Br₄ で Z, Z, Z₂, 0。Br₆ で Z, Z, Z₂, Z₂, Z₃, 0。
+  Br₈ で Z, Z, Z₂, Z₂, Z₆, Z₃, Z₂, 0。F₂E(k) の軌道の複体による計算(k = 3。参照実装で k = 4)と一致する。
+
 ### 3.6 反復 bar 構成と Eilenberg–MacLane 空間
 
 delooping の、計算できる具体的なモデル(``Operadica`BarConstruction` ``)。`reference/bar_reference.py` で確認。
@@ -259,6 +279,9 @@ Eilenberg–MacLane 空間 K(A, n) = BⁿA(ホモトピー群が次数 n の A �
   生成元の上の自由次数付き Lie 代数(Hilton–Milnor)で、ΩⁿΣⁿX の有理ホモロジーは、それを n−1 だけ下げたものの上の
   自由次数付き可換代数である(Milnor–Moore)。`FreeLieDimensions`(PBW から)、`LoopSuspensionDimensions`。
   Ω²S⁴ は次数 2 の多項式類と次数 5 の外積類、Ω³S⁴ は次数 1 の外積類と次数 4 の多項式類。
+- **ループ空間の側**(Z₂ 係数、n = 2):次数 d ≥ 1 の球面 S^d に対し、Ω²S^(d+2) の Z₂ 係数ホモロジーは
+  x, Qx, QQx, … の上の多項式代数である(Kudo–Araki)。x は重み 1・次数 d、作用素 Q は重みを 2 倍にし、次数 m を 2m+1 にする。
+  `KudoArakiDimensions[d, kmax]`。Ω²S³ の生成元は次数 1, 3, 7, …。
 - K(A, n) の k-単体の上の、1 を法とする値を持つ関数 w が cocycle であること(退化した単体の上で 0、
   (k+1)-単体の面にわたる交代和が 0)を `CharacteristicCocycleQ` が検査する。そのような w は、
   平坦な n-form ゲージ場の、k 次元での位相的作用である。`CharacteristicClassOrder` は、その類の
@@ -435,6 +458,7 @@ Gerstenhaber operad の Leibniz 則が cochain の上ではホモトピーを除
 | 平坦な Z₂ 場の Steenrod 平方:`Sq¹B` は Bockstein `δB/2`(cochain として)。`(1/2) Sq^k B` は K(Z₂, n) の R/Z 値の cocycle | `SteenrodBocksteinQ`、`SteenrodWeight` |
 | `(1/2) Sq²` の類は K(Z₂, 2)(`(1/2) B∪B`)と K(Z₂, 3)(`(1/2) C∪₁C`)で位数 2。braided な構造、symmetric な構造としての fermion | `SteenrodFermionQ` |
 | 近似定理 CₙX ≃ ΩⁿΣⁿX(X 連結)の、有理 Poincaré 級数での確認:H̃_*(X) の上の自由 Pₙ-代数 = H_*(ΩⁿΣⁿX; Q) | `ApproximationTheoremQ` |
+| 近似定理の Z₂ 係数・n = 2 の場合:braid 群の Z₂ 係数 Betti 数 = Kudo–Araki の多項式代数 x, Qx, QQx, … の次元 | `ApproximationTheoremModTwoQ` |
 | braided な圏は、対象を載せた little squares の配置の道に位相を与える。反時計回りの入れ替えが braiding c(a, b) | `PathBraidingPhase` |
 | その位相は operad の合成と両立する。1 個が 2 個の列を越える道が六角形 1、2 個の列が 1 個を越える道が六角形 2 | `BlockBraidingQ`、`HexagonFromPathsQ` |
 | 3 次元では 2 つの半回転がホモトピックで、位相が一致する条件は symmetric | `SymmetricFromPathsQ` |
@@ -581,6 +605,24 @@ May の近似定理は、連結な X に対して CₙX ≃ ΩⁿΣⁿX を主�
 写像 α: CₙX → ΩⁿΣⁿX そのものは 3.2 の `ApproximationMap` で、代数の射であることまで確かめている。
 ここで確かめているのは次元の一致で、α が弱同値であること(両側 bar 構成を使う証明)は計算の外にある。
 
+**1 点の上の自由 E₂-代数:braid 群**。X = S⁰(1 点と基点)では C₂X は無順序の配置の空間の和 ⊔ₖ C₂(k)/S_k で、
+そのホモロジーは braid 群のホモロジーである(3.5)。
+
+- 有理係数:Betti 数は 1, 1(k ≥ 2)。次数 0 の類 x の上の自由 Gerstenhaber 代数の arity k の部分
+  `x^k`、`x^(k−2)[x, x]` と一致する(`FreeAlgebraDimensions[PoissonOperad[2], {0}, 4]`)。
+- **Z₂ 係数**:`b_j(Br_k; Z₂)` は「k を 2 の冪 k − j 個の和に書く方法の数」に等しい(Fuks)。これは重み 2^i・次数 2^i − 1 の類
+  x, Qx, QQx, … の上の多項式代数の次元である。有理係数では `[x, x]` の 2 乗は 0 だが、Z₂ 係数では括弧の代わりに
+  Kudo–Araki(Dyer–Lashof)作用素 Q が現れ、Qx が `[x, x]` の位置(重み 2、次数 1)にいる。
+- X = S^d(d ≥ 1)では、Z₂ 係数の Thom 同型で左辺は braid 群のホモロジーを次数 dk だけ上げたものになり、
+  右辺は Ω²S^(d+2) の Z₂ 係数ホモロジー(3.6 の `KudoArakiDimensions`)である。
+  `ApproximationTheoremModTwoQ[d, kmax]` が k ≤ kmax で両者の一致を確かめる(k ≤ 8、d ≤ 3)。
+  Thom 同型と Kudo–Araki の定理は使っている事実で、ここで計算しているのは braid 群の側である。
+- Z₃ 係数で最初の新しい類は H₄(Br₆) に現れる(Z₃)。
+
+**統計**。同じ対象 k 個の上では、braid 群は H₁(Br_k) = Z を通して作用する:`BraidPathPhase` は spin × braid の指数和になる
+(1 つの角度 θ を持つ anyon)。little 3-cubes と対称群では H₁ = Z₂ で、boson と fermion しかない。
+前の小節の `SymmetricFromPathsQ` と同じことの、ホモロジーによる形である。
+
 ### little squares の道と braiding
 
 E₂ 構造が braiding であることを、3.2 の little squares の道の側から読む。braided な圏は、各正方形に対象を載せた
@@ -621,7 +663,7 @@ c(a, b) とする。これは平面の向きの選び方で、逆に取ると `c
 | C | 点付き Eₙ モノイダル圏、coherence、braid 群の作用 | 五角形・六角形・分類の個数。coherence が長さ 6 まで | 実装済み(little squares の道の braid とその位相、六角形 = operad の合成との両立まで。parenthesized braids を operad として扱う一般の coherence は未着手) |
 | G | 多重線形展開、ゲージ変分、作用 | 5 節の恒等式が通る | 実装済み |
 | 4 | E∞ operad(Barratt–Eccles、table reduction で surjection へ)、Eₙ フィルトレーション、cochain への作用 | eᵢ ↦ (1,2,1,2,…) の作用が ∪ᵢ を再現。三つの法則 (L)・(C)・(E)。Hirsch 公式のホモトピー | 実装済み(surjection operad の合成は未実装) |
-| 5 | 単体的対象、bar 構成 B(Σⁿ, Cₙ, X) | 反復 bar 構成で作った BⁿA のホモトピー群が次数 n の A だけ。近似定理を有理 Poincaré 級数の一致で確認 | 離散群の場合を実装済み(BⁿA のホモロジーとホモトピー群、Eₙ 構造 = BⁿA の cocycle、格子の作用 = K(A, n) の cocycle)。ΩⁿY への little cubes の作用と近似写像 α は実装済み。近似定理は、球面の楔について有理 Poincaré 級数の一致を arity 4 まで確認済み。両側 bar 構成 B(Σⁿ, Cₙ, X) そのものは未着手 |
+| 5 | 単体的対象、bar 構成 B(Σⁿ, Cₙ, X) | 反復 bar 構成で作った BⁿA のホモトピー群が次数 n の A だけ。近似定理を有理 Poincaré 級数の一致で確認 | 離散群の場合を実装済み(BⁿA のホモロジーとホモトピー群、Eₙ 構造 = BⁿA の cocycle、格子の作用 = K(A, n) の cocycle)。ΩⁿY への little cubes の作用と近似写像 α は実装済み。近似定理は、球面の楔について有理 Poincaré 級数の一致を arity 4 まで確認済み。n = 2 の Z₂ 係数では球面 1 個について重み 8 まで(braid 群のホモロジーと Kudo–Araki の多項式代数)。両側 bar 構成 B(Σⁿ, Cₙ, X) そのものは未着手 |
 
 次の候補:
 
@@ -629,7 +671,7 @@ c(a, b) とする。これは平面の向きの選び方で、逆に取ると `c
 - Pontryagin 平方や高次 cup 積を含む作用のゲージ変分を、E∞ の演算で系統的に書くこと
 - K(A, 2) の 4-cocycle と bar 構成 B² の cocycle (w, c) を cochain として比べること(Eilenberg–MacLane の比較写像)
 - surjection operad の、単体的 cochain への作用(arity 3 以上。単体の上では Hirsch のホモトピーが 0 になること)
-- 両側 bar 構成 B(Σⁿ, Cₙ, X) そのもの(単体的な対象として)。Dyer–Lashof 作用素(mod p の近似定理)
+- 両側 bar 構成 B(Σⁿ, Cₙ, X) そのもの(単体的な対象として)。Dyer–Lashof 作用素を cochain や鎖の上の演算として実装すること(次元の一致は n = 2、Z₂ 係数で確認済み)。奇素数と n ≥ 3 の場合
 - Koszul 双対の計算(関係式の直交補空間)と operad の bar 構成
 - parenthesized braids の operad(E₂ の基本亜群)を作り、braided な圏がその代数であることを一般の arity で確かめること
 
@@ -670,6 +712,8 @@ c(a, b) とする。これは平面の向きの選び方で、逆に取ると `c
   単独の層のロードと、16 層すべてのロードも確認済み。`PathBraid`、`SwapHomotopy`、`BraidPathPhase`、`PathBraidingPhase`、`BlockBraidingQ`、`HexagonFromPathsQ`、`SymmetricFromPathsQ` を含む。
 - v0.11.0:`wolframscript -file Scripts/RunTests.wls` で 315/315 が通過(2026-11-22、Wolfram Language 15.0.1、利用者の環境)。
   単独の層のロードと、16 層すべてのロードも確認済み。`SteenrodSquare` の拡張、`SteenrodWeight`、`SteenrodBocksteinQ`、`SteenrodFermionQ` を含む。
+- v0.12.0:`wolframscript -file Scripts/RunTests.wls` で 322/322 が通過(2026-11-22、Wolfram Language 15.0.1、利用者の環境)。
+  単独の層のロードと、16 層すべてのロードも確認済み。`ModularBetti`、`BarrattEcclesOrbitHomology`、`BraidGroupHomology`、`BraidGroupCohomology`、`KudoArakiDimensions`、`ApproximationTheoremModTwoQ` を含む。
 
 ### Python 参照実装(整数・有理数の厳密計算)
 
@@ -706,3 +750,6 @@ c(a, b) とする。これは平面の向きの選び方で、逆に取ると `c
 - `steenrod_reference.py`:Sq⁰ の値が 2 乗であること、`δ(Sq^k x)` の式(単体で p ≤ 3、立方格子で 4 次元まで)、
   K(Z₂, n)(n ≤ 3)で `Sq¹B ≡ δB/2`(mod 2)、`(1/2) Sq^k B` が cocycle であることと類の位数
   ((n, k) = (1, 1)、(2, 1)、(3, 1) で 1、(2, 2)、(3, 2) で 2)、Z₃ では `(1/2) B∪B` が cocycle でないこと
+- `braidgroup_reference.py`:Fuks–Vainshtein の複体の d² = 0(k ≤ 10)、H_*(Br_k; Z)(k ≤ 8)とコホモロジーとの整合(普遍係数定理)、
+  Z₂ 係数の Betti 数 = 2 の冪への分割の数、Barratt–Eccles operad の軌道の複体(k = 2 で実射影空間、F₂ で braid 群(k = 3, 4)、
+  F₃E(3) と operad 全体で H₁ = Z₂)

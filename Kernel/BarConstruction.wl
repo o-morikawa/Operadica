@@ -85,6 +85,8 @@ FreeLieDimensions::usage = "FreeLieDimensions[degrees, kmax] gives the dimension
 
 LoopSuspensionDimensions::usage = "LoopSuspensionDimensions[n, degrees, kmax] gives the rational homology of the n-fold loop space of the n-fold suspension of a wedge of spheres of the given dimensions (all >= 1), by weight up to kmax: an Association weight -> (degree -> dimension). The rational homotopy of the loop space of a wedge of spheres is a free graded Lie algebra (Hilton-Milnor), and the homology of the n-fold loop space is the free graded commutative algebra on it, shifted down by n - 1 (Milnor-Moore).";
 
+KudoArakiDimensions::usage = "KudoArakiDimensions[d, kmax] gives the dimensions of the polynomial algebra over Z_2 on the classes x, Q x, Q Q x, ..., where x has weight 1 and degree d and the Kudo-Araki (Dyer-Lashof) operation Q doubles the weight and sends the degree m to 2 m + 1: an Association weight -> (degree -> dimension), for the weights 1, ..., kmax. For d >= 1 it is the homology modulo 2 of the double loop space of the sphere of dimension d + 2.";
+
 Begin["`Private`"];
 
 (* ---------------------------------------------------------------------- *)
@@ -480,6 +482,23 @@ LoopSuspensionDimensions[n_Integer?Positive, degrees : {__Integer}, kmax_Integer
     ];
     Association[
       Table[w -> KeySort[Association[polynomialRules[prod[[w + 1]]]]], {w, 1, kmax}]
+    ]
+  ];
+
+(* a monomial of weight k is a way to write k as a sum of powers of 2; the
+   class of weight 2^i has the degree 2^i (d + 1) - 1 *)
+KudoArakiDimensions[d_Integer?NonNegative, kmax_Integer?Positive] :=
+  Association[
+    Table[
+      k -> KeySort[
+        Counts[
+          Map[
+            Function[lam, k (d + 1) - Length[lam]],
+            IntegerPartitions[k, All, 2^Range[0, BitLength[k] - 1]]
+          ]
+        ]
+      ],
+      {k, 1, kmax}
     ]
   ];
 

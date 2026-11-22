@@ -650,3 +650,23 @@ VerificationTest[
   },
   TestID -> "BarConstruction-loop-suspension"
 ]
+
+(* the polynomial algebra over Z_2 on x, Q x, Q Q x, ...: for a class of
+   degree 1 the homology modulo 2 of the double loop space of the 3-sphere,
+   with generators in the degrees 1, 3, 7, ... *)
+
+VerificationTest[
+  {
+    KudoArakiDimensions[0, 4],
+    KudoArakiDimensions[1, 4],
+    Lookup[KudoArakiDimensions[0, 8], 8]
+  },
+  {
+    <|1 -> <|0 -> 1|>, 2 -> <|0 -> 1, 1 -> 1|>, 3 -> <|0 -> 1, 1 -> 1|>,
+      4 -> <|0 -> 1, 1 -> 1, 2 -> 1, 3 -> 1|>|>,
+    <|1 -> <|1 -> 1|>, 2 -> <|2 -> 1, 3 -> 1|>, 3 -> <|3 -> 1, 4 -> 1|>,
+      4 -> <|4 -> 1, 5 -> 1, 6 -> 1, 7 -> 1|>|>,
+    <|0 -> 1, 1 -> 1, 2 -> 1, 3 -> 2, 4 -> 2, 5 -> 1, 6 -> 1, 7 -> 1|>
+  },
+  TestID -> "BarConstruction-Kudo-Araki"
+]

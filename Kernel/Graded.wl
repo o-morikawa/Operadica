@@ -61,6 +61,8 @@ IntegerKernel::usage = "IntegerKernel[m] gives a basis over the integers of the 
 
 ChainHomology::usage = "ChainHomology[{basis0, basis1, ...}, d] gives the integral homology of the chain complex with the given bases in degrees 0, 1, ... and the differential d of degree -1, a function from basis labels to linear combinations with integer coefficients. Each group is given as the list of its cyclic summands: 0 for Z and t for Z_t, so that {0, 0, 2} is Z + Z + Z_2 and {} is the trivial group. In the top degree the chains of the next degree are taken to be absent.";
 
+ModularBetti::usage = "ModularBetti[{h0, h1, ...}, p] gives the Betti numbers with coefficients in the field Z_p of a complex of free abelian groups whose integral homology groups are h0, h1, ..., in the form given by ChainHomology (lists of cyclic summands, 0 for Z and t for Z_t). By the universal coefficient theorem a summand Z counts once, in its own degree, and a summand Z_t with t divisible by p counts twice, in its own degree and in the next one.";
+
 Begin["`Private`"];
 
 (* ---------------------------------------------------------------------- *)
@@ -333,6 +335,13 @@ differentialMatrix[low_List, high_List, d_] :=
         {Length[low], Length[high]}
       ]
     ]
+  ];
+
+ModularBetti[groups_List, p_Integer?PrimeQ] :=
+  Table[
+    Count[groups[[i]], _?(Function[t, Divisible[t, p]])] +
+      If[i > 1, Count[groups[[i - 1]], _?(Function[t, t =!= 0 && Divisible[t, p]])], 0],
+    {i, 1, Length[groups]}
   ];
 
 ChainBetti[bases_List, d_] :=

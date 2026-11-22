@@ -791,3 +791,61 @@ VerificationTest[
   {True, True, {2}, True, False, {False, True, True, True, True, False}, True, 1/2},
   TestID -> "Bridge-Steenrod-fermion"
 ]
+
+(* ---------------------------------------------------------------------- *)
+(* operad <-> loop spaces: the free E_2-algebra on a point                *)
+(*   expected values: reference/braidgroup_reference.py                   *)
+(* ---------------------------------------------------------------------- *)
+
+(* the homology of the braid groups.  Rationally it is the free Gerstenhaber
+   algebra on a class x of degree 0: x^k and x^(k-2) [x, x].  Modulo 2 it is
+   the polynomial algebra on x, Q x, Q Q x, ... (Fuks), which for a class of
+   degree d >= 1 is the homology of the double loop space of a sphere *)
+
+VerificationTest[
+  {
+    FreeAlgebraDimensions[PoissonOperad[2], {0}, 4],
+    Table[Map[Function[g, Count[g, 0]], BraidGroupHomology[k]], {k, 1, 4}],
+    ModularBetti[BraidGroupHomology[8], 2],
+    ModularBetti[BraidGroupHomology[6], 3],
+    Table[ApproximationTheoremModTwoQ[d, 8], {d, 0, 3}]
+  },
+  {
+    <|1 -> <|0 -> 1|>, 2 -> <|0 -> 1, 1 -> 1|>, 3 -> <|0 -> 1, 1 -> 1|>, 4 -> <|0 -> 1, 1 -> 1|>|>,
+    {{1}, {1, 1}, {1, 1, 0}, {1, 1, 0, 0}},
+    {1, 1, 1, 2, 2, 1, 1, 1},
+    {1, 1, 0, 0, 1, 1},
+    {True, True, True, True}
+  },
+  TestID -> "Bridge-approximation-theorem-mod-2"
+]
+
+(* statistics: on k equal objects the braid group acts through H_1 = Z, by
+   the spin times the exponent sum of the braid: one angle, anyons.  For
+   little 3-cubes, and for the symmetric groups, H_1 is Z_2: bosons and
+   fermions *)
+
+VerificationTest[
+  With[{braids = {{1}, {1, 1}, {1, 2, -1, 2, 2}, {2, -1, -1}, {1, 2, 1, -2, -1, -2}, {3, 1, 2, 3}}},
+    {
+      Table[BraidGroupHomology[k][[2]], {k, 2, 6}],
+      Table[BarrattEcclesOrbitHomology[Infinity, k, 1][[2]], {k, 2, 4}],
+      BarrattEcclesOrbitHomology[3, 3][[2]],
+      BraidPathPhase[Semion[], {{1}, {1}, {1}, {1}}, {1, 2, -1, 2, 2}],
+      AllTrue[
+        {{Semion[], {1}}, {ZNAnyons[4, 1], {1}}, {ZNAnyons[4, 1], {3}}, {ToricCode[], {1, 1}}},
+        Function[ca,
+          AllTrue[
+            braids,
+            Function[braid,
+              BraidPathPhase[ca[[1]], ConstantArray[ca[[2]], 4], braid] ===
+                Mod[Total[Sign[braid]] * TopologicalSpin[ca[[1]], ca[[2]]], 1]
+            ]
+          ]
+        ]
+      ]
+    }
+  ],
+  {{{0}, {0}, {0}, {0}, {0}}, {{2}, {2}, {2}}, {2}, 3/4, True},
+  TestID -> "Bridge-statistics"
+]

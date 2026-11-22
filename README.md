@@ -39,7 +39,7 @@ automatically; the lattice and category layers do not need the operad layer.
 | operad | ``Operadica`Graded` `` | Trees | linear combinations, graded operads with Koszul signs, differentials, integral homology of chain complexes |
 | operad | ``Operadica`AInfinity` `` | Trees, Graded, Rewriting | the A-infinity operad, associahedra |
 | operad | ``Operadica`Presented` `` | Graded | symmetric operads by generators and relations: Com, Lie, Ass, Poisson, Gerstenhaber, P_n |
-| operad | ``Operadica`BarrattEccles` `` | Graded | the Barratt-Eccles operad (E-infinity), its E_n stages, its action on cubes |
+| operad | ``Operadica`BarrattEccles` `` | Graded | the Barratt-Eccles operad (E-infinity), its E_n stages, its action on cubes, unordered configurations and the homology of braid groups |
 | operad | ``Operadica`BarConstruction` `` | Graded | delooping: the iterated bar construction of an abelian group, the Eilenberg-MacLane spaces K(A, n) |
 | category | ``Operadica`EnCategories` `` | | pointed E_n-monoidal categories: pentagon, hexagons, spins |
 | lattice gauge theory | ``Operadica`Lattice` `` | | cochains, coboundary, cup and higher cup products, local multilinear operations |
@@ -558,6 +558,30 @@ ApproximationTheoremQ[3, {1, 2}, 4]        (* True: Omega^3 Sigma^3 (S^1 v S^2),
 The bracket `[x, x]` of a class of degree `d` is non-zero exactly when `n + d`
 is even: it is the Whitehead square of the sphere of dimension `n + d`.
 
+For a point (`X = S^0`) the left side is the space of unordered little
+squares, and its homology is the homology of the braid groups. The complex of
+Fuks and Vainshtein computes it from the `2^(k-1)` compositions of `k`:
+
+```wolfram
+BraidGroupHomology[6]                      (* {{0}, {0}, {2}, {2}, {3}, {}}: Z, Z, Z_2, Z_2, Z_3, 0 *)
+BarrattEcclesOrbitHomology[2, 3]           (* {{0}, {0}, {}, {}}: the same for Br_3, from the E_2 stage *)
+ModularBetti[BraidGroupHomology[8], 2]     (* {1, 1, 1, 2, 2, 1, 1, 1} *)
+KudoArakiDimensions[1, 4]                  (* Omega^2 S^3 modulo 2: generators in the degrees 1, 3, 7 *)
+ApproximationTheoremModTwoQ[1, 8]          (* True *)
+```
+
+Rationally only `x^k` and `x^(k-2) [x, x]` survive (the free Gerstenhaber
+algebra on a class of degree 0). Modulo 2 the Betti numbers count the ways to
+write `k` as a sum of powers of 2: the polynomial algebra on `x, Q x, Q Q x,
+...`, with the Kudo-Araki (Dyer-Lashof) operation `Q` where the bracket was.
+For a sphere of dimension `d >= 1` this is the homology modulo 2 of
+`Omega^2 S^(d+2)`.
+
+`H_1` of the braid group is `Z`: `k` equal objects of a braided category see a
+braid only through its exponent sum, with one angle, the spin. For little
+3-cubes and for the symmetric groups `H_1` is `Z_2`
+(`BarrattEcclesOrbitHomology[Infinity, 4, 1]`): bosons and fermions.
+
 ### Braiding from paths of little squares
 
 A braided category gives a phase to a path of configurations of little squares
@@ -666,6 +690,7 @@ python3 reference/approximation_reference.py   # characters, free algebras, loop
 python3 reference/loops_reference.py        # the little cubes act on loop spaces
 python3 reference/braiding_reference.py     # braids of paths of little squares, braiding phases
 python3 reference/steenrod_reference.py     # Steenrod squares of cochains, the fermion on K(Z_2, 3)
+python3 reference/braidgroup_reference.py   # homology of braid groups, unordered configurations
 ```
 
 ## Layout

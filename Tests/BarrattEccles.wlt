@@ -377,3 +377,80 @@ VerificationTest[
   {{2, 4, 8, 16}, {1, 4, 12, 32}, {0, 1, 6, 24}, {3, 9, 27, 81}, {0, 1, 9, 54}},
   TestID -> "BarrattEccles-cube-term-counts"
 ]
+
+(* ---------------------------------------------------------------------- *)
+(* unordered configurations: orbits of the symmetric group                *)
+(*   expected values: reference/braidgroup_reference.py                   *)
+(* ---------------------------------------------------------------------- *)
+
+(* two unordered little n-cubes: the real projective space of dimension
+   n - 1 *)
+
+VerificationTest[
+  {
+    BarrattEcclesOrbits[2, 2],
+    Map[Length, BarrattEcclesOrbits[2, 3]],
+    Map[Length, BarrattEcclesOrbits[3, 3]],
+    Table[BarrattEcclesOrbitHomology[n, 2], {n, 2, 5}]
+  },
+  {
+    {{{{1, 2}}}, {{{1, 2}, {2, 1}}}},
+    {1, 5, 6, 2},
+    {1, 5, 25, 60, 70, 38, 8},
+    {
+      {{0}, {0}},
+      {{0}, {2}, {}},
+      {{0}, {2}, {}, {0}},
+      {{0}, {2}, {}, {2}, {}}
+    }
+  },
+  TestID -> "BarrattEccles-orbits-projective-spaces"
+]
+
+(* the braid groups, from the complex of Fuks and Vainshtein: H_1 = Z, and
+   the rest is torsion.  H^i has the torsion of H_(i-1) *)
+
+VerificationTest[
+  {
+    Table[BraidGroupHomology[k], {k, 1, 6}],
+    BraidGroupHomology[8],
+    BraidGroupCohomology[4],
+    BraidGroupCohomology[6]
+  },
+  {
+    {
+      {{0}},
+      {{0}, {0}},
+      {{0}, {0}, {}},
+      {{0}, {0}, {2}, {}},
+      {{0}, {0}, {2}, {}, {}},
+      {{0}, {0}, {2}, {2}, {3}, {}}
+    },
+    {{0}, {0}, {2}, {2}, {6}, {3}, {2}, {}},
+    {{0}, {0}, {}, {2}},
+    {{0}, {0}, {}, {2}, {2}, {3}}
+  },
+  TestID -> "BarrattEccles-braid-group-homology"
+]
+
+(* the stage F_2 gives the braid group again, by an independent computation;
+   in three dimensions, and for the whole operad (the symmetric groups),
+   H_1 is Z_2 *)
+
+VerificationTest[
+  {
+    BarrattEcclesOrbitHomology[2, 3] === Join[BraidGroupHomology[3], {{}}],
+    BarrattEcclesOrbitHomology[3, 3],
+    BarrattEcclesOrbitHomology[Infinity, 2, 3],
+    BarrattEcclesOrbitHomology[Infinity, 3, 2],
+    BarrattEcclesOrbitHomology[Infinity, 4, 1]
+  },
+  {
+    True,
+    {{0}, {2}, {}, {3}, {}, {}, {}},
+    {{0}, {2}, {}, {2}},
+    {{0}, {2}, {}},
+    {{0}, {2}}
+  },
+  TestID -> "BarrattEccles-orbits-braid-and-symmetric-groups"
+]
