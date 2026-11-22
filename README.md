@@ -52,7 +52,7 @@ automatically; the lattice and category layers do not need the operad layer.
 | lattice gauge theory | ``Operadica`Lattice` `` | | cochains, coboundary, cup and higher cup products, local multilinear operations |
 | lattice gauge theory | ``Operadica`Gauge` `` | Lattice | multilinear expansion, gauge variations, actions |
 | lattice gauge theory | ``Operadica`Simplicial` `` | Lattice | the same cochain expressions on simplices: Steenrod's cup-i products |
-| lattice gauge theory | ``Operadica`Villain` `` | Lattice | U(1) gauge fields in the modified Villain form, the Deligne-Beilinson product, BF and Chern-Simons actions, the theta term |
+| lattice gauge theory | ``Operadica`Villain` `` | Lattice | U(1) gauge fields in the modified Villain form, differential cochains, the Deligne-Beilinson product, BF and Chern-Simons actions, the theta term |
 | bridge | ``Operadica`EInfinity` `` | Graded, BarrattEccles, Lattice | the E-infinity operad acts on lattice cochains: higher cup products and the homotopies between them |
 | bridge | ``Operadica`Bridge` `` | Trees, Operads, LittleCubes, Loops, Graded, Presented, BarrattEccles, BarConstruction, Lattice, Simplicial, Villain, EnCategories | statements connecting the layers |
 
@@ -269,8 +269,46 @@ T = VillainField[(1/3) RandomCochain[1, dims], THooftFluxCochain[z, dims]];
 Expand[CochainIntegrate[VillainThetaTerm[1][T], dims]]                                      (* -6 *)
 ```
 
-Products of three or more fields, the coupling to Z_N background fields and
-the search for correction terms are not there yet.
+A Villain field is a differential cochain: the differential cocycle of Hopkins
+and Singer with the differential form replaced by a cochain. A differential
+cochain of degree `k` is a triple `(c, h, w)` of an integer `k`-cochain, a real
+`(k-1)`-cochain and a real `k`-cochain, with `d(c, h, w) = (dc, w - c - dh, dw)`,
+and the field `(a, n)` is `(-n, a / 2 Pi, F / 2 Pi)`. The definition of the
+curvature is the vanishing of the middle component of `d`, `dn = 0` is the
+cocycle condition, gauge transformations add coboundaries, and the
+Deligne-Beilinson product is the product of differential cochains, which is
+associative and satisfies the Leibniz rule:
+
+```wolfram
+x = VillainDifferentialCochain[A];
+y = VillainDifferentialCochain[B];
+
+(* d(x . y) = dx . y + (-1)^k x . dy, here k = 2 *)
+DifferentialCochainEqualQ[
+  DifferentialCoboundary[DifferentialProduct[x, y]],
+  DifferentialComponents[DifferentialProduct[DifferentialCoboundary[x], y]] +
+    DifferentialComponents[DifferentialProduct[x, DifferentialCoboundary[y]]],
+  5]                                                                                        (* True *)
+
+(* the homotopy for commutativity has the components (-m, -lam / 2 Pi, defect / 2 Pi) *)
+DifferentialCochainEqualQ[
+  DifferentialSwapHomotopy[x, y],
+  {-mm, -lam / (2 Pi), DeligneSwapDefect[A, B] / (2 Pi)},
+  3]                                                                                        (* True *)
+```
+
+Towards the quantum theory: besides gauge transformations and flat connections,
+the quadratic form `sum of a cup da` on a three-torus has two zero modes for
+each momentum with `p1 + p2 + p3 = Pi`, the staggered modes of arXiv:2303.06160.
+There are none if all sides are odd:
+
+```wolfram
+ChernSimonsZeroModeCount /@ {{2, 2, 2}, {3, 3, 3}, {2, 3, 4}}   (* {8, 0, 4} *)
+StaggeredMomentumCount /@ {{2, 2, 2}, {3, 3, 3}, {2, 3, 4}}     (* {4, 0, 2} *)
+```
+
+Odd levels (spin structures), the coupling to Z_N background fields and the
+search for correction terms are not there yet.
 
 ## Category layer
 
@@ -784,7 +822,7 @@ python3 reference/loops_reference.py        # the little cubes act on loop space
 python3 reference/braiding_reference.py     # braids of paths of little squares, braiding phases
 python3 reference/steenrod_reference.py     # Steenrod squares of cochains, the fermion on K(Z_2, 3)
 python3 reference/braidgroup_reference.py   # homology of braid groups, unordered configurations
-python3 reference/villain_reference.py      # Villain fields, the Deligne-Beilinson product, Chern-Simons, the theta term
+python3 reference/villain_reference.py      # Villain fields, differential cochains, Chern-Simons, the theta term
 ```
 
 ## Layout

@@ -52,6 +52,31 @@ Checked, for random cochains on a hypercubic lattice and on simplices, with
   the charge    on the four-torus with the flux z (n = flux + dm, a arbitrary):
                     sum of (1 / 8 pi^2) F cup F = (1 / 2) sum of n cup n = Pf(z), an integer.
 
+  differential  a differential cochain of degree k is a triple x = (c, h, w): an integer k-cochain,
+  cochains      a real (k-1)-cochain and a real k-cochain (Hopkins-Singer, with the differential
+                form replaced by a cochain), with
+                    d(c, h, w) = (dc, w - c - dh, dw)
+                    x . y      = (c1 cup c2, (-1)^k1 c1 cup h2 + h1 cup w2, w1 cup w2)
+                d d = 0, d(x . y) = dx . y + (-1)^k1 x . dy, the product is associative, and
+                    x . y - (-1)^(k1 k2) y . x = d H(x, y) + H(dx, y) + (-1)^k1 H(x, dy)
+                    H(x, y) = ( s c1 cup_1 c2,
+                                (-1)^k1 h1 cup h2 - (-1)^k2 w1 cup_1 h2 - (-1)^(k1+k2) h1 cup_1 c2,
+                                s w1 cup_1 w2 ),     s = (-1)^(k1+k2+1)
+                A Villain field A = (a, n) of degree p is the differential cochain
+                T(A) = (-n, a / 2 pi, F / 2 pi) of degree p + 1.  These are the differential
+                cochains whose coboundary has no middle component; d T(A) = (-dn, 0, -dn).
+                Gauge and large gauge transformations add d(-m, -lambda / 2 pi, 0).
+                T(A) . T(B) and T(A * B) have the same first two components, and the third
+                components differ by the middle component of d(T(A) . T(B)), which has dn, dn'.
+                H(T(A), T(B)) = (-m, -lambda / 2 pi, defect / 2 pi) with the lambda, m and the
+                defect - s F_A cup_1 F_B / 2 pi of the commutativity above.
+  zero modes    the quadratic form sum of a cup da on the three-torus with sides (L1, L2, L3) has,
+                besides the closed 1-cochains, 2 V / lcm(L1, L2, L3) zero modes if the lcm is even
+                (V = L1 L2 L3) and none if all sides are odd: two for each momentum with
+                p1 + p2 + p3 = pi (the staggered modes of arXiv:2303.06160).
+  large gauge   the boundary term B(m; a) = -(k/2) m cup a of the large gauge variation satisfies
+                B(m + m'; a) - B(m; a + 2 pi m') - B(m'; a) = k pi m cup m'.
+
 Run:  python3 reference/villain_reference.py
 """
 
@@ -235,6 +260,182 @@ def check_charge(rng):
     return out
 
 
+# ---- differential cochains: triples (c, h, w) of degrees (k, k - 1, k) ----
+
+def dc_d(C, x, k):
+    c, h, w = x
+    return (C.d(c), C.lin(k, (1, w), (-1, c), (-1, C.d(h))), C.d(w))
+
+
+def dc_prod(C, x, k1, y, k2):
+    (c1, h1, w1), (c2, h2, w2) = x, y
+    return (C.cup(c1, c2),
+            C.lin(k1 + k2 - 1, ((-1) ** k1, C.cup(c1, h2)), (1, C.cup(h1, w2))),
+            C.cup(w1, w2))
+
+
+def dc_hom(C, x, k1, y, k2):
+    (c1, h1, w1), (c2, h2, w2) = x, y
+    s = (-1) ** (k1 + k2 + 1)
+    hh = C.lin(k1 + k2 - 2, ((-1) ** k1, C.cup(h1, h2)), (-(-1) ** k2, C.cup(w1, h2, 1)),
+               (-(-1) ** (k1 + k2), C.cup(h1, c2, 1)))
+    return (C.lin(k1 + k2 - 1, (s, C.cup(c1, c2, 1))), hh, C.lin(k1 + k2 - 1, (s, C.cup(w1, w2, 1))))
+
+
+def dc_add(C, k, *terms):
+    return tuple(C.lin(k - (1 if i == 1 else 0), *[(co, t[i]) for co, t in terms]) for i in range(3))
+
+
+def dc_equal(C, x, y, k, top):
+    return all(C.equal(x[i], y[i], deg) for i, deg in ((0, k), (1, k - 1), (2, k)) if deg <= top)
+
+
+def dc_of_villain(C, A, tau):
+    a, n = A
+    p = a.p
+    return (C.lin(p + 1, (-1, n)), C.lin(p, (Fr(1, tau), a)), C.lin(p + 1, (Fr(1, tau), curvature(C, A, tau))))
+
+
+def check_differential(C, k1, k2, tau, rng, top):
+    """the complex of differential cochains, its product, and Villain fields inside it"""
+    def gen(k):
+        return (C.rand(k, rng), C.lin(k - 1, (Fr(1, 3), C.rand(k - 1, rng))), C.lin(k, (Fr(1, 2), C.rand(k, rng))))
+    x, y, z = gen(k1), gen(k2), gen(k1)
+    zero = lambda k: (C.lin(k), C.lin(k - 1), C.lin(k))
+    assert dc_equal(C, dc_d(C, dc_d(C, x, k1), k1 + 1), zero(k1 + 2), k1 + 2, top), "d d"
+    lhs = dc_d(C, dc_prod(C, x, k1, y, k2), k1 + k2)
+    rhs = dc_add(C, k1 + k2 + 1, (1, dc_prod(C, dc_d(C, x, k1), k1 + 1, y, k2)),
+                 ((-1) ** k1, dc_prod(C, x, k1, dc_d(C, y, k2), k2 + 1)))
+    assert dc_equal(C, lhs, rhs, k1 + k2 + 1, top), ("Leibniz", C.kind, k1, k2)
+    lhs = dc_prod(C, dc_prod(C, x, k1, y, k2), k1 + k2, z, k1)
+    rhs = dc_prod(C, x, k1, dc_prod(C, y, k2, z, k1), k2 + k1)
+    assert dc_equal(C, lhs, rhs, 2 * k1 + k2, top), ("associativity", C.kind, k1, k2)
+    eps = (-1) ** (k1 * k2)
+    lhs = dc_add(C, k1 + k2, (1, dc_prod(C, x, k1, y, k2)), (-eps, dc_prod(C, y, k2, x, k1)))
+    rhs = dc_add(C, k1 + k2, (1, dc_d(C, dc_hom(C, x, k1, y, k2), k1 + k2 - 1)),
+                 (1, dc_hom(C, dc_d(C, x, k1), k1 + 1, y, k2)),
+                 ((-1) ** k1, dc_hom(C, x, k1, dc_d(C, y, k2), k2 + 1)))
+    assert dc_equal(C, lhs, rhs, k1 + k2, top), ("homotopy", C.kind, k1, k2)
+
+    # Villain fields
+    p, q = k1 - 1, k2 - 1
+    a, n = C.rand(p, rng), C.rand(p + 1, rng)
+    b, n2 = C.rand(q, rng), C.rand(q + 1, rng)
+    A, B = (a, n), (b, n2)
+    TA, TB = dc_of_villain(C, A, tau), dc_of_villain(C, B, tau)
+    dn = C.d(n)
+    assert dc_equal(C, dc_d(C, TA, k1), (C.lin(k1 + 1, (-1, dn)), C.lin(k1), C.lin(k1 + 1, (-1, dn))), k1 + 1, top)
+    lam, m = C.rand(p - 1, rng), C.rand(p, rng)
+    A2 = (C.lin(p, (1, a), (1, C.d(lam)), (tau, m)), C.lin(p + 1, (1, n), (1, C.d(m))))
+    xi = (C.lin(p, (-1, m)), C.lin(p - 1, (Fr(-1, tau), lam)), C.lin(p))
+    assert dc_equal(C, dc_of_villain(C, A2, tau), dc_add(C, k1, (1, TA), (1, dc_d(C, xi, p))), k1, top), "gauge"
+    PT = dc_prod(C, TA, k1, TB, k2)
+    TP = dc_of_villain(C, product(C, A, B, tau), tau)
+    mid = dc_d(C, PT, k1 + k2)[1]
+    assert C.equal(PT[0], TP[0], k1 + k2) if k1 + k2 <= top else True
+    assert C.equal(PT[1], TP[1], k1 + k2 - 1)
+    if k1 + k2 <= top:
+        assert C.equal(TP[2], C.lin(k1 + k2, (1, PT[2]), (-1, mid)), k1 + k2), "product, third component"
+    # the homotopy on Villain fields is the gauge transformation of the commutativity
+    FA, FB = curvature(C, A, tau), curvature(C, B, tau)
+    s, sq = (-1) ** (p + q), (-1) ** q
+    lam_s = C.lin(p + q, (Fr((-1) ** p, tau), C.cup(a, b)), (Fr(-sq, tau), C.cup(FA, b, 1)), (-s, C.cup(a, n2, 1)))
+    m_s = C.lin(p + q + 1, (s, C.cup(n, n2, 1)))
+    defect = C.lin(p + q + 1, (Fr(-s, tau), C.cup(FA, FB, 1)))
+    Hv = dc_hom(C, TA, k1, TB, k2)
+    assert dc_equal(C, Hv, (C.lin(p + q + 1, (-1, m_s)), C.lin(p + q, (Fr(-1, tau), lam_s)),
+                            C.lin(p + q + 1, (Fr(1, tau), defect))), k1 + k2 - 1, top), "homotopy on Villain fields"
+
+
+# ---- zero modes of the Chern-Simons quadratic form on a three-torus ----
+
+def rank_mod(M, p):
+    M = [row[:] for row in M]
+    r, ncol = 0, len(M[0])
+    for col in range(ncol):
+        piv = next((i for i in range(r, len(M)) if M[i][col] % p), None)
+        if piv is None:
+            continue
+        M[r], M[piv] = M[piv], M[r]
+        inv = pow(M[r][col], p - 2, p)
+        M[r] = [(v * inv) % p for v in M[r]]
+        for i in range(len(M)):
+            if i != r and M[i][col] % p:
+                f = M[i][col]
+                M[i] = [(u - f * v) % p for u, v in zip(M[i], M[r])]
+        r += 1
+    return r
+
+
+def cs_matrix(dims):
+    """the matrix M with  sum of a cup da = a^T M a  on the periodic lattice with sides dims"""
+    sites = list(itertools.product(*[range(L) for L in dims]))
+    idx = {}
+    for x in sites:
+        for mu in (1, 2, 3):
+            idx[(x, mu)] = len(idx)
+
+    def sh(x, *dirs):
+        x = list(x)
+        for mu in dirs:
+            x[mu - 1] = (x[mu - 1] + 1) % dims[mu - 1]
+        return tuple(x)
+
+    def da(x, mu, nu):
+        return [(1, idx[(sh(x, mu), nu)]), (-1, idx[(x, nu)]), (-1, idx[(sh(x, nu), mu)]), (1, idx[(x, mu)])]
+    N = len(idx)
+    M = [[0] * N for _ in range(N)]
+    for x in sites:
+        for mu, (b1, b2), sg in ((1, (2, 3), 1), (2, (1, 3), -1), (3, (1, 2), 1)):
+            for c, j in da(sh(x, mu), b1, b2):
+                M[idx[(x, mu)]][j] += sg * c
+    return M, idx
+
+
+def cs_zero_modes(dims):
+    """zero modes of the symmetric form, beyond the closed 1-cochains"""
+    M, idx = cs_matrix(dims)
+    N, V = len(idx), dims[0] * dims[1] * dims[2]
+    S = [[M[i][j] + M[j][i] for j in range(N)] for i in range(N)]
+    r = min(rank_mod(S, 1000003), rank_mod(S, 998244353))
+    return N - r - (V - 1 + 3)
+
+
+def staggered_momenta(dims):
+    """the number of momenta with p1 + p2 + p3 = pi"""
+    return sum(1 for ns in itertools.product(*[range(L) for L in dims])
+               if sum(Fr(n_, L) for n_, L in zip(ns, dims)) % 1 == Fr(1, 2))
+
+
+def lcm3(dims):
+    from math import gcd
+    out = 1
+    for L in dims:
+        out = out * L // gcd(out, L)
+    return out
+
+
+def check_zero_modes(rng):
+    # the matrix agrees with the cochain operations of cubical_reference on cubic tori
+    for L in (2, 3):
+        lat = cr.Lattice(3, L)
+        M, idx = cs_matrix((L, L, L))
+        for trial in range(3):
+            a = lat.random_cochain(1, rng)
+            total = sum(cr.cup(a, cr.delta(a))(x, (1, 2, 3)) for x in itertools.product(range(L), repeat=3))
+            vec = [0] * len(idx)
+            for (x, mu), i in idx.items():
+                vec[i] = a(x, (mu,))
+            assert total == sum(vec[i] * M[i][j] * vec[j] for i in range(len(vec)) for j in range(len(vec)) if M[i][j])
+    table = {}
+    for dims in [(2, 2, 2), (3, 3, 3), (2, 3, 3), (2, 2, 3), (2, 3, 4), (4, 4, 4), (3, 3, 5), (3, 4, 5), (6, 3, 3), (6, 4, 2)]:
+        zm, ns = cs_zero_modes(dims), staggered_momenta(dims)
+        V, l = dims[0] * dims[1] * dims[2], lcm3(dims)
+        assert zm == 2 * ns and ns == (V // l if l % 2 == 0 else 0), (dims, zm, ns)
+        table[dims] = zm
+    return table
+
+
 def chern_simons(C, k, a, n, phi, tau):
     """ModifiedVillainCS of Operadica`Gauge`, with 2 pi = tau"""
     return C.lin(3,
@@ -283,6 +484,34 @@ def main():
     print("theta term = (1/4 pi) F(A * A) + the coupling of a to the monopole current, charge theta / 2 pi  True")
     charges = check_charge(rng)
     print("topological charge on the four-torus = Pf(z):", charges, " True")
+
+    # ---- differential cochains ----
+    for tau in (3, 5):
+        cube4 = Calc("cube", cr.Lattice(4, 2))
+        check_differential(cube4, 2, 2, tau, rng, 4)
+        for k1, k2 in ((2, 2), (2, 3), (3, 2)):
+            check_differential(Calc("simplex", n=2 * k1 + k2), k1, k2, tau, rng, 2 * k1 + k2)
+    check_differential(Calc("cube", cr.Lattice(5, 2)), 2, 2, 7, rng, 5)
+    print("differential cochains: d d = 0, the Leibniz rule, associativity, the commutativity homotopy;"
+          " Villain fields as differential cochains  True")
+
+    # ---- zero modes of a cup da on three-tori ----
+    table = check_zero_modes(rng)
+    print("zero modes of a cup da beyond the closed cochains = 2 x (momenta with p1 + p2 + p3 = pi):", table, " True")
+
+    # ---- the algebra of large gauge transformations ----
+    for C in (Calc("cube", cr.Lattice(2, 3)), Calc("simplex", n=2)):
+        for k in (1, 2, 3):
+            for tau in (3, 5):
+                a, m, m2 = C.rand(1, rng), C.rand(1, rng), C.rand(1, rng)
+                bt = lambda mm, aa: C.lin(2, (Fr(-k, 2), C.cup(mm, aa)))
+                lhs = C.lin(2, (1, bt(C.lin(1, (1, m), (1, m2)), a)), (-1, bt(m, C.lin(1, (1, a), (tau, m2)))), (-1, bt(m2, a)))
+                assert C.equal(lhs, C.lin(2, (Fr(k * tau, 2), C.cup(m, m2))), 2)
+        m, m2 = C.rand(1, rng), C.rand(1, rng)
+        lhs = C.lin(2, (1, C.cup(m, m2)), (1, C.cup(m2, m)))
+        rhs = C.lin(2, (-1, C.d(C.cup(m, m2, 1))), (1, C.cup(C.d(m), m2, 1)), (-1, C.cup(m, C.d(m2), 1)))
+        assert C.equal(lhs, rhs, 2)
+    print("large gauge transformations compose up to k pi m cup m'; its symmetric part is a cup_1 expression  True")
 
     # ---- Chern-Simons ----
     for tau in (3, 5, 7):

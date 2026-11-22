@@ -339,3 +339,194 @@ VerificationTest[
   {True, -6, -6, 0},
   TestID -> "Villain-topological-charge"
 ]
+
+(* ---------------------------------------------------------------------- *)
+(* differential cochains                                                  *)
+(*   x = (c, h, w) of degree k: an integer k-cochain, a real (k-1)-cochain *)
+(*   and a real k-cochain; identities are pairs of lists of components     *)
+(* ---------------------------------------------------------------------- *)
+
+(* d d = 0, the Leibniz rule and associativity, for generic components *)
+
+VerificationTest[
+  With[{
+      gen = Function[{deg, uc, uh, uw},
+        DifferentialCochain[Cochain[deg, uc], Cochain[deg - 1, uh], Cochain[deg, uw]]],
+      comps = DifferentialComponents
+    },
+    With[{
+        leibniz = Function[{k1, k2},
+          With[{x = gen[k1, fc1, fh1, fw1], y = gen[k2, fc2, fh2, fw2]},
+            {
+              comps[DifferentialCoboundary[DifferentialProduct[x, y]]],
+              comps[DifferentialProduct[DifferentialCoboundary[x], y]] +
+                (-1)^k1 comps[DifferentialProduct[x, DifferentialCoboundary[y]]]
+            }
+          ]
+        ],
+        assoc = Function[{k1, k2, k3},
+          With[{x = gen[k1, fc1, fh1, fw1], y = gen[k2, fc2, fh2, fw2], z = gen[k3, fc3, fh3, fw3]},
+            {
+              comps[DifferentialProduct[DifferentialProduct[x, y], z]],
+              comps[DifferentialProduct[x, DifferentialProduct[y, z]]]
+            }
+          ]
+        ],
+        ddx = comps[DifferentialCoboundary[DifferentialCoboundary[gen[2, fc1, fh1, fw1]]]]
+      },
+      {
+        DifferentialDegree[gen[2, fc1, fh1, fw1]],
+        AllTrue[ddx, Function[u, CochainZeroQ[u, 4]]],
+        AllTrue[ddx, SimplexCochainZeroQ],
+        Table[
+          DifferentialCochainEqualQ[leibniz[pr[[1]], pr[[2]]][[1]], leibniz[pr[[1]], pr[[2]]][[2]], pr[[1]] + pr[[2]] + 1],
+          {pr, {{1, 1}, {1, 2}, {2, 1}, {2, 2}}}
+        ],
+        Table[And @@ MapThread[SimplexCochainEqualQ, leibniz[i1, i2]], {i1, 2, 3}, {i2, 2, 3}],
+        DifferentialCochainEqualQ[assoc[1, 1, 1][[1]], assoc[1, 1, 1][[2]], 3],
+        Table[And @@ MapThread[SimplexCochainEqualQ, assoc[2, i2, 2]], {i2, 2, 3}]
+      }
+    ]
+  ],
+  {2, True, True, {True, True, True, True}, {{True, True}, {True, True}}, True, {True, True}},
+  TestID -> "Villain-differential-cochains"
+]
+
+(* Villain fields are differential cochains: the definition of the
+   curvature is the vanishing of the middle component of the coboundary,
+   gauge transformations add coboundaries, and the Deligne-Beilinson
+   product is the product of differential cochains *)
+
+VerificationTest[
+  With[{
+      a = Cochain[1, fa], n = Cochain[2, fn], b = Cochain[1, fb], n2 = Cochain[2, fn2],
+      lam = Cochain[0, fl], m = Cochain[1, fm], comps = DifferentialComponents
+    },
+    With[{
+        aa = VillainField[a, n], bb = VillainField[b, n2],
+        ta = VillainDifferentialCochain[VillainField[a, n]],
+        tb = VillainDifferentialCochain[VillainField[b, n2]],
+        xi = DifferentialCochain[-m, -(1 / (2 Pi)) lam, Cochain[1, Function[{pt, dirs}, 0]]]
+      },
+      With[{
+          prod = comps[DifferentialProduct[ta, tb]],
+          dprod = comps[DifferentialCoboundary[DifferentialProduct[ta, tb]]],
+          tprod = comps[VillainDifferentialCochain[DeligneProduct[aa, bb]]]
+        },
+        {
+          DifferentialDegree[ta],
+          (* the coboundary of a Villain field is (-dn, 0, -dn) *)
+          DifferentialCochainEqualQ[
+            DifferentialCoboundary[ta],
+            {-Coboundary[n], Cochain[2, Function[{pt, dirs}, 0]], -Coboundary[n]},
+            3
+          ],
+          (* gauge and large gauge transformations add the coboundary of (-m, -lam / 2 Pi, 0) *)
+          DifferentialCochainEqualQ[
+            VillainDifferentialCochain[VillainLargeGaugeTransform[VillainGaugeTransform[aa, lam], m]],
+            comps[ta] + comps[DifferentialCoboundary[xi]],
+            2
+          ],
+          (* the product: the first two components agree *)
+          CochainEqualQ[prod[[1]], tprod[[1]], 4],
+          CochainEqualQ[prod[[2]], tprod[[2]], 3],
+          SimplexCochainEqualQ[prod[[1]], tprod[[1]]],
+          SimplexCochainEqualQ[prod[[2]], tprod[[2]]],
+          (* the third components differ by the middle component of the coboundary of the product *)
+          CochainEqualQ[tprod[[3]], prod[[3]] - dprod[[2]], 4],
+          CochainEqualQ[tprod[[3]], prod[[3]], 4]
+        }
+      ]
+    ]
+  ],
+  {2, True, True, True, True, True, True, True, False},
+  TestID -> "Villain-fields-as-differential-cochains"
+]
+
+(* the product is graded commutative up to the homotopy H; on Villain
+   fields H is the gauge transformation and the defect of DeligneSwapGauge *)
+
+VerificationTest[
+  With[{
+      gen = Function[{deg, uc, uh, uw},
+        DifferentialCochain[Cochain[deg, uc], Cochain[deg - 1, uh], Cochain[deg, uw]]],
+      comps = DifferentialComponents
+    },
+    With[{
+        swap = Function[{k1, k2},
+          With[{x = gen[k1, fc1, fh1, fw1], y = gen[k2, fc2, fh2, fw2]},
+            {
+              comps[DifferentialProduct[x, y]] - (-1)^(k1 k2) comps[DifferentialProduct[y, x]],
+              comps[DifferentialCoboundary[DifferentialSwapHomotopy[x, y]]] +
+                comps[DifferentialSwapHomotopy[DifferentialCoboundary[x], y]] +
+                (-1)^k1 comps[DifferentialSwapHomotopy[x, DifferentialCoboundary[y]]]
+            }
+          ]
+        ],
+        aa = VillainField[Cochain[1, fa], Cochain[2, fn]],
+        bb = VillainField[Cochain[1, fb], Cochain[2, fn2]]
+      },
+      {
+        DifferentialCochainEqualQ[swap[2, 2][[1]], swap[2, 2][[2]], 4],
+        Table[And @@ MapThread[SimplexCochainEqualQ, swap[i1, i2]], {i1, 2, 3}, {i2, 2, 3}],
+        DifferentialCochainEqualQ[
+          DifferentialSwapHomotopy[VillainDifferentialCochain[aa], VillainDifferentialCochain[bb]],
+          {
+            -DeligneSwapGauge[aa, bb][[2]],
+            -(1 / (2 Pi)) DeligneSwapGauge[aa, bb][[1]],
+            (1 / (2 Pi)) DeligneSwapDefect[aa, bb]
+          },
+          3
+        ]
+      }
+    ]
+  ],
+  {True, {{True, True}, {True, True}}, True},
+  TestID -> "Villain-differential-swap-homotopy"
+]
+
+(* ---------------------------------------------------------------------- *)
+(* towards the quantum theory                                             *)
+(* ---------------------------------------------------------------------- *)
+
+(* zero modes of sum of a cup da on three-tori, beyond the closed
+   1-cochains: two for each momentum with p1 + p2 + p3 = Pi (the staggered
+   modes), none if all sides are odd *)
+
+VerificationTest[
+  {
+    Map[ChernSimonsZeroModeCount, {{2, 2, 2}, {3, 3, 3}, {2, 3, 3}, {2, 2, 3}, {2, 3, 4}}],
+    Map[StaggeredMomentumCount, {{2, 2, 2}, {3, 3, 3}, {2, 3, 3}, {2, 2, 3}, {2, 3, 4}, {4, 4, 4}, {3, 4, 5}, {6, 4, 2}}],
+    Map[StaggeredMomentumCount, {{4, 6}, {3, 5}, {2, 2}}]
+  },
+  {{8, 0, 6, 4, 4}, {4, 0, 3, 2, 2, 16, 1, 4}, {2, 0, 2}},
+  TestID -> "Villain-Chern-Simons-zero-modes"
+]
+
+(* large gauge transformations: the boundary term B(m; a) = -(k/2) m cup a
+   of the variation composes up to k Pi m cup m2; the symmetric part of
+   m cup m2 is a cup-1 expression, the obstruction at odd level *)
+
+VerificationTest[
+  With[{
+      a = Cochain[1, fa], m = Cochain[1, fm], m2 = Cochain[1, fm2],
+      bt = Function[{u, v}, -(kk / 2) Cup[u, v]]
+    },
+    With[{
+        lhs = bt[m + m2, a] - bt[m, a + 2 Pi m2] - bt[m2, a],
+        sym = Cup[m, m2] + Cup[m2, m],
+        cup1 = -Coboundary[HigherCup[1][m, m2]] + HigherCup[1][Coboundary[m], m2] -
+          HigherCup[1][m, Coboundary[m2]]
+      },
+      {
+        CochainEqualQ[lhs, kk Pi Cup[m, m2], 2],
+        SimplexCochainEqualQ[lhs, kk Pi Cup[m, m2]],
+        CochainEqualQ[sym, cup1, 2],
+        SimplexCochainEqualQ[sym, cup1],
+        CochainZeroQ[sym, 2]
+      }
+    ]
+  ],
+  {True, True, True, True, False},
+  TestID -> "Villain-large-gauge-algebra"
+]
