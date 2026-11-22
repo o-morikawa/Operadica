@@ -178,7 +178,17 @@ SimplexCochainEqualQ[Coboundary[Cup[a, u]], Cup[Coboundary[a], u] - Cup[a, Cobou
 (* the Hirsch formula: exact on simplices, a defect on plaquettes *)
 hirsch = HigherCup[1][Cup[a, b], c] - Cup[a, HigherCup[1][b, c]] - Cup[HigherCup[1][a, c], b];
 {SimplexCochainZeroQ[hirsch], CochainZeroQ[hirsch, 2]}     (* {True, False} *)
+
+(* Steenrod squares, on simplices and on cubes: Sq^k x = x cup_(p-k) x *)
+c3 = Cochain[3, fc];
+SteenrodSquare[2][c3]                                      (* HigherCup[1][c3, c3] *)
+SimplexCochainEqualQ[Coboundary[SteenrodSquare[2][c3]],
+  -2 Cup[c3, c3] + HigherCup[1][Coboundary[c3], c3] - HigherCup[1][c3, Coboundary[c3]]]   (* True *)
 ```
+
+If the coboundary of `x` is even, the right-hand side is even: `Sq^k x` is a
+cocycle modulo 2. For even `k` the first term is twice `Sq^(k+1) x`, so that
+`Sq^(k+1)` is the Bockstein of `Sq^k`.
 
 ## Category layer
 
@@ -606,11 +616,26 @@ PontryaginSpinQ[2, 1]                          (* True: the semion generates H^4
 The cup-1 term of the Pontryagin square is needed here: `B cup B / 4` alone
 is not a cocycle on `K(Z_2, 2)`.
 
+For n = 3 the action is a Steenrod square. On a flat Z_2 3-form field `C`,
+`(1/2) Sq^2 C = (1/2) C cup_1 C` is a cocycle on `K(Z_2, 3)` whose class has
+order 2: the generator of `H^5(K(Z_2, 3); U(1)) = Z_2`, the fermion as a
+symmetric structure (the anomaly of a 2-form Z_2 symmetry in 3+1 dimensions
+whose line is the worldline of a fermion).
+
+```wolfram
+SteenrodBocksteinQ[2]                          (* True: Sq^1 B = dB / 2 modulo 2, as cochains *)
+CharacteristicClassOrder[{2}, 3, 5, SteenrodWeight[3, 2]]     (* 2 *)
+SteenrodFermionQ /@ {2, 3}                     (* {True, True}: (1/2) B cup B and (1/2) C cup_1 C *)
+```
+
+So the three lattice actions `A cup dA`, `P(B)` and `Sq^2 C` are the monoidal,
+the braided and the symmetric structures: E_1, E_2 and E_3.
+
 This is the recognition principle in its discrete form: an invertible E_n
 structure on a group is a cocycle on its n-fold delooping, and a map from a
 lattice to that delooping is a flat higher-form gauge field. The 't Hooft flux
-line above is the same statement on a torus. (For n = 2 the cocycle on
-K(Z_N, 2) and the cocycle on the bar construction are compared through the
+line above is the same statement on a torus. (For n = 2 and n = 3 the cocycle on
+K(Z_N, n) and the cocycle on the bar construction are compared through the
 order of their classes; the comparison at the level of cochains is not
 implemented yet.)
 
@@ -640,6 +665,7 @@ python3 reference/simplicial_reference.py   # cochains on simplices, characteris
 python3 reference/approximation_reference.py   # characters, free algebras, loop spaces of suspensions
 python3 reference/loops_reference.py        # the little cubes act on loop spaces
 python3 reference/braiding_reference.py     # braids of paths of little squares, braiding phases
+python3 reference/steenrod_reference.py     # Steenrod squares of cochains, the fermion on K(Z_2, 3)
 ```
 
 ## Layout

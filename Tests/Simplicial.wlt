@@ -243,3 +243,34 @@ VerificationTest[
   {True, True, True, False},
   TestID -> "Simplicial-Chern-Simons-identity"
 ]
+
+(* ---------------------------------------------------------------------- *)
+(* Steenrod squares on simplices                                          *)
+(*   expected values: reference/steenrod_reference.py                     *)
+(* ---------------------------------------------------------------------- *)
+
+VerificationTest[
+  Table[
+    Expand[SimplexValue[SteenrodSquare[0][Cochain[p, al]], Range[0, p]] - al[Range[0, p]]^2],
+    {p, 0, 3}
+  ],
+  {0, 0, 0, 0},
+  TestID -> "Simplicial-Steenrod-square-zero"
+]
+
+(* the same formula for the coboundary as on cubes, for all 0 <= k <= p <= 3 *)
+
+VerificationTest[
+  Table[
+    With[{x = Cochain[p, al]},
+      SimplexCochainEqualQ[
+        Coboundary[SteenrodSquare[k][x]],
+        (-1)^(p - k) (1 + (-1)^k) SteenrodSquare[k + 1][x] +
+          HigherCup[p - k][Coboundary[x], x] + (-1)^p HigherCup[p - k][x, Coboundary[x]]
+      ]
+    ],
+    {p, 1, 3}, {k, 0, p}
+  ],
+  {{True, True}, {True, True, True}, {True, True, True, True}},
+  TestID -> "Simplicial-Steenrod-coboundary"
+]

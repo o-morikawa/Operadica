@@ -718,3 +718,76 @@ VerificationTest[
   },
   TestID -> "Bridge-symmetric-from-paths"
 ]
+
+(* ---------------------------------------------------------------------- *)
+(* lattice <-> delooping <-> category: Steenrod squares of Z_2 fields     *)
+(*   expected values: reference/steenrod_reference.py                     *)
+(* ---------------------------------------------------------------------- *)
+
+(* Sq^1 is the Bockstein, as cochains: Sq^1 B = dB / 2 modulo 2 for the lift
+   of a flat Z_2 field to the values 0, 1.  For a 1-form field A the equation
+   A cup A = dA / 2 is exact *)
+
+VerificationTest[
+  {
+    Table[SteenrodBocksteinQ[n], {n, 1, 3}],
+    AllTrue[
+      EilenbergMacLaneSimplices[{2}, 1, 2],
+      Function[x,
+        With[{a = FlatFieldCochain[1][x]},
+          SimplexValue[Cup[a, a] - (1/2) Coboundary[a], {0, 1, 2}] === 0
+        ]
+      ]
+    ]
+  },
+  {{True, True, True}, True},
+  TestID -> "Bridge-Steenrod-Bockstein"
+]
+
+(* (1/2) Sq^k B is a cocycle on K(Z_2, n) with values in R/Z.  (1/2) Sq^1 is
+   the coboundary of B / 4, a trivial class; (1/2) Sq^2 B = (1/2) B cup B on
+   K(Z_2, 2) is the weight (2/4) P(B) and has order 2 *)
+
+VerificationTest[
+  {
+    CharacteristicCocycleQ[{2}, 1, 2, SteenrodWeight[1, 1]],
+    CharacteristicClassOrder[{2}, 1, 2, SteenrodWeight[1, 1]],
+    CharacteristicCocycleQ[{2}, 2, 3, SteenrodWeight[2, 1]],
+    CharacteristicClassOrder[{2}, 2, 3, SteenrodWeight[2, 1]],
+    CharacteristicCocycleQ[{2}, 3, 4, SteenrodWeight[3, 1]],
+    CharacteristicClassOrder[{2}, 3, 4, SteenrodWeight[3, 1]],
+    CharacteristicCocycleQ[{2}, 2, 4, SteenrodWeight[2, 2]],
+    CharacteristicClassOrder[{2}, 2, 4, SteenrodWeight[2, 2]],
+    AllTrue[
+      EilenbergMacLaneSimplices[{2}, 2, 4],
+      Function[x, SteenrodWeight[2, 2][x] === PontryaginWeight[2, 2][x]]
+    ]
+  },
+  {True, 1, True, 1, True, 1, True, 2, True},
+  TestID -> "Bridge-Steenrod-weights"
+]
+
+(* the fermion as a symmetric structure: (1/2) Sq^2 C = (1/2) C cup_1 C on
+   K(Z_2, 3) has a class of order 2, the generator of H^5(K(Z_2, 3); U(1)).
+   One 5-simplex is a cycle by itself (its faces 0 and 5 agree and the other
+   faces are degenerate), and the weight on it is 1/2 *)
+
+VerificationTest[
+  With[{
+      x = EMSimplex[5,
+        {{1}, {0}, {1}, {0}, {0}, {1}, {0}, {0}, {0}, {1}, {1}, {0}, {0}, {0}, {1}}]
+    },
+    {
+      SteenrodFermionQ[2],
+      SteenrodFermionQ[3],
+      BarHomology[{2}, 3, 5],
+      MemberQ[EilenbergMacLaneSimplices[{2}, 3, 5], x],
+      EilenbergMacLaneDegenerateQ[{2}, 3][x],
+      Table[EilenbergMacLaneDegenerateQ[{2}, 3][EilenbergMacLaneFace[3][x, i]], {i, 0, 5}],
+      EilenbergMacLaneFace[3][x, 0] === EilenbergMacLaneFace[3][x, 5],
+      SteenrodWeight[3, 2][x]
+    }
+  ],
+  {True, True, {2}, True, False, {False, True, True, True, True, False}, True, 1/2},
+  TestID -> "Bridge-Steenrod-fermion"
+]

@@ -1,6 +1,6 @@
 # Operadica 設計文書
 
-最終更新: 2026-11-22(v0.10.0)
+最終更新: 2026-11-22(v0.11.0)
 
 ## 1. 目的
 
@@ -362,6 +362,22 @@ braid 群の作用:右に寄せた積 `a₁(a₂(a₃…))` の上で、生成�
 は単体の上では厳密に成り立ち、立方格子ではホモトピー H を除いてしか成り立たない(6 節)。
 同じ式 `HigherCup[1][Cup[a, b], c] − …` を `SimplexCochainZeroQ` と `CochainZeroQ` に渡すと、True と False が返る。
 
+### Steenrod 平方
+
+p-cochain x に対し `Sq^k x = x ∪_(p−k) x` と置く(`SteenrodSquare[k][x]`。0 ≤ k ≤ p 以外では 0)。
+同じ式を立方格子と単体の両方で評価できる(`reference/steenrod_reference.py` で確認)。
+
+- `Sq^p x = x∪x`。`Sq⁰ x` の値は x の値の 2 乗で、2 を法として x そのものである。
+- (A3) で a = b = x と置くと、どちらの格子でも
+
+  `δ(Sq^k x) = (−1)^(p−k) (1 + (−1)^k) Sq^(k+1) x + δx ∪_(p−k) x + (−1)^p x ∪_(p−k) δx`
+
+  が成り立つ。δx が偶数(x が Z₂ cocycle の整数への持ち上げ)なら、右辺は偶数で、Sq^k x は 2 を法とする cocycle になる。
+- k が偶数のときは右辺の第 1 項が `±2 Sq^(k+1) x` なので、Sq^(k+1) x は Sq^k x の Bockstein を表す
+  (コホモロジー類として。Adem 関係式 Sq¹Sq^(2m) = Sq^(2m+1) の cochain での形)。
+- 値を 0, 1 に持ち上げた平坦な Z₂ 場 B では、`Sq¹B ≡ δB/2`(mod 2)が cochain の等式として成り立つ。
+  1-form 場では `A∪A = δA/2` が厳密に成り立つ。K(Z₂, n)(n ≤ 3)のすべての単体で確かめている(6 節)。
+
 ### ∪ᵢ の構成
 
 区間の鎖複体に Δ₀(e) = v₀⊗e + e⊗v₁、Δ₁(e) = −e⊗e を置き、ℤ/2 の標準分解の対角
@@ -416,6 +432,8 @@ Gerstenhaber operad の Leibniz 則が cochain の上ではホモトピーを除
 | A 上の Eₙ 構造の個数 = H_(n+2)(K(A, n)) の位数 | `EnStructureCount` |
 | 平坦な Z_N ゲージ場の上の格子作用 `(k/N²) A∪δA` は K(Z_N, 1) の 3-cocycle で、四面体の上の値が `VecZN[N, k]` の associator | `FlatFieldCochain`、`DijkgraafWittenWeight`、`DijkgraafWittenAssociatorQ` |
 | `(p/2N) P(B)` は K(Z_N, 2) の 4-cocycle で、その類の位数は `ZNAnyons[N, p]` の spin p/2N の分母 | `PontryaginWeight`、`PontryaginSpinQ` |
+| 平坦な Z₂ 場の Steenrod 平方:`Sq¹B` は Bockstein `δB/2`(cochain として)。`(1/2) Sq^k B` は K(Z₂, n) の R/Z 値の cocycle | `SteenrodBocksteinQ`、`SteenrodWeight` |
+| `(1/2) Sq²` の類は K(Z₂, 2)(`(1/2) B∪B`)と K(Z₂, 3)(`(1/2) C∪₁C`)で位数 2。braided な構造、symmetric な構造としての fermion | `SteenrodFermionQ` |
 | 近似定理 CₙX ≃ ΩⁿΣⁿX(X 連結)の、有理 Poincaré 級数での確認:H̃_*(X) の上の自由 Pₙ-代数 = H_*(ΩⁿΣⁿX; Q) | `ApproximationTheoremQ` |
 | braided な圏は、対象を載せた little squares の配置の道に位相を与える。反時計回りの入れ替えが braiding c(a, b) | `PathBraidingPhase` |
 | その位相は operad の合成と両立する。1 個が 2 個の列を越える道が六角形 1、2 個の列が 1 個を越える道が六角形 2 | `BlockBraidingQ`、`HexagonFromPathsQ` |
@@ -531,7 +549,19 @@ K(Z_N, n) の k-単体は、k-単体の上の平坦な Z_N 値 n-form 場であ�
 - **∪₁ の項は必要である**:`(1/2N) B∪B` だけでは cocycle にならない(N = 2 で確認)。`(1/N) B∪B` は cocycle で、
   N = 2 では fermion の類である。2N を法とする精密化に ∪₁ が要る。
 
-n = 2 では、cocycle を cochain として bar 構成の (w, c) と比べること(Eilenberg–MacLane の比較写像)はまだしていない。
+- **n = 3(Steenrod 平方)**:Z₂ の 3-form 場 C に対し `(1/2) Sq²C = (1/2) C∪₁C` は K(Z₂, 3) の 5-cocycle で、
+  その類の位数は 2。H⁵(K(Z₂, 3); U(1)) = Z₂ の生成元で、前の小節の「自明でない 5-cocycle = fermion」の、格子の作用としての形である。
+  n = 1 の `A∪δA`(モノイダル)、n = 2 の `P(B)`(braided)に続く、symmetric(E₃ 以上)の場合にあたる。
+  - cocycle であることは 5 節の `δ(Sq^k x)` の式から従う:`δ(C∪₁C) = −2 C∪C + δC∪₁C − C∪₁δC` で、δC が偶数なら右辺は偶数。
+    K(Z₂, 3) の 6-単体は 2²⁰ 個あるので全数検査はしていない(参照実装で乱数の 2 万個。退化した 5-単体の上で 0 であることは全数)。
+  - 類の位数は、5 次元の cycle の基底(退化していない 5-単体は 958 個)の上の値から求める。面 0 と面 5 が一致し、
+    ほかの面がすべて退化している 5-単体が 1 個あり、それ 1 個で cycle になっていて、その上の重みが 1/2 である。
+  - 物理では、3+1 次元の 2-form Z₂ 対称性(生成する線が fermion の世界線)のアノマリーの inflow 作用 `(1/2)∫Sq²C` にあたる。
+- **`(1/2) Sq^k B` の一般の形**:K(Z₂, n) の (n+k)-単体の上の R/Z 値の cocycle である(`SteenrodWeight[n, k]`)。
+  n = 2、k = 2 は `(1/2) B∪B` で、p = 2 の重み `(2/4) P(B)` と値として一致する(fermion、位数 2)。
+  k = 1 は `δ(B/4)` で、類は自明(n = 1, 2, 3 で確認)。
+
+n = 2、3 では、cocycle を cochain として bar 構成の (w, c) と比べること(Eilenberg–MacLane の比較写像)はまだしていない。
 比べているのは類の位数である。
 
 ### 近似定理
@@ -595,7 +625,7 @@ c(a, b) とする。これは平面の向きの選び方で、逆に取ると `c
 
 次の候補:
 
-- arity 4 のホモトピー:Cartan 公式、∪₁ の結合性のずれ、Steenrod 平方の関係式
+- arity 4 のホモトピー:Cartan 公式、∪₁ の結合性のずれ、Steenrod 平方の関係式(Sq¹Sq^(2m) = Sq^(2m+1) だけは 5 節の式として入っている)
 - Pontryagin 平方や高次 cup 積を含む作用のゲージ変分を、E∞ の演算で系統的に書くこと
 - K(A, 2) の 4-cocycle と bar 構成 B² の cocycle (w, c) を cochain として比べること(Eilenberg–MacLane の比較写像)
 - surjection operad の、単体的 cochain への作用(arity 3 以上。単体の上では Hirsch のホモトピーが 0 になること)
@@ -638,6 +668,8 @@ c(a, b) とする。これは平面の向きの選び方で、逆に取ると `c
   単独の層のロードと、16 層すべてのロードも確認済み。`Loops`(little cubes のループ空間への作用、近似写像)を含む。
 - v0.10.0:`wolframscript -file Scripts/RunTests.wls` で 308/308 が通過(2026-11-22、Wolfram Language 15.0.1、利用者の環境)。
   単独の層のロードと、16 層すべてのロードも確認済み。`PathBraid`、`SwapHomotopy`、`BraidPathPhase`、`PathBraidingPhase`、`BlockBraidingQ`、`HexagonFromPathsQ`、`SymmetricFromPathsQ` を含む。
+- v0.11.0:`wolframscript -file Scripts/RunTests.wls` で 315/315 が通過(2026-11-22、Wolfram Language 15.0.1、利用者の環境)。
+  単独の層のロードと、16 層すべてのロードも確認済み。`SteenrodSquare` の拡張、`SteenrodWeight`、`SteenrodBocksteinQ`、`SteenrodFermionQ` を含む。
 
 ### Python 参照実装(整数・有理数の厳密計算)
 
@@ -671,3 +703,6 @@ c(a, b) とする。これは平面の向きの選び方で、逆に取ると `c
   3 個で指数和 = 巻き数の和の 2 倍と、標本の細かさに依らないこと)、列を入れた道が block の braid であること、
   その位相が `−R + c(A, B) + R′` であること(列は (2, 3) まで)、(1, 2) と (2, 1) が六角形 1 と 2 に同値であること(乱数のデータ 400 個)、
   pure braid の位相のゲージ不変性、`SwapHomotopy` が端点を固定したホモトピーであること(33 × 33 の格子点で配置が正しいこと)
+- `steenrod_reference.py`:Sq⁰ の値が 2 乗であること、`δ(Sq^k x)` の式(単体で p ≤ 3、立方格子で 4 次元まで)、
+  K(Z₂, n)(n ≤ 3)で `Sq¹B ≡ δB/2`(mod 2)、`(1/2) Sq^k B` が cocycle であることと類の位数
+  ((n, k) = (1, 1)、(2, 1)、(3, 1) で 1、(2, 2)、(3, 2) で 2)、Z₃ では `(1/2) B∪B` が cocycle でないこと

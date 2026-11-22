@@ -65,7 +65,7 @@ CochainIntegrate::usage = "CochainIntegrate[c, dims] sums the top-degree cochain
 
 PontryaginSquare::usage = "PontryaginSquare[b] gives Cup[b, b] - HigherCup[1][b, Coboundary[b]].";
 
-SteenrodSquare::usage = "SteenrodSquare[k][a] gives HigherCup[p - k][a, a] for a p-cochain a; modulo 2 this represents the Steenrod square Sq^k.";
+SteenrodSquare::usage = "SteenrodSquare[k][a] gives HigherCup[p - k][a, a] for a cochain expression a of degree p and 0 <= k <= p, and 0 for other k. If the coboundary of the integer cochain a is even, then SteenrodSquare[k][a] is a cocycle modulo 2 of degree p + k, and it represents the Steenrod square Sq^k of the class of a modulo 2. SteenrodSquare[p][a] is Cup[a, a], and the values of SteenrodSquare[0][a] are the squares of the values of a. The coboundary of SteenrodSquare[k][a] is (-1)^(p - k) (1 + (-1)^k) SteenrodSquare[k + 1][a] plus terms with the coboundary of a: for even k, SteenrodSquare[k + 1] is the Bockstein of SteenrodSquare[k]. The expression can be evaluated on cubes (CochainValue) and on simplices (SimplexValue).";
 
 SteenrodCupSign::usage = "SteenrodCupSign[p, q, i] gives the sign (-1)^(i (p + q + 1)) relating the two conventions for higher cup products: Steenrod's cup-i of a p-cochain and a q-cochain equals SteenrodCupSign[p, q, i] times HigherCup[i].";
 
@@ -369,7 +369,14 @@ CochainIntegrate[c_, dims_List] :=
 
 PontryaginSquare[b_] := Cup[b, b] - HigherCup[1][b, Coboundary[b]];
 
-SteenrodSquare[k_Integer][a_] := HigherCup[CochainDegree[a] - k][a, a];
+SteenrodSquare[k_Integer][a_] :=
+  With[{p = CochainDegree[a]},
+    Which[
+      ! IntegerQ[p], $Failed,
+      0 <= k <= p, HigherCup[p - k][a, a],
+      True, 0
+    ]
+  ];
 
 SteenrodCupSign[p_Integer, q_Integer, i_Integer] := (-1)^(i (p + q + 1));
 

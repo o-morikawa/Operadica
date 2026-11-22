@@ -586,3 +586,48 @@ VerificationTest[
   },
   TestID -> "Lattice-local-operation"
 ]
+
+(* ---------------------------------------------------------------------- *)
+(* Steenrod squares: Sq^k x = x cup_(p-k) x                               *)
+(*   expected values: reference/steenrod_reference.py                     *)
+(* ---------------------------------------------------------------------- *)
+
+(* Sq^0 x has the squares of the values of x; outside 0 <= k <= p it is 0 *)
+
+VerificationTest[
+  {
+    Table[
+      With[{x = {x1, x2, x3}, s = Range[p]},
+        Expand[CochainValue[SteenrodSquare[0][Cochain[p, al]], x, s] - al[x, s]^2]
+      ],
+      {p, 0, 3}
+    ],
+    SteenrodSquare[3][Cochain[2, al]],
+    SteenrodSquare[-1][Cochain[2, al]],
+    CochainDegree[SteenrodSquare[1][Cochain[2, al]]]
+  },
+  {{0, 0, 0, 0}, 0, 0, 3},
+  TestID -> "Lattice-Steenrod-square-zero"
+]
+
+(* d(Sq^k x) = (-1)^(p-k) (1 + (-1)^k) Sq^(k+1) x + dx cup_(p-k) x + (-1)^p x cup_(p-k) dx.
+   If dx is even, Sq^k x is a cocycle modulo 2, and for even k the Bockstein
+   of Sq^k x is Sq^(k+1) x *)
+
+VerificationTest[
+  Table[
+    With[{p = pk[[1]], k = pk[[2]]},
+      With[{x = Cochain[p, al]},
+        CochainEqualQ[
+          Coboundary[SteenrodSquare[k][x]],
+          (-1)^(p - k) (1 + (-1)^k) SteenrodSquare[k + 1][x] +
+            HigherCup[p - k][Coboundary[x], x] + (-1)^p HigherCup[p - k][x, Coboundary[x]],
+          p + k + 1
+        ]
+      ]
+    ],
+    {pk, {{0, 0}, {1, 0}, {1, 1}, {2, 0}, {2, 1}, {3, 0}}}
+  ],
+  {True, True, True, True, True, True},
+  TestID -> "Lattice-Steenrod-coboundary"
+]

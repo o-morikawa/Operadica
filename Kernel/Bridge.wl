@@ -79,6 +79,13 @@
 (*                            associator of Vec_(Z_N)^k, and the class of  *)
 (*                            (p / 2N) P(B) on a 4-simplex has the order   *)
 (*                            of the spin p / 2N of the anyons Z_N^(p).    *)
+(*     SteenrodWeight,        (1/2) Sq^k B on a simplex of K(Z_2, n) is a  *)
+(*     SteenrodBocksteinQ,    cocycle with values in R/Z.  Sq^1 B is the   *)
+(*     SteenrodFermionQ       Bockstein dB / 2 modulo 2 as a cochain, and  *)
+(*                            (1/2) Sq^2 has a class of order 2 on         *)
+(*                            K(Z_2, 2) and on K(Z_2, 3), where it is      *)
+(*                            (1/2) C cup_1 C: the fermion, as a braided   *)
+(*                            and as a symmetric structure.                *)
 (*                                                                        *)
 (*  The action of an E-infinity operad on lattice cochains is in          *)
 (*  Operadica`EInfinity`.                                                 *)
@@ -151,6 +158,12 @@ BlockBraidingQ::usage = "BlockBraidingQ[cat, {m1, m2}] gives True if the braidin
 HexagonFromPathsQ::usage = "HexagonFromPathsQ[cat] gives True if BlockBraidingQ[cat, {1, 2}] and BlockBraidingQ[cat, {2, 1}] hold: moving a square around a pair of squares, or a pair around a square, has the phase of the braiding with the product. For arbitrary data this is equivalent to HexagonQ[cat].";
 
 SymmetricFromPathsQ::usage = "SymmetricFromPathsQ[cat] gives True if the category cat gives the same phase to the two ends SwapHomotopy[0] and SwapHomotopy[1] of the homotopy between the counterclockwise and the clockwise exchange of two little 3-cubes, for all pairs of objects: the condition that the phases come from paths of little 3-cubes up to homotopy. It is equivalent to SymmetricBraidingQ[cat].";
+
+SteenrodWeight::usage = "SteenrodWeight[n, k][x] gives the value modulo 1 of (1/2) Sq^k B on the simplex of dimension n + k, for the flat Z_2 field x of degree n, a simplex of K(Z_2, n), with B = FlatFieldCochain[n][x] and Sq^k B = SteenrodSquare[k][B]. It is a cocycle on K(Z_2, n) with values in R/Z: a topological action for a Z_2 gauge field of degree n in n + k dimensions.";
+
+SteenrodBocksteinQ::usage = "SteenrodBocksteinQ[n] gives True if, on every (n+1)-simplex of K(Z_2, n), the cochain SteenrodSquare[1][B] equals half of the coboundary of B modulo 2, for the lift B = FlatFieldCochain[n][x] of the flat field to the values 0 and 1: Sq^1 is the Bockstein, as cochains.";
+
+SteenrodFermionQ::usage = "SteenrodFermionQ[n], for n = 2 or 3, gives True if the weight SteenrodWeight[n, 2], which is (1/2) B cup B for n = 2 and (1/2) C cup_1 C for n = 3, vanishes on the degenerate simplices of K(Z_2, n) and the order of its class in H^(n+2)(K(Z_2, n); U(1)) is the denominator of the spin 1/2 of the fermion SuperVec[]. For n = 3 the class generates H^5(K(Z_2, 3); U(1)) = Z_2, the symmetric structures on Z_2. That the weight is a cocycle follows from the formula for the coboundary of SteenrodSquare.";
 
 Begin["`Private`"];
 
@@ -466,6 +479,30 @@ PontryaginSpinQ[nn_Integer?Positive, p_Integer] :=
   CharacteristicCocycleQ[{nn}, 2, 4, PontryaginWeight[nn, p]] &&
     CharacteristicClassOrder[{nn}, 2, 4, PontryaginWeight[nn, p]] ===
       Denominator[TopologicalSpin[ZNAnyons[nn, p], {1}]];
+
+(* Steenrod squares of a flat Z_2 field *)
+SteenrodWeight[n_Integer?Positive, k_Integer?NonNegative][x_EMSimplex] :=
+  Mod[(1/2) * SimplexValue[SteenrodSquare[k][FlatFieldCochain[n][x]], Range[0, n + k]], 1];
+
+SteenrodBocksteinQ[n_Integer?Positive] :=
+  AllTrue[
+    EilenbergMacLaneSimplices[{2}, n, n + 1],
+    Function[x,
+      With[{b = FlatFieldCochain[n][x]},
+        Mod[SimplexValue[SteenrodSquare[1][b] - (1/2) Coboundary[b], Range[0, n + 1]], 2] === 0
+      ]
+    ]
+  ];
+
+SteenrodFermionQ[n : (2 | 3)] :=
+  With[{w = SteenrodWeight[n, 2]},
+    AllTrue[
+      EilenbergMacLaneSimplices[{2}, n, n + 2],
+      Function[x, ! EilenbergMacLaneDegenerateQ[{2}, n][x] || w[x] === 0]
+    ] &&
+      CharacteristicClassOrder[{2}, n, n + 2, w] ===
+        Denominator[TopologicalSpin[SuperVec[], {1}]]
+  ];
 
 
 (* ---------------------------------------------------------------------- *)
