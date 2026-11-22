@@ -35,7 +35,7 @@ automatically; the lattice and category layers do not need the operad layer.
 | operad | ``Operadica`Operads` `` | Trees | operad objects, axiom and equivariance verifiers, algebras |
 | operad | ``Operadica`Rewriting` `` | Trees | quotient operads, normal forms, confluence |
 | operad | ``Operadica`LittleCubes` `` | | the little n-cubes operads (E_n), nerves and Betti numbers of their spaces |
-| operad | ``Operadica`Loops` `` | LittleCubes | the action of the little n-cubes on n-fold loop spaces, the approximation map |
+| operad | ``Operadica`Loops` `` | LittleCubes | the action of the little n-cubes on n-fold loop spaces, the approximation map, braids of paths of configurations |
 | operad | ``Operadica`Graded` `` | Trees | linear combinations, graded operads with Koszul signs, differentials, integral homology of chain complexes |
 | operad | ``Operadica`AInfinity` `` | Trees, Graded, Rewriting | the A-infinity operad, associahedra |
 | operad | ``Operadica`Presented` `` | Graded | symmetric operads by generators and relations: Com, Lie, Ass, Poisson, Gerstenhaber, P_n |
@@ -46,7 +46,7 @@ automatically; the lattice and category layers do not need the operad layer.
 | lattice gauge theory | ``Operadica`Gauge` `` | Lattice | multilinear expansion, gauge variations, actions |
 | lattice gauge theory | ``Operadica`Simplicial` `` | Lattice | the same cochain expressions on simplices: Steenrod's cup-i products |
 | bridge | ``Operadica`EInfinity` `` | Graded, BarrattEccles, Lattice | the E-infinity operad acts on lattice cochains: higher cup products and the homotopies between them |
-| bridge | ``Operadica`Bridge` `` | Trees, Operads, LittleCubes, Graded, Presented, BarrattEccles, BarConstruction, Lattice, Simplicial, EnCategories | statements connecting the layers |
+| bridge | ``Operadica`Bridge` `` | Trees, Operads, LittleCubes, Loops, Graded, Presented, BarrattEccles, BarConstruction, Lattice, Simplicial, EnCategories | statements connecting the layers |
 
 ```wolfram
 PacletDirectoryLoad["/path/to/Operadica"];
@@ -203,6 +203,9 @@ MutualBraiding[ToricCode[], {1, 0}, {0, 1}]   (* 1/2: e and m braid with -1 *)
 (* the braid group acts on a product of objects *)
 BraidPhase[cat, {{1}, {3}, {2}}, 1]           (* 7/8: exchange the first two *)
 BraidRelationQ[cat, 3]                        (* True *)
+
+(* a braid is a list of generators, -i for the inverse of sigma_i *)
+BraidPathPhase[Semion[], {{1}, {1}}, {1, 1}]  (* 1/2: one semion around another *)
 ```
 
 Your own data go into `PointedCategory[{N1, ..., Nr}, w, c]`. Gauge
@@ -355,6 +358,11 @@ SwapPath[2][1] === LittleCubesAct[SwapPath[2][0], {2, 1}]            (* True *)
 
 (* May's map C_n X -> Omega^n Sigma^n X *)
 ApproximationMap[half, {x, y}][{1/4}]                  (* SuspensionPoint[{1/2}, x] *)
+
+(* a path of configurations in the plane is a braid: half of SwapPath is the
+   generator sigma (a counterclockwise exchange), all of it is sigma^2 *)
+PathBraid[SwapPath[2], {0, 1}, 8]                      (* {1} *)
+PathBraid[SwapPath[2], {0, 2}, 16]                     (* {1, 1} *)
 ```
 
 `LoopEqualQ` compares two such maps at enough points of every cell of the grid
@@ -540,6 +548,44 @@ ApproximationTheoremQ[3, {1, 2}, 4]        (* True: Omega^3 Sigma^3 (S^1 v S^2),
 The bracket `[x, x]` of a class of degree `d` is non-zero exactly when `n + d`
 is even: it is the Whitehead square of the sphere of dimension `n + d`.
 
+### Braiding from paths of little squares
+
+A braided category gives a phase to a path of configurations of little squares
+with an object in every square. `PathBraid` reads the braid of the path from
+samples, and the counterclockwise exchange of `a` (left) and `b` (right) has
+the phase `c(a, b)`; choosing counterclockwise fixes the orientation of the
+plane.
+
+```wolfram
+(* the exchange of two semions is their spin; e around m in the toric code *)
+PathBraidingPhase[Semion[], {{1}, {1}}, SwapPath[2], {0, 1}, 8]                (* 1/4 *)
+PathBraidingPhase[ToricCode[], {{1, 0}, {0, 1}}, SwapPath[2], {0, 2}, 16]      (* 1/2 *)
+
+(* composition of the operad: a row of two squares inside the second square *)
+row = {{{0, 1/2}, {0, 1}}, {{1/2, 1}, {0, 1}}};
+PathBraid[Function[s, LittleCubesCompose[SwapPath[2][s], 2, row]], {0, 1}, 32] (* {1, 2} *)
+HexagonFromPathsQ[ZNAnyons[4, 1]]                                              (* True *)
+BlockBraidingQ[ToricCode[], {2, 2}]                                            (* True *)
+
+(* in three dimensions the two half turns are the ends of a homotopy *)
+PathBraid[SwapHomotopy[0], {0, 1}, 8]                                          (* {1} *)
+PathBraid[SwapHomotopy[1], {0, 1}, 8]                                          (* {-1} *)
+SymmetricFromPathsQ /@ {Semion[], SuperVec[]}                                  (* {False, True} *)
+```
+
+Moving one square past a pair has the phase of the braiding with the product
+of the pair, up to associators: written out, this is the first hexagon
+equation, and a pair moving past one square is the second. Longer rows
+(`BlockBraidingQ`) follow from the hexagons together with the pentagon. In
+three dimensions `SwapHomotopy` joins the counterclockwise exchange to the
+clockwise one, so the phase can depend only on the homotopy class of the path
+if `c(a, b) = -c(b, a)`: E_3 means symmetric, and two equal objects are
+exchanged with a sign, as bosons or fermions.
+
+What is computed is the braid read from samples of a path and its phase. That
+braids classify paths of configurations in the plane up to homotopy is a
+classical fact used here, not something the computation proves.
+
 ### Lattice actions are cocycles on K(Z_N, n)
 
 A simplex of `K(Z_N, n)` is a flat field on a simplex, so a lattice action can
@@ -593,6 +639,7 @@ python3 reference/bar_reference.py          # bar construction, K(A, n), E_n str
 python3 reference/simplicial_reference.py   # cochains on simplices, characteristic classes (30 s)
 python3 reference/approximation_reference.py   # characters, free algebras, loop spaces of suspensions
 python3 reference/loops_reference.py        # the little cubes act on loop spaces
+python3 reference/braiding_reference.py     # braids of paths of little squares, braiding phases
 ```
 
 ## Layout

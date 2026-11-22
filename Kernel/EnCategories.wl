@@ -59,7 +59,9 @@ ModularQ::usage = "ModularQ[cat] gives True if cat is a braided category (the pe
 
 BraidPhase::usage = "BraidPhase[cat, word, i] gives the phase, modulo 1, of the braid generator sigma_i that exchanges the i-th and (i+1)-th objects of the right-nested product of the objects in word: for the last two objects it is the braiding c(a, b), and otherwise -w(a, b, x) + c(a, b) + w(b, a, x) with x the product of the objects that follow.";
 
-BraidWord::usage = "BraidWord[word, i] gives the word with its i-th and (i+1)-th objects exchanged.";
+BraidWord::usage = "BraidWord[word, i] gives the word with its i-th and (i+1)-th objects exchanged. BraidWord[word, {i1, i2, ...}] applies the generators of a braid one after the other; a negative entry -i stands for the inverse of sigma_i and exchanges the same two objects.";
+
+BraidPathPhase::usage = "BraidPathPhase[cat, word, {i1, i2, ...}] gives the phase, modulo 1, of a braid acting on the right-nested product of the objects in word, from that product to the right-nested product of BraidWord[word, {i1, i2, ...}]. The entry i stands for the generator sigma_i with the phase BraidPhase, and -i for its inverse. The phase of a pure braid (the word returns to itself) does not change under gauge transformations; the phase of a braid that permutes different objects does.";
 
 BraidRelationQ::usage = "BraidRelationQ[cat, n] gives True if the phases of the braid generators satisfy sigma_i sigma_(i+1) sigma_i = sigma_(i+1) sigma_i sigma_(i+1) on all products of n objects. For a pointed category this follows from the pentagon equation; the hexagon equations are the statements that braiding past a product is the composite of the braidings.";
 
@@ -195,6 +197,9 @@ ModularQ[cat_Association] :=
 BraidWord[word_List, i_Integer] :=
   ReplacePart[word, {i -> word[[i + 1]], i + 1 -> word[[i]]}];
 
+BraidWord[word_List, braid_List] :=
+  Fold[Function[{acc, i}, BraidWord[acc, Abs[i]]], word, braid];
+
 BraidPhase[cat_Association, word_List, i_Integer] /; 1 <= i < Length[word] :=
   With[{w = cat["Associator"], br = cat["Braiding"], g1 = word[[i]], g2 = word[[i + 1]]},
     If[i === Length[word] - 1,
@@ -207,8 +212,15 @@ BraidPhase[cat_Association, word_List, i_Integer] /; 1 <= i < Length[word] :=
 
 braidPathPhase[cat_Association, word_List, {}] := 0;
 
-braidPathPhase[cat_Association, word_List, {i_Integer, rest___}] :=
+braidPathPhase[cat_Association, word_List, {i_Integer?Positive, rest___}] :=
   BraidPhase[cat, word, i] + braidPathPhase[cat, BraidWord[word, i], {rest}];
+
+(* the inverse of sigma_i leaves the word w for the word w' with sigma_i: w' -> w *)
+braidPathPhase[cat_Association, word_List, {i_Integer?Negative, rest___}] :=
+  -BraidPhase[cat, BraidWord[word, -i], -i] + braidPathPhase[cat, BraidWord[word, -i], {rest}];
+
+BraidPathPhase[cat_Association, word_List, braid : {___Integer}] :=
+  Mod[braidPathPhase[cat, word, braid], 1];
 
 BraidRelationQ[cat_Association, n_Integer /; n >= 3] :=
   AllTrue[

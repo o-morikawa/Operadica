@@ -1,6 +1,6 @@
 # Operadica 設計文書
 
-最終更新: 2026-11-22(v0.9.0)
+最終更新: 2026-11-22(v0.10.0)
 
 ## 1. 目的
 
@@ -29,7 +29,7 @@ operad の標準的な理論を、Mathematica 上で実際に計算しながら�
 | operad | ``Operadica`Operads` `` | Trees | operad オブジェクト、公理と同変性の検証器、代数 |
 | operad | ``Operadica`Rewriting` `` | Trees | 書き換えによる商、正規形、合流性 |
 | operad | ``Operadica`LittleCubes` `` | なし | little n-cubes operad(Eₙ)、配置の空間の脈体と Betti 数 |
-| operad | ``Operadica`Loops` `` | LittleCubes | little cubes の n 重ループ空間への作用、近似写像 CₙX → ΩⁿΣⁿX |
+| operad | ``Operadica`Loops` `` | LittleCubes | little cubes の n 重ループ空間への作用、近似写像 CₙX → ΩⁿΣⁿX、配置の道の braid |
 | operad | ``Operadica`Graded` `` | Trees | 線形結合、Koszul 符号つきの次数付き operad、微分、鎖複体の整係数ホモロジー |
 | operad | ``Operadica`AInfinity` `` | Trees, Graded, Rewriting | A∞ operad、associahedron |
 | operad | ``Operadica`Presented` `` | Graded | 生成元と関係式による対称 operad:Com、Lie、Ass、Poisson、Gerstenhaber、Pₙ |
@@ -40,7 +40,7 @@ operad の標準的な理論を、Mathematica 上で実際に計算しながら�
 | 格子ゲージ理論 | ``Operadica`Gauge` `` | Lattice | 多重線形展開、ゲージ変分、作用 |
 | 格子ゲージ理論 | ``Operadica`Simplicial` `` | Lattice | 同じ cochain の式を単体の上で評価する:Steenrod の ∪ᵢ |
 | 橋 | ``Operadica`EInfinity` `` | Graded, BarrattEccles, Lattice | 格子 cochain への E∞ operad の作用:∪ᵢ とその間のホモトピー |
-| 橋 | ``Operadica`Bridge` `` | Trees, Operads, LittleCubes, Graded, Presented, BarrattEccles, BarConstruction, Lattice, Simplicial, EnCategories | 層をつなぐ主張 |
+| 橋 | ``Operadica`Bridge` `` | Trees, Operads, LittleCubes, Loops, Graded, Presented, BarrattEccles, BarConstruction, Lattice, Simplicial, EnCategories | 層をつなぐ主張 |
 
 - 格子ゲージ理論の計算をしたい人は ``Operadica`Gauge` `` だけをロードすればよく、operad を知る必要はない。
 - カテゴリ層と格子層は operad 層に依存しない。三者が同じものであることは橋で初めて述べる。
@@ -100,6 +100,20 @@ k 個の立方体の配置 c は
 - n ≥ 2 では、2 つの立方体が互いのまわりを回る道 `SwapPath[n][s]` があり、s = 1 で 2 つが入れ替わる:
   積はホモトピーを除いて可換(Eckmann–Hilton)。s = 2 まで行くと元に戻り、これが二重 braiding にあたる
   (n = 2 では C₂(2) ≃ S¹ の生成元、n ≥ 3 では可縮)。
+- **配置の道の braid**(`reference/braiding_reference.py` で確認):n ≥ 2 の配置の道を最初の 2 方向で読む。
+  立方体を中心の (x, y) の辞書式順序で左から並べる(`ConfigurationOrder`)。隣り合う 2 つが 2 つの標本点の間で
+  入れ替わったとき、相対位置 r(右の中心 − 左の中心)が反時計回りに回っていれば生成元 σᵢ(左から来た立方体が下を通る)、
+  時計回りなら σᵢ⁻¹ とする(前後の r の外積 `r₀ × r₁` の符号)。`PathBraid[path, {s0, s1}, steps]` は braid を
+  整数のリストで返す(i が σᵢ、−i がその逆)。`ExchangeCount` は指数和で、立方体 2 個なら反時計回りの半回転の数。
+  - 標本の間で相対位置が半回転したり、隣り合わない立方体が入れ替わったり、2 つの中心が平面で重なったりすると
+    `$Failed` を返す(steps を増やす)。`SwapPath[2]` の半分は `{1}`、全部は `{1, 1}`、逆向きは `{−1}`。1 歩では読めない。
+  - operad の合成で作った道、つまり `SwapPath[2]` の 2 つの正方形に正方形の列を入れた道は、block の braid になる。
+    1 個と 2 個で `{1, 2}`、2 個と 1 個で `{2, 1}`、2 個と 2 個で `{2, 1, 3, 2}`。
+  - 参照実装では、乱歩で作った道について、指数和が独立に数えた半回転の数(3 個のときは巻き数の和の 2 倍)に一致すること、
+    標本を細かくしても braid が変わらないこと(Burau 表現で比較)を確かめている。
+- **3 次元では braid は不変量でない**:`SwapHomotopy[u][s]` は、little 3-cubes 2 個の配置の空間の中で、
+  反時計回りの半回転(u = 0)を時計回りの半回転(u = 1)に、端点を動かさずにつなぐ。半回転の面を第 1 方向の
+  まわりに回すだけである。途中(u = 1/2)では 2 つの中心が平面への射影で重なり、braid は読めない。
 - **近似写像**:単位 `η(x)(t) = [t, x]`(`SuspensionUnit`)から `α(c; x₁, …, x_k) = θ(c; η(x₁), …, η(x_k))` が
   May の写像 CₙX → ΩⁿΣⁿX である(`ApproximationMap`)。α は代数の射で、合成した配置の像は、像への作用に等しい。
   ホモロジーでの帰結(自由 Pₙ-代数との一致)は 6 節の近似定理の小節。
@@ -271,6 +285,9 @@ braid 群の作用:右に寄せた積 `a₁(a₂(a₃…))` の上で、生成�
 `−w(a,b,x) + c(a,b) + w(b,a,x)`(x は後ろに続く対象の積。最後の 2 つでは `c(a,b)` だけ)。
 σᵢ を 2 回かけると相互 braiding になる。点付きの圏では braid 関係式は五角形から従い、
 六角形は「積を越える braiding は braiding の合成である」という主張にあたる。`BraidPhase`、`BraidRelationQ`。
+`BraidPathPhase[cat, word, braid]` は braid(整数のリスト。−i は σᵢ の逆)の位相で、word の右寄せの積から、
+並べ替えた word の右寄せの積への位相である。ゲージ変換では、位相は道の両端だけで決まる量だけ変わる。
+したがって pure braid(word が元に戻る braid)の位相は不変で、a と b の 1 回の入れ替えは `f(b, a) − f(a, b)` だけ変わる。
 
 標準例:`ZNAnyons[n, p]`(`w = p·a·carry(b,c)/2`、`c = p·a·b/(2n)`。n が偶数か p が偶数のとき成立)、
 `VecZN[n, k]`(H³(Z_n, U(1)) の代表)、`DoubleZN[n]`、`ToricCode[]`、`Semion[]`、`SuperVec[]`。
@@ -400,6 +417,9 @@ Gerstenhaber operad の Leibniz 則が cochain の上ではホモトピーを除
 | 平坦な Z_N ゲージ場の上の格子作用 `(k/N²) A∪δA` は K(Z_N, 1) の 3-cocycle で、四面体の上の値が `VecZN[N, k]` の associator | `FlatFieldCochain`、`DijkgraafWittenWeight`、`DijkgraafWittenAssociatorQ` |
 | `(p/2N) P(B)` は K(Z_N, 2) の 4-cocycle で、その類の位数は `ZNAnyons[N, p]` の spin p/2N の分母 | `PontryaginWeight`、`PontryaginSpinQ` |
 | 近似定理 CₙX ≃ ΩⁿΣⁿX(X 連結)の、有理 Poincaré 級数での確認:H̃_*(X) の上の自由 Pₙ-代数 = H_*(ΩⁿΣⁿX; Q) | `ApproximationTheoremQ` |
+| braided な圏は、対象を載せた little squares の配置の道に位相を与える。反時計回りの入れ替えが braiding c(a, b) | `PathBraidingPhase` |
+| その位相は operad の合成と両立する。1 個が 2 個の列を越える道が六角形 1、2 個の列が 1 個を越える道が六角形 2 | `BlockBraidingQ`、`HexagonFromPathsQ` |
+| 3 次元では 2 つの半回転がホモトピックで、位相が一致する条件は symmetric | `SymmetricFromPathsQ` |
 | 四次元トーラス上の 't Hooft flux での重み `(p/2N)ΣP(B)` = flux の相互 braiding | `PontryaginFluxPhase`, `FluxBraidingPhase` |
 
 ### 格子 cochain は E∞ 代数
@@ -531,6 +551,35 @@ May の近似定理は、連結な X に対して CₙX ≃ ΩⁿΣⁿX を主�
 写像 α: CₙX → ΩⁿΣⁿX そのものは 3.2 の `ApproximationMap` で、代数の射であることまで確かめている。
 ここで確かめているのは次元の一致で、α が弱同値であること(両側 bar 構成を使う証明)は計算の外にある。
 
+### little squares の道と braiding
+
+E₂ 構造が braiding であることを、3.2 の little squares の道の側から読む。braided な圏は、各正方形に対象を載せた
+配置の道に位相を与える。道の braid を `PathBraid` で読み、対象を左から並べた右寄せの積の上で `BraidPathPhase` を取る
+(`PathBraidingPhase[cat, objects, path, {s0, s1}, steps]`)。反時計回りの入れ替え(左の a が下を通って右の b と入れ替わる)を
+c(a, b) とする。これは平面の向きの選び方で、逆に取ると `c′(a, b) = −c(b, a)` の圏になる。
+
+- 同じ対象 2 つの半回転は spin c(a, a)、1 周は相互 braiding である。semion で 1/4 と 1/2。toric code の e と m では、
+  半回転は c(e, m) = 1/2 または c(m, e) = 0(どちらが左かで変わり、ゲージにも依る)、1 周は 1/2(不変量)。
+- **operad の合成との両立が六角形である**:`SwapPath[2]` の 2 つの正方形に m₁ 個と m₂ 個の正方形の列を入れた道の位相は
+
+  `−R + c(A, B) + R′`
+
+  に等しい(`BlockBraidingQ[cat, {m1, m2}]`)。A, B は 2 つの列の積、c(A, B) は `SwapPath[2]` そのものに A, B を載せた位相、
+  R, R′ は「列ごとにまとめた積」から右寄せの積への再結合の位相(入れ替えの前と後)。
+  (m₁, m₂) = (1, 2) の等式は六角形 1 の式、(2, 1) は六角形 2 の式そのもので(差が、六角形の左辺 − 右辺の符号を変えたもの)、
+  任意のデータで同値である(`HexagonFromPathsQ` ⇔ `HexagonQ`)。第 2 引数についてだけ加法的な braiding
+  `c(a, b) = a²b/3`(Z₃)は (1, 2) だけを満たす。
+- 長い列は六角形と五角形から従う。braided な圏で (2, 2)、(1, 3)、(3, 1)、(2, 3) を確かめている。
+  `ZNAnyons[5, 3]` は六角形を満たし五角形を満たさないデータで、(1, 2) と (2, 1) は通り、(2, 2) で落ちる。
+- **3 次元**:`SwapHomotopy` の両端の braid は `{1}` と `{−1}` で、位相は c(a, b) と −c(b, a)。little 3-cubes の道の
+  ホモトピー類だけで位相が決まるには両者が等しいこと、つまり symmetric であることが要る
+  (`SymmetricFromPathsQ` ⇔ `SymmetricBraidingQ`)。同じ対象の入れ替えは ±1(boson か fermion)になる。
+  E₃ 以上が symmetric であること、3+1 次元に anyon がないことの、道による形である。
+
+ここで計算しているのは、標本点から読んだ braid とその位相である。平面の配置の道のホモトピー類が braid で
+分類されること(配置空間が K(π, 1) であること)は古典的な事実として使っていて、計算の外にある。
+一般の道について位相が operad の合成と両立すること(coherence)も、確かめているのは上に挙げた列についてだけである。
+
 ## 7. 道筋と到達判定
 
 | 段階 | 作るもの | 到達判定 | 状態 |
@@ -539,7 +588,7 @@ May の近似定理は、連結な X に対して CₙX ≃ ΩⁿΣⁿX を主�
 | 1b | 対称群作用と同変性、Com。線形結合と Lie(shuffle 木) | 同変性の検証が通る。Lie の成分次元が (n−1)! | 実装済み |
 | 2 | little intervals、A∞ operad(自由 dg operad) | 公理が端点を記号にして通る。d²=0。associahedron の面の総数 1, 3, 11, 45。A∞ が As の分解 | 実装済み |
 | 3 | little 2-cubes、Gerstenhaber operad、Pₙ | C_n(2) ≃ S^(n−1)。k 点成分の Poincaré 多項式が ∏(1+jt) | 実装済み(Pₙ の次元は arity 4 まで、参照実装で arity 5 まで。Betti 数との照合は、脈体で k = 2 と (n, k) = (2, 3)、Barratt–Eccles の段で (3, 3) まで、参照実装で (2, 4) と (4, 3) まで) |
-| C | 点付き Eₙ モノイダル圏、coherence、braid 群の作用 | 五角形・六角形・分類の個数。coherence が長さ 6 まで | 実装済み(parenthesized braids の coherence は未着手) |
+| C | 点付き Eₙ モノイダル圏、coherence、braid 群の作用 | 五角形・六角形・分類の個数。coherence が長さ 6 まで | 実装済み(little squares の道の braid とその位相、六角形 = operad の合成との両立まで。parenthesized braids を operad として扱う一般の coherence は未着手) |
 | G | 多重線形展開、ゲージ変分、作用 | 5 節の恒等式が通る | 実装済み |
 | 4 | E∞ operad(Barratt–Eccles、table reduction で surjection へ)、Eₙ フィルトレーション、cochain への作用 | eᵢ ↦ (1,2,1,2,…) の作用が ∪ᵢ を再現。三つの法則 (L)・(C)・(E)。Hirsch 公式のホモトピー | 実装済み(surjection operad の合成は未実装) |
 | 5 | 単体的対象、bar 構成 B(Σⁿ, Cₙ, X) | 反復 bar 構成で作った BⁿA のホモトピー群が次数 n の A だけ。近似定理を有理 Poincaré 級数の一致で確認 | 離散群の場合を実装済み(BⁿA のホモロジーとホモトピー群、Eₙ 構造 = BⁿA の cocycle、格子の作用 = K(A, n) の cocycle)。ΩⁿY への little cubes の作用と近似写像 α は実装済み。近似定理は、球面の楔について有理 Poincaré 級数の一致を arity 4 まで確認済み。両側 bar 構成 B(Σⁿ, Cₙ, X) そのものは未着手 |
@@ -552,6 +601,7 @@ May の近似定理は、連結な X に対して CₙX ≃ ΩⁿΣⁿX を主�
 - surjection operad の、単体的 cochain への作用(arity 3 以上。単体の上では Hirsch のホモトピーが 0 になること)
 - 両側 bar 構成 B(Σⁿ, Cₙ, X) そのもの(単体的な対象として)。Dyer–Lashof 作用素(mod p の近似定理)
 - Koszul 双対の計算(関係式の直交補空間)と operad の bar 構成
+- parenthesized braids の operad(E₂ の基本亜群)を作り、braided な圏がその代数であることを一般の arity で確かめること
 
 ## 8. 開発の進め方
 
@@ -586,6 +636,8 @@ May の近似定理は、連結な X に対して CₙX ≃ ΩⁿΣⁿX を主�
   `Scripts/RunExamples.wls` で `Examples/` の 2 つのノートブックの入力セルがメッセージなしで評価されることも確認済み。`ModularQ` の修正を含む。
 - v0.9.0:`wolframscript -file Scripts/RunTests.wls` で 298/298 が通過(2026-11-22、Wolfram Language 15.0.1、利用者の環境)。
   単独の層のロードと、16 層すべてのロードも確認済み。`Loops`(little cubes のループ空間への作用、近似写像)を含む。
+- v0.10.0:`wolframscript -file Scripts/RunTests.wls` で 308/308 が通過(2026-11-22、Wolfram Language 15.0.1、利用者の環境)。
+  単独の層のロードと、16 層すべてのロードも確認済み。`PathBraid`、`SwapHomotopy`、`BraidPathPhase`、`PathBraidingPhase`、`BlockBraidingQ`、`HexagonFromPathsQ`、`SymmetricFromPathsQ` を含む。
 
 ### Python 参照実装(整数・有理数の厳密計算)
 
@@ -615,3 +667,7 @@ May の近似定理は、連結な X に対して CₙX ≃ ΩⁿΣⁿX を主�
   自由 Pₙ-代数と H_*(ΩⁿΣⁿX; Q) の一致(n ≤ 3、球面 1 個と楔 7 通り、arity 4 まで)
 - `loops_reference.py`:little cubes のループ空間への作用の単位・合成・同変性(n ≤ 3、乱数で作った有理数の配置)、
   近似写像が代数の射であること、n ≥ 2 で 2 つの立方体を入れ替える道
+- `braiding_reference.py`:配置の道の braid(`SwapPath` の半分が σ、全部が σ²。乱歩 300 本で指数和 = 半回転の数。
+  3 個で指数和 = 巻き数の和の 2 倍と、標本の細かさに依らないこと)、列を入れた道が block の braid であること、
+  その位相が `−R + c(A, B) + R′` であること(列は (2, 3) まで)、(1, 2) と (2, 1) が六角形 1 と 2 に同値であること(乱数のデータ 400 個)、
+  pure braid の位相のゲージ不変性、`SwapHomotopy` が端点を固定したホモトピーであること(33 × 33 の格子点で配置が正しいこと)

@@ -278,3 +278,130 @@ VerificationTest[
   },
   TestID -> "Loops-commutativity-up-to-homotopy"
 ]
+
+(* ---------------------------------------------------------------------- *)
+(* the braid of a path of configurations                                  *)
+(*   expected values: reference/braiding_reference.py                     *)
+(* ---------------------------------------------------------------------- *)
+
+(* the cubes from left to right; when the first coordinates of two centres
+   agree, the lower one comes first *)
+
+VerificationTest[
+  {
+    ConfigurationOrder[SwapPath[2][0]],
+    ConfigurationOrder[SwapPath[2][1]],
+    ConfigurationOrder[SwapPath[2][1/2]],
+    ConfigurationOrder[SwapPath[2][3/2]],
+    ConfigurationOrder[{{{0, 1}, {0, 1}, {0, 1/2}}, {{0, 1}, {0, 1}, {1/2, 1}}}]
+  },
+  {{1, 2}, {2, 1}, {1, 2}, {2, 1}, $Failed},
+  TestID -> "Loops-configuration-order"
+]
+
+(* half of SwapPath is the generator sigma, the counterclockwise exchange;
+   all of it is sigma^2; backwards it is the inverse.  A half turn between
+   two samples cannot be read: more steps are needed *)
+
+VerificationTest[
+  {
+    PathBraid[SwapPath[2], {0, 1}, 8],
+    PathBraid[SwapPath[2], {0, 2}, 16],
+    PathBraid[SwapPath[2], {1, 2}, 4],
+    PathBraid[Function[s, SwapPath[2][1 - s]], {0, 1}, 8],
+    PathBraid[SwapPath[2], {0, 1/4}, 4],
+    PathBraid[SwapPath[2], {0, 1}, 2],
+    PathBraid[SwapPath[2], {0, 1}, 1],
+    PathBraid[SwapPath[2], {0, 2}, 3],
+    PathBraid[SwapPath[3], {0, 1}, 8],
+    ExchangeCount[SwapPath[2], {0, 2}, 16],
+    ExchangeCount[Function[s, SwapPath[2][1 - s]], {0, 1}, 8],
+    ExchangeCount[SwapPath[2], {0, 1}, 1]
+  },
+  {{1}, {1, 1}, {1}, {-1}, {}, {1}, $Failed, {1, 1}, {1}, 2, -1, $Failed},
+  TestID -> "Loops-path-braid-half-turn"
+]
+
+(* the composition of the operad: SwapPath with a row of squares put into
+   each of its two squares.  One square passes a pair, a pair passes one
+   square, two pairs pass each other *)
+
+VerificationTest[
+  With[{
+      row1 = {{{0, 1}, {0, 1}}},
+      row2 = {{{0, 1/2}, {0, 1}}, {{1/2, 1}, {0, 1}}},
+      row3 = {{{0, 1/3}, {0, 1}}, {{1/3, 2/3}, {0, 1}}, {{2/3, 1}, {0, 1}}}
+    },
+    {
+      PathBraid[Function[s, LittleCubesComposeAll[SwapPath[2][s], {row1, row2}]], {0, 1}, 32],
+      PathBraid[Function[s, LittleCubesComposeAll[SwapPath[2][s], {row2, row1}]], {0, 1}, 32],
+      PathBraid[Function[s, LittleCubesComposeAll[SwapPath[2][s], {row2, row2}]], {0, 1}, 64],
+      PathBraid[Function[s, LittleCubesComposeAll[SwapPath[2][s], {row2, row3}]], {0, 1}, 96],
+      PathBraid[Function[s, LittleCubesComposeAll[SwapPath[2][s], {row1, row2}]], {0, 1}, 2],
+      PathBraid[Function[s, LittleCubesComposeAll[SwapPath[2][s], {row1, row2}]], {0, 1}, 1],
+      AllTrue[
+        Range[0, 1, 1/64],
+        Function[s, LittleCubesQ[LittleCubesComposeAll[SwapPath[2][s], {row2, row2}], 2]]
+      ],
+      ConfigurationOrder[LittleCubesComposeAll[SwapPath[2][0], {row2, row2}]],
+      ConfigurationOrder[LittleCubesComposeAll[SwapPath[2][1], {row2, row2}]]
+    }
+  ],
+  {
+    {1, 2},
+    {2, 1},
+    {2, 1, 3, 2},
+    {2, 3, 1, 4, 2, 3},
+    {1, 2},
+    $Failed,
+    True,
+    {1, 2, 3, 4},
+    {3, 4, 1, 2}
+  },
+  TestID -> "Loops-path-braid-composition"
+]
+
+(* three dimensions: a homotopy, with fixed end points, from the
+   counterclockwise half turn to the clockwise one.  On the way the two
+   centres pass over each other and the braid cannot be read *)
+
+VerificationTest[
+  {
+    AllTrue[
+      Tuples[Range[0, 1, 1/8], 2],
+      Function[us, LittleCubesQ[SwapHomotopy[us[[1]]][us[[2]]], 3]]
+    ],
+    AllTrue[
+      Range[0, 1, 1/8],
+      Function[u,
+        SwapHomotopy[u][0] === SwapHomotopy[0][0] && SwapHomotopy[u][1] === SwapHomotopy[0][1]
+      ]
+    ],
+    AllTrue[
+      Range[0, 1, 1/8],
+      Function[s, Map[Function[cube, Take[cube, 2]], SwapHomotopy[0][s]] === SwapPath[2][s]]
+    ],
+    SwapHomotopy[0][0],
+    SwapHomotopy[1][1/2],
+    PathBraid[SwapHomotopy[0], {0, 1}, 8],
+    PathBraid[SwapHomotopy[1], {0, 1}, 8],
+    PathBraid[SwapHomotopy[1/8], {0, 1}, 8],
+    PathBraid[SwapHomotopy[7/8], {0, 1}, 8],
+    PathBraid[SwapHomotopy[1/2], {0, 1}, 8],
+    PathBraid[SwapHomotopy[1/2], {0, 1}, 7]
+  },
+  {
+    True,
+    True,
+    True,
+    {{{1/8, 3/8}, {3/8, 5/8}, {3/8, 5/8}}, {{5/8, 7/8}, {3/8, 5/8}, {3/8, 5/8}}},
+    {{{3/8, 5/8}, {5/8, 7/8}, {3/8, 5/8}}, {{3/8, 5/8}, {1/8, 3/8}, {3/8, 5/8}}},
+    {1},
+    {-1},
+    {1},
+    {-1},
+    $Failed,
+    $Failed
+  },
+  TestID -> "Loops-swap-homotopy"
+]

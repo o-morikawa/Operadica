@@ -195,6 +195,77 @@ VerificationTest[
   TestID -> "EnCategories-braid-relation"
 ]
 
+(* a braid is a list of generators: i for sigma_i, -i for its inverse.  The
+   phase goes from the right-nested product of the word to that of the
+   permuted word *)
+
+VerificationTest[
+  With[{z4 = ZNAnyons[4, 1], word = {{1}, {3}, {2}}},
+    {
+      BraidPathPhase[Semion[], {{1}, {1}}, {1}],
+      BraidPathPhase[Semion[], {{1}, {1}}, {1, 1}],
+      BraidPathPhase[Semion[], {{1}, {1}}, {-1}],
+      BraidPathPhase[Semion[], {{1}, {1}}, {}],
+      BraidPathPhase[z4, word, {1, 2}],
+      BraidPathPhase[z4, word, {-2, 1}],
+      BraidPathPhase[z4, word, {2, -1, -1}],
+      BraidWord[word, {1, 2}],
+      BraidWord[word, {-2, 1}],
+      AllTrue[
+        Tuples[CategoryObjects[z4], 3],
+        Function[w3,
+          BraidPathPhase[z4, w3, {1, -1}] === 0 && BraidPathPhase[z4, w3, {-2, 2}] === 0 &&
+            BraidPathPhase[z4, w3, {1, 2, 1, -2, -1, -2}] === 0
+        ]
+      ]
+    }
+  ],
+  {1/4, 1/2, 3/4, 0, 1/8, 0, 1/4, {{3}, {2}, {1}}, {{2}, {1}, {3}}, True},
+  TestID -> "EnCategories-braid-path-phase"
+]
+
+(* under a gauge transformation the phase of a braid changes by terms at its
+   two ends only: pure braids are invariant, and one exchange of a and b
+   changes by f(b, a) - f(a, b) *)
+
+VerificationTest[
+  With[{cat = ZNAnyons[4, 1], f = Function[{a, b}, (a[[1]]^2 b[[1]] + 3 a[[1]]) / 5]},
+    With[{
+        g = GaugeTransformCategory[cat, f],
+        pure = {{1, 1}, {2, 2}, {1, 2, 2, -1}, {1, 2, 1, 2, 1, 2}, {-2, 1, 1, 2}}
+      },
+      {
+        AllTrue[
+          Tuples[CategoryObjects[cat], 3],
+          Function[w3,
+            AllTrue[
+              pure,
+              Function[braid,
+                BraidWord[w3, braid] === w3 &&
+                  BraidPathPhase[g, w3, braid] === BraidPathPhase[cat, w3, braid]
+              ]
+            ]
+          ]
+        ],
+        AllTrue[
+          Tuples[CategoryObjects[cat], 2],
+          Function[w2,
+            Mod[
+              BraidPathPhase[g, w2, {1}] - BraidPathPhase[cat, w2, {1}] -
+                (f[w2[[2]], w2[[1]]] - f[w2[[1]], w2[[2]]]),
+              1
+            ] === 0
+          ]
+        ],
+        BraidPathPhase[cat, {{1}, {3}}, {1}],
+        BraidPathPhase[g, {{1}, {3}}, {1}]
+      }
+    ]
+  ],
+  {True, True, 3/8, 31/40},
+  TestID -> "EnCategories-braid-path-gauge"
+]
+
 (* modular means: a braided category with a non-degenerate double braiding.
    For n odd and p odd the data of ZNAnyons[n, p] fail the pentagon equation;
    their double braiding is non-degenerate all the same, but there is no

@@ -57,6 +57,19 @@
 (*                            of Omega^n Sigma^n X: the approximation      *)
 (*                            theorem C_n X ~ Omega^n Sigma^n X, rationally *)
 (*                                                                        *)
+(*   loop spaces <-> category: paths of little squares and the braiding    *)
+(*     PathBraidingPhase,     a braided category gives a phase to a path   *)
+(*     BlockBraidingQ,        of configurations of little squares with an  *)
+(*     HexagonFromPathsQ,     object in every square: the counterclockwise *)
+(*     SymmetricFromPathsQ    exchange of a (left) and b (right) is the    *)
+(*                            braiding c(a, b).  The phase is compatible   *)
+(*                            with the composition of the operad: moving a *)
+(*                            past a row of squares is braiding with the   *)
+(*                            product (the two hexagon equations).  In     *)
+(*                            three dimensions the two half turns are      *)
+(*                            homotopic, and the phases agree exactly when *)
+(*                            the braiding is symmetric.                   *)
+(*                                                                        *)
 (*   lattice <-> delooping <-> category                                    *)
 (*     FlatFieldCochain,      a simplex of K(Z_N, n) is a flat n-form      *)
 (*     DijkgraafWittenWeight, field on a simplex; its lift to integers is  *)
@@ -70,15 +83,16 @@
 (*  The action of an E-infinity operad on lattice cochains is in          *)
 (*  Operadica`EInfinity`.                                                 *)
 (*                                                                        *)
-(*  Layer: bridge.  Depends on: Trees, Operads, LittleCubes, Graded,      *)
-(*  Presented, BarrattEccles, BarConstruction, Lattice, Simplicial,       *)
-(*  EnCategories.                                                         *)
+(*  Layer: bridge.  Depends on: Trees, Operads, LittleCubes, Loops,       *)
+(*  Graded, Presented, BarrattEccles, BarConstruction, Lattice,           *)
+(*  Simplicial, EnCategories.                                             *)
 (* ====================================================================== *)
 
 BeginPackage["Operadica`Bridge`", {
   "Operadica`Trees`",
   "Operadica`Operads`",
   "Operadica`LittleCubes`",
+  "Operadica`Loops`",
   "Operadica`Graded`",
   "Operadica`Presented`",
   "Operadica`BarrattEccles`",
@@ -129,6 +143,14 @@ DijkgraafWittenAssociatorQ::usage = "DijkgraafWittenAssociatorQ[nn, k] gives Tru
 PontryaginSpinQ::usage = "PontryaginSpinQ[nn, p] gives True if PontryaginWeight[nn, p] is a cocycle on K(Z_nn, 2) and the order of its class in H^4(K(Z_nn, 2); U(1)) is the denominator of the spin p / (2 nn) of the generator of ZNAnyons[nn, p].";
 
 ApproximationTheoremQ::usage = "ApproximationTheoremQ[n, degrees, kmax] gives True if, for X a wedge of spheres of the given dimensions (all >= 1), the free algebra over PoissonOperad[n] = H_*(E_n) on the reduced homology of X and the rational homology of the n-fold loop space of the n-fold suspension of X have the same dimensions in every degree, for the arities (weights) 1, ..., kmax: the approximation theorem C_n X ~ Omega^n Sigma^n X at the level of rational Poincare series.";
+
+PathBraidingPhase::usage = "PathBraidingPhase[cat, {a1, ..., ak}, path, {s0, s1}, steps] gives the phase, modulo 1, that the pointed braided category cat gives to the path s -> path[s] of configurations of k little squares with the object aj in the j-th square: BraidPathPhase for the braid PathBraid[path, {s0, s1}, steps], on the right-nested product of the objects read from left to right at s0. The counterclockwise exchange of a (left) and b (right) has the phase c(a, b); this choice fixes the orientation of the plane. The result is $Failed if PathBraid fails.";
+
+BlockBraidingQ::usage = "BlockBraidingQ[cat, {m1, m2}] gives True if the braiding of cat is compatible with the composition of the little squares operad for the half turn of two rows of m1 and m2 squares, the path SwapPath[2] composed with the two rows: for all objects, the phase of the braid of this path on the right-nested product equals - R + c(A, B) + R', where A and B are the products of the two rows, c(A, B) is the phase of SwapPath[2] itself for the objects A and B, and R, R' are the reassociation phases between the right-nested products and the products of the two rows before and after the exchange. {1, 2} is the first hexagon equation and {2, 1} the second.";
+
+HexagonFromPathsQ::usage = "HexagonFromPathsQ[cat] gives True if BlockBraidingQ[cat, {1, 2}] and BlockBraidingQ[cat, {2, 1}] hold: moving a square around a pair of squares, or a pair around a square, has the phase of the braiding with the product. For arbitrary data this is equivalent to HexagonQ[cat].";
+
+SymmetricFromPathsQ::usage = "SymmetricFromPathsQ[cat] gives True if the category cat gives the same phase to the two ends SwapHomotopy[0] and SwapHomotopy[1] of the homotopy between the counterclockwise and the clockwise exchange of two little 3-cubes, for all pairs of objects: the condition that the phases come from paths of little 3-cubes up to homotopy. It is equivalent to SymmetricBraidingQ[cat].";
 
 Begin["`Private`"];
 
@@ -336,6 +358,74 @@ EnStructureCount[orders : {__Integer}, n_Integer?Positive] :=
 ApproximationTheoremQ[n_Integer?Positive, degrees : {__Integer}, kmax_Integer?Positive] :=
   FreeAlgebraDimensions[PoissonOperad[n], degrees, kmax] ===
     LoopSuspensionDimensions[n, degrees, kmax];
+
+
+(* ---------------------------------------------------------------------- *)
+(* loop spaces <-> category: paths of little squares and the braiding     *)
+(* ---------------------------------------------------------------------- *)
+
+PathBraidingPhase[cat_Association, objects_List, path_, {s0_, s1_}, steps_Integer?Positive] :=
+  With[{start = ConfigurationOrder[path[s0]], braid = PathBraid[path, {s0, s1}, steps]},
+    If[start === $Failed || braid === $Failed,
+      $Failed,
+      BraidPathPhase[cat, objects[[start]], braid]
+    ]
+  ];
+
+rowOfSquares[m_Integer] := Table[{{(j - 1) / m, j / m}, {0, 1}}, {j, 1, m}];
+
+combTree[1] := OpLeaf;
+
+combTree[m_Integer /; m >= 2] := OpTensor[OpLeaf, combTree[m - 1]];
+
+(* with 16 m1 m2 steps every exchange happens at a sample of the path *)
+blockBraid[m1_Integer, m2_Integer] := blockBraid[m1, m2] =
+  PathBraid[
+    Function[s, LittleCubesComposeAll[SwapPath[2][s], {rowOfSquares[m1], rowOfSquares[m2]}]],
+    {0, 1},
+    16 m1 m2
+  ];
+
+BlockBraidingQ[cat_Association, {m1_Integer?Positive, m2_Integer?Positive}] :=
+  With[{
+      braid = blockBraid[m1, m2],
+      group = cat["Group"],
+      br = Lookup[cat, "Braiding", None],
+      before = OpTensor[combTree[m1], combTree[m2]],
+      after = OpTensor[combTree[m2], combTree[m1]]
+    },
+    br =!= None &&
+      AllTrue[
+        Tuples[CategoryObjects[cat], m1 + m2],
+        Function[word,
+          With[{first = Take[word, m1], second = Drop[word, m1]},
+            BraidWord[word, braid] === Join[second, first] &&
+              Mod[
+                BraidPathPhase[cat, word, braid]
+                  + ReassociationPhase[cat, before, word]
+                  - br[Mod[Total[first], group], Mod[Total[second], group]]
+                  - ReassociationPhase[cat, after, Join[second, first]],
+                1
+              ] === 0
+          ]
+        ]
+      ]
+  ];
+
+HexagonFromPathsQ[cat_Association] :=
+  BlockBraidingQ[cat, {1, 2}] && BlockBraidingQ[cat, {2, 1}];
+
+SymmetricFromPathsQ[cat_Association] :=
+  With[{
+      b0 = PathBraid[SwapHomotopy[0], {0, 1}, 8],
+      b1 = PathBraid[SwapHomotopy[1], {0, 1}, 8]
+    },
+    Lookup[cat, "Braiding", None] =!= None &&
+      AllTrue[
+        Tuples[CategoryObjects[cat], 2],
+        Function[word, BraidPathPhase[cat, word, b0] === BraidPathPhase[cat, word, b1]]
+      ]
+  ];
 
 
 (* ---------------------------------------------------------------------- *)

@@ -608,3 +608,113 @@ VerificationTest[
   },
   TestID -> "Bridge-approximation-theorem-wedges"
 ]
+
+(* ---------------------------------------------------------------------- *)
+(* loop spaces <-> category: paths of little squares and the braiding     *)
+(*   a braided category gives the phase c(a, b) to the counterclockwise   *)
+(*   exchange of a (left) and b (right).  Expected values:                *)
+(*   reference/braiding_reference.py                                      *)
+(* ---------------------------------------------------------------------- *)
+
+(* half of SwapPath is the exchange, all of it the double braiding; for two
+   equal objects the exchange is the spin *)
+
+VerificationTest[
+  With[{sem = Semion[], tc = ToricCode[]},
+    {
+      PathBraidingPhase[sem, {{1}, {1}}, SwapPath[2], {0, 1}, 8],
+      PathBraidingPhase[sem, {{1}, {1}}, SwapPath[2], {0, 2}, 16],
+      PathBraidingPhase[sem, {{1}, {1}}, Function[s, SwapPath[2][1 - s]], {0, 1}, 8],
+      PathBraidingPhase[sem, {{1}, {1}}, SwapPath[2], {0, 1}, 1],
+      PathBraidingPhase[tc, {{1, 0}, {0, 1}}, SwapPath[2], {0, 1}, 8],
+      PathBraidingPhase[tc, {{1, 0}, {0, 1}}, SwapPath[2], {1, 2}, 8],
+      PathBraidingPhase[tc, {{1, 0}, {0, 1}}, SwapPath[2], {0, 2}, 16],
+      AllTrue[
+        Tuples[CategoryObjects[tc], 2],
+        Function[t,
+          PathBraidingPhase[tc, t, SwapPath[2], {0, 2}, 16] === MutualBraiding[tc, t[[1]], t[[2]]]
+        ]
+      ],
+      AllTrue[
+        CategoryObjects[tc],
+        Function[a, PathBraidingPhase[tc, {a, a}, SwapPath[2], {0, 1}, 8] === TopologicalSpin[tc, a]]
+      ]
+    }
+  ],
+  {1/4, 1/2, 3/4, $Failed, 1/2, 0, 1/2, True, True},
+  TestID -> "Bridge-path-braiding-phase"
+]
+
+(* the hexagon equations are the compatibility with the composition of the
+   operad: one square passing a pair is the first hexagon, a pair passing
+   one square the second.  The last category has a braiding that is additive
+   in its second argument only, and satisfies the first hexagon only *)
+
+VerificationTest[
+  With[{
+      cats = {Semion[], SuperVec[], ToricCode[], ZNAnyons[4, 1], ZNAnyons[3, 2], ZNAnyons[5, 3], VecZN[2, 1]},
+      half = PointedCategory[{3}, Function[{a, b, c}, 0], Function[{a, b}, a[[1]]^2 b[[1]] / 3]]
+    },
+    {
+      Map[HexagonFromPathsQ, cats],
+      Map[HexagonQ, cats],
+      PentagonQ[half],
+      BlockBraidingQ[half, {1, 2}],
+      BlockBraidingQ[half, {2, 1}],
+      HexagonFromPathsQ[half],
+      HexagonQ[half]
+    }
+  ],
+  {
+    {True, True, True, True, True, True, False},
+    {True, True, True, True, True, True, False},
+    True,
+    True,
+    False,
+    False,
+    False
+  },
+  TestID -> "Bridge-hexagon-from-paths"
+]
+
+(* longer rows follow from the hexagons and the pentagon together.  The data
+   ZNAnyons[5, 3] satisfy the hexagons and not the pentagon, and two pairs
+   passing each other already see it *)
+
+VerificationTest[
+  {
+    BlockBraidingQ[Semion[], {1, 1}],
+    BlockBraidingQ[Semion[], {2, 2}],
+    BlockBraidingQ[ToricCode[], {2, 2}],
+    BlockBraidingQ[ZNAnyons[4, 1], {2, 2}],
+    BlockBraidingQ[ZNAnyons[3, 2], {1, 3}],
+    BlockBraidingQ[ZNAnyons[3, 2], {3, 1}],
+    BlockBraidingQ[Semion[], {2, 3}],
+    BlockBraidingQ[ZNAnyons[5, 3], {2, 2}]
+  },
+  {True, True, True, True, True, True, True, False},
+  TestID -> "Bridge-block-braiding"
+]
+
+(* three dimensions: the two half turns are the two ends of SwapHomotopy, so
+   a phase that depends only on the homotopy class of a path of little
+   3-cubes needs c(a, b) = - c(b, a).  E_3 is symmetric: bosons and fermions *)
+
+VerificationTest[
+  With[{
+      cats = {SuperVec[], ZNAnyons[4, 4], ZNAnyons[3, 6], Semion[], ToricCode[], ZNAnyons[4, 2],
+        ZNAnyons[3, 2], VecZN[2, 1]}
+    },
+    {
+      Map[SymmetricFromPathsQ, cats],
+      Map[SymmetricBraidingQ, cats],
+      Map[EnLevel, cats]
+    }
+  ],
+  {
+    {True, True, True, False, False, False, False, False},
+    {True, True, True, False, False, False, False, False},
+    {Infinity, Infinity, Infinity, 2, 2, 2, 2, 1}
+  },
+  TestID -> "Bridge-symmetric-from-paths"
+]

@@ -29,7 +29,19 @@
 (*  points of every cell of the grid: for given configurations with exact  *)
 (*  endpoints this is a proof at all points off the grid.                  *)
 (*                                                                        *)
-(*  Checked in reference/loops_reference.py.                              *)
+(*  Paths of configurations and their braids.  A path of configurations   *)
+(*  of k little n-cubes (n >= 2) is read in the first two directions: the  *)
+(*  cubes are ordered by their centres, lexicographically in (x, y), and   *)
+(*  when two neighbours change places between two samples of the path the  *)
+(*  relative position of the right one turns either counterclockwise (the  *)
+(*  cube from the left passes below: the generator sigma_i) or clockwise   *)
+(*  (its inverse).  PathBraid gives the braid as a list of integers, +i    *)
+(*  for sigma_i and -i for its inverse.  For n = 2 the braid is the        *)
+(*  homotopy class of the path; for n >= 3 it is not an invariant, and     *)
+(*  SwapHomotopy is a homotopy between the two half turns.                 *)
+(*                                                                        *)
+(*  Checked in reference/loops_reference.py and                           *)
+(*  reference/braiding_reference.py.                                      *)
 (*                                                                        *)
 (*  Layer: operad.  Depends on: LittleCubes.                              *)
 (* ====================================================================== *)
@@ -55,6 +67,14 @@ LoopSamplePoints::usage = "LoopSamplePoints[c] gives n + 1 affinely independent 
 LoopEqualQ::usage = "LoopEqualQ[g, h, c] gives True if the loops g and h have the same value at all the points LoopSamplePoints[c]. For loops built with LoopAction from generic loops, with the endpoints of all the cubes involved among those of c, this proves that g and h agree at every point off the grid.";
 
 SwapPath::usage = "SwapPath[n][s] gives, for n >= 2 and 0 <= s <= 2, a configuration of two little n-cubes whose centres move around a square in the first two directions. SwapPath[n][1] is SwapPath[n][0] with the two cubes exchanged, and SwapPath[n][2] is SwapPath[n][0]: half of the path is a homotopy between the products a b and b a of an n-fold loop space, and the whole path is the double braiding.";
+
+ConfigurationOrder::usage = "ConfigurationOrder[c] gives the labels of the cubes of the configuration c of little n-cubes (n >= 2) from left to right: ordered by the first coordinate of the centre, and by the second coordinate when the first ones agree. It gives $Failed if two centres agree in the first two coordinates.";
+
+PathBraid::usage = "PathBraid[path, {s0, s1}, steps] gives the braid of the path s -> path[s] of configurations of little n-cubes (n >= 2), read in the first two directions and sampled at steps + 1 equally spaced values from s0 to s1. The braid is a list of nonzero integers: i stands for the generator sigma_i, the counterclockwise exchange of the cubes at the positions i and i + 1 from the left (the cube from the left passes below), and -i for its inverse. Between two samples every relative position must turn by less than a half turn, and only neighbours may change places; otherwise, or if two centres coincide in the plane, the result is $Failed and more steps are needed. For n = 2 the braid is the homotopy class of the path.";
+
+ExchangeCount::usage = "ExchangeCount[path, {s0, s1}, steps] gives the exponent sum of PathBraid[path, {s0, s1}, steps]. For two cubes it is the number of counterclockwise half turns of the cubes around each other.";
+
+SwapHomotopy::usage = "SwapHomotopy[u][s] gives, for 0 <= u <= 1 and 0 <= s <= 1, a configuration of two little 3-cubes. For u = 0 the path in s is the counterclockwise half turn SwapPath[2] in the first two directions, for u = 1 its mirror image, the clockwise half turn, and the configurations at s = 0 and s = 1 do not depend on u: a homotopy between the two ways to exchange two cubes, which exists in three dimensions and not in two.";
 
 Begin["`Private`"];
 
@@ -150,6 +170,91 @@ swapCube[n_Integer, centre_List] :=
 
 SwapPath[n_Integer /; n >= 2][s_] :=
   {swapCube[n, squarePoint[s]], swapCube[n, squarePoint[s + 1]]};
+
+
+(* ---------------------------------------------------------------------- *)
+(* the braid of a path of configurations                                  *)
+(* ---------------------------------------------------------------------- *)
+
+planeCentre[cube_List] := {Mean[cube[[1]]], Mean[cube[[2]]]};
+
+ConfigurationOrder[c_List] :=
+  With[{pts = Map[planeCentre, c]},
+    If[DuplicateFreeQ[pts],
+      SortBy[Range[Length[c]], {Function[lab, pts[[lab, 1]]], Function[lab, pts[[lab, 2]]]}],
+      $Failed
+    ]
+  ];
+
+(* the generators between two consecutive samples: the positions are read
+   from the left; two neighbours p, q that change places give the sign of
+   the cross product of the relative positions before and after *)
+stepGenerators[prev_List, cur_List, oprev_List, ocur_List, pos_Integer] :=
+  Which[
+    pos > Length[oprev],
+      {},
+    oprev[[pos]] === ocur[[pos]],
+      stepGenerators[prev, cur, oprev, ocur, pos + 1],
+    pos < Length[oprev] && oprev[[pos]] === ocur[[pos + 1]] && oprev[[pos + 1]] === ocur[[pos]],
+      With[{
+          r0 = planeCentre[prev[[oprev[[pos + 1]]]]] - planeCentre[prev[[oprev[[pos]]]]],
+          r1 = planeCentre[cur[[oprev[[pos + 1]]]]] - planeCentre[cur[[oprev[[pos]]]]],
+          rest = stepGenerators[prev, cur, oprev, ocur, pos + 2]
+        },
+        With[{z = r0[[1]] r1[[2]] - r0[[2]] r1[[1]]},
+          If[z == 0 || rest === $Failed, $Failed, Prepend[rest, Sign[z] pos]]
+        ]
+      ],
+    True,
+      $Failed
+  ];
+
+braidStep[prev_List, cur_List] :=
+  With[{oprev = ConfigurationOrder[prev], ocur = ConfigurationOrder[cur]},
+    If[oprev === $Failed || ocur === $Failed,
+      $Failed,
+      stepGenerators[prev, cur, oprev, ocur, 1]
+    ]
+  ];
+
+PathBraid[path_, {s0_, s1_}, steps_Integer?Positive] :=
+  With[{configs = Table[path[s0 + (s1 - s0) j / steps], {j, 0, steps}]},
+    With[{parts = Table[braidStep[configs[[j]], configs[[j + 1]]], {j, 1, steps}]},
+      If[MemberQ[parts, $Failed], $Failed, Join @@ parts]
+    ]
+  ];
+
+ExchangeCount[path_, {s0_, s1_}, steps_Integer?Positive] :=
+  With[{braid = PathBraid[path, {s0, s1}, steps]},
+    If[braid === $Failed, $Failed, Total[Sign[braid]]]
+  ];
+
+
+(* ---------------------------------------------------------------------- *)
+(* three dimensions: the two half turns are homotopic                     *)
+(*   the plane of the half turn is spanned by the first direction and by   *)
+(*   a vector v(u) that goes from the second direction, through the third, *)
+(*   to minus the second; v(u) stays on the square max(|v2|, |v3|) = 1, so *)
+(*   that the two cubes of side 1/4 stay 1/2 apart                         *)
+(* ---------------------------------------------------------------------- *)
+
+homotopyDirection[u_] :=
+  Which[
+    u <= 1/4, {1, 4 u},
+    u <= 3/4, {2 - 4 u, 1},
+    True, {-1, 4 - 4 u}
+  ];
+
+homotopyCube[q_List, v_List] :=
+  Map[
+    Function[x, {x - 1/8, x + 1/8}],
+    {q[[1]], 1/2 + (q[[2]] - 1/2) v[[1]], 1/2 + (q[[2]] - 1/2) v[[2]]}
+  ];
+
+SwapHomotopy[u_][s_] :=
+  With[{v = homotopyDirection[u]},
+    {homotopyCube[squarePoint[s], v], homotopyCube[squarePoint[s + 1], v]}
+  ];
 
 End[];
 
