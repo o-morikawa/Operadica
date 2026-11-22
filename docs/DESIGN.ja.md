@@ -1,6 +1,6 @@
 # Operadica 設計文書
 
-最終更新: 2026-11-22(v0.13.0)
+最終更新: 2026-11-23(v0.14.0)
 
 ## 1. 目的
 
@@ -9,6 +9,18 @@ operad の標準的な理論を、Mathematica 上で実際に計算しながら�
 
 「証明する」のではなく、**定理の主張と証明の部品をすべて実行可能にする**ことを目標にする。
 一般の弱同値の主張そのものは Mathematica の外(人間の証明、必要なら Lean)に残る。
+
+第二の方向として、operad に基づいて、格子 cochain の上でゲージ理論を構成的に作る指針を探る。
+
+- 格子作用を、cochain の演算(δ、∪、∪ᵢ)と、E∞ operad が与えるその間のホモトピーの組み合わせとして書く。
+- 可換なゲージ場は Villain 形式(実数の接続と整数の flux の組)で扱い、作用を Deligne–Beilinson 積から組み立てる。
+- ゲージ変分と離散的な不変性(Pontryagin 平方、Chern–Simons 型)を記号的に検査し、補正項がどこから来るかを operad の側から説明する。
+- 作用を K(A, n) の cocycle として読み、圏の側の量(associator、braiding、spin)と照合する。
+
+これは Wilson 流の格子ゲージ理論の代わりではない。非可換ゲージ場の力学は cochain に乗らない。
+届くのは、可換な場、高次形式対称性の背景場、アノマリー、θ 項などの位相的な部分である。
+
+現状は途中経過で、既知の構成の再現までである。どこまで構成的に作れるかを探っている。
 
 ## 2. 設計思想
 
@@ -39,7 +51,7 @@ operad の標準的な理論を、Mathematica 上で実際に計算しながら�
 | 格子ゲージ理論 | ``Operadica`Lattice` `` | なし | cochain、δ、∪、∪ᵢ、局所的な多重線形演算 |
 | 格子ゲージ理論 | ``Operadica`Gauge` `` | Lattice | 多重線形展開、ゲージ変分、作用 |
 | 格子ゲージ理論 | ``Operadica`Simplicial` `` | Lattice | 同じ cochain の式を単体の上で評価する:Steenrod の ∪ᵢ |
-| 格子ゲージ理論 | ``Operadica`Villain` `` | Lattice | modified Villain 形式の U(1) ゲージ場、Deligne–Beilinson 積、BF・Chern–Simons の作用 |
+| 格子ゲージ理論 | ``Operadica`Villain` `` | Lattice | modified Villain 形式の U(1) ゲージ場、Deligne–Beilinson 積、BF・Chern–Simons の作用、θ 項 |
 | 橋 | ``Operadica`EInfinity` `` | Graded, BarrattEccles, Lattice | 格子 cochain への E∞ operad の作用:∪ᵢ とその間のホモトピー |
 | 橋 | ``Operadica`Bridge` `` | Trees, Operads, LittleCubes, Loops, Graded, Presented, BarrattEccles, BarConstruction, Lattice, Simplicial, Villain, EnCategories | 層をつなぐ主張 |
 
@@ -371,10 +383,38 @@ Wilson 流の link 変数ではなく cochain の組を基本の対象にし、�
   これは arXiv:2303.06160 式 (17) の modified Villain のラグランジアン(``Operadica`Gauge` `` の `ModifiedVillainCS`)と一致する。
   「半分」を取るので大きいゲージ変換での変化は kπ × 整数 cochain になり、level k は偶数に限られる(5 節の恒等式)。
   ∪₁ の項は、n が平坦でないときにもゲージ不変にするための補正である。
-- 4 次元では `F(A∗A)/4π = F∪F/8π²` が位相電荷の密度で、平坦な n について `F∪F/8π² = n∪n/2 + 全微分` になる
-  (曲率の恒等式の p = q = 1 の場合)。
 
-今あるのは最初の一歩で、積の次数付き可換性(∪₁ を使うホモトピー)、高次の積、θ 項や Witten 効果、補正項の自動探索はまだない(7 節)。
+**積の次数付き可換性**(`DeligneSwapGauge`、`DeligneSwapDefect`):連続理論の Deligne–Beilinson 積は次数付き可換で、
+`A∗B` と `ε B∗A`(`ε = (−1)^((p+1)(q+1))`)はゲージ変換で移り合う。格子では、`s = (−1)^(p+q)` として、一般の cochain について
+
+- 接続の差 `(A∗B) − ε(B∗A) = δλ + 2πm − s F_A∪₁F_B/2π + (−1)^q (a∪₁δn′ − δn∪₁b)`
+- flux の差 `(A∗B) − ε(B∗A) = δm − s (δn∪₁n′ − (−1)^p n∪₁δn′)`
+- `λ = ((−1)^p a∪b − (−1)^q F_A∪₁b)/2π − s a∪₁n′`、`m = s n∪₁n′`(`DeligneSwapGauge[A, B]` が `{λ, m}` を返す)
+
+が厳密に成り立つ。λ がゲージ変換、m が大きいゲージ変換である。ホモトピーは ∪₁、つまり ∪ の 2 つの因子を入れ替える
+E∞ operad の演算(E₂ の段)で、式は 5 節の (A3) から従う。
+
+- `−s F_A∪₁F_B/2π`(`DeligneSwapDefect`)はゲージ不変な局所項で、ゲージ変換ではない。微分形式の ∧ は厳密に次数付き可換なので、
+  連続理論には対応する項がない。cochain の ∪ が可換でないことから出る項で、A か B の曲率が 0 なら消える。
+- 例:BF 理論の 2 つの書き方 `a∪δb` と `b∪δa`(p = q = 1、ε = 1)の差は、平坦な flux について `δλ + 2πm − F_A∪₁F_B/2π`。
+  作用としては、2π × 整数と、片方の曲率が 0 なら消える項だけ違う。
+
+**θ 項と Witten 効果**(`VillainThetaTerm`、`VillainWittenTerm`):次数 p の場の 2p+2 次元での θ 項は `(θ/8π²) F∪F`
+(p = 1 が 4 次元の U(1) ゲージ場)。F だけで書けるので、monopole があっても、ゲージ変換と大きいゲージ変換で厳密に不変である。
+一般の cochain について
+
+`(θ/8π²) F∪F = (θ/4π) F(A∗A) + W`、`W = −(−1)^p (θ/4π)(δn∪a − a∪δn)`
+
+が成り立つ(曲率の恒等式で B = A と置いたもの)。`F(A∗A) = δ(A∗A の接続) + 2π n∪n` である。
+
+- monopole がなければ(δn = 0)W = 0 で、`(θ/8π²) F∪F = (θ/2) n∪n + 全微分`。閉じた格子の上の位相電荷は `(1/2) Σ n∪n`。
+- 四次元トーラスの上で flux が z(`THooftFluxCochain`)のとき、位相電荷 `(1/8π²) Σ F∪F` は接続 a に依らず
+  Pfaffian `z₁₂z₃₄ − z₁₃z₂₄ + z₁₄z₂₃` に等しい。整数なので、トーラスの上で θ の周期は 2π。
+- **Witten 効果**:W は接続 a と monopole のカレント δn の結合である。ゲージ変換 `a → a + δλ` で W は
+  `−(θ/4π) δ(δn∪λ − (−1)^p λ∪δn)` だけ変わる。大きさ θ/2π の電荷が δn の上にあるときの変化で、
+  a の左に置いた δn と右に置いた δn が半分ずつ担う。
+
+3 つ以上の場の積(結合性のホモトピー)、Z_N の背景場との結合、補正項の自動探索はまだない(7 節)。
 
 ## 4. 自動検証の4つの強さ
 
@@ -713,14 +753,15 @@ c(a, b) とする。これは平面の向きの選び方で、逆に取ると `c
 | 3 | little 2-cubes、Gerstenhaber operad、Pₙ | C_n(2) ≃ S^(n−1)。k 点成分の Poincaré 多項式が ∏(1+jt) | 実装済み(Pₙ の次元は arity 4 まで、参照実装で arity 5 まで。Betti 数との照合は、脈体で k = 2 と (n, k) = (2, 3)、Barratt–Eccles の段で (3, 3) まで、参照実装で (2, 4) と (4, 3) まで) |
 | C | 点付き Eₙ モノイダル圏、coherence、braid 群の作用 | 五角形・六角形・分類の個数。coherence が長さ 6 まで | 実装済み(little squares の道の braid とその位相、六角形 = operad の合成との両立まで。parenthesized braids を operad として扱う一般の coherence は未着手) |
 | G | 多重線形展開、ゲージ変分、作用 | 5 節の恒等式が通る | 実装済み |
-| V | Villain 形式の U(1) 場、Deligne–Beilinson 積、構成的な格子作用 | 積がゲージ同値類の上で定まる。BF と Chern–Simons が積から出る。平坦な Z_N 場の上で Dijkgraaf–Witten になる | 最初の一歩を実装済み(対象、ゲージ変換、積、BF、Chern–Simons、Z_N への制限)。可換性のホモトピー、θ 項、補正項の探索は未着手 |
+| V | Villain 形式の U(1) 場、Deligne–Beilinson 積、構成的な格子作用 | 積がゲージ同値類の上で定まる。BF と Chern–Simons が積から出る。平坦な Z_N 場の上で Dijkgraaf–Witten になる | 実装済み(対象、ゲージ変換、積、BF、Chern–Simons、Z_N への制限、積の可換性のホモトピー、θ 項と Witten 効果)。3 つ以上の場の積、背景場との結合、補正項の探索は未着手 |
 | 4 | E∞ operad(Barratt–Eccles、table reduction で surjection へ)、Eₙ フィルトレーション、cochain への作用 | eᵢ ↦ (1,2,1,2,…) の作用が ∪ᵢ を再現。三つの法則 (L)・(C)・(E)。Hirsch 公式のホモトピー | 実装済み(surjection operad の合成は未実装) |
 | 5 | 単体的対象、bar 構成 B(Σⁿ, Cₙ, X) | 反復 bar 構成で作った BⁿA のホモトピー群が次数 n の A だけ。近似定理を有理 Poincaré 級数の一致で確認 | 離散群の場合を実装済み(BⁿA のホモロジーとホモトピー群、Eₙ 構造 = BⁿA の cocycle、格子の作用 = K(A, n) の cocycle)。ΩⁿY への little cubes の作用と近似写像 α は実装済み。近似定理は、球面の楔について有理 Poincaré 級数の一致を arity 4 まで確認済み。n = 2 の Z₂ 係数では球面 1 個について重み 8 まで(braid 群のホモロジーと Kudo–Araki の多項式代数)。両側 bar 構成 B(Σⁿ, Cₙ, X) そのものは未着手 |
 
 次の候補(研究で使う計算機としての方向。cochain の式を入れると、ゲージ変分・補正項・アノマリーの類が出てくること):
 
 - **補正項の探索**:`δX = Y` を解いて X を返すこと。コホモロジーで成り立つ等式の cochain での補正項を、∪ᵢ と E∞ の演算の線形結合の中から探す
-- Deligne–Beilinson 積の次数付き可換性のホモトピー(∪₁)、3 つ以上の場の積、θ 項と Witten 効果、Z_N の背景場との結合
+- Deligne–Beilinson 積の結合性のホモトピーと 3 つ以上の場の積、Z_N の背景場との結合(1-form 対称性のゲージ化)、
+  `F_A∪₁F_B` のような格子に固有の項の系統的な扱い
 - 混合アノマリー(K(A, n) の積の上の cocycle)と 2-group(`δB = β(A)`)
 - 非可逆な対称性:fusion 圏の F・R 記号を厳密に扱う層
 
@@ -744,6 +785,9 @@ operad の側の候補:
 - `Examples/*.nb` は入口のノートブック(`Operadica-Tour.nb` が全体の案内、`ZnAnyons.nb` が最小の例)。
   `wolframscript -file Scripts/RunExamples.wls` は、ノートブックの入力セルをカーネルだけで上から順に評価し、
   メッセージを出したセルを報告する。描画はしないので、図の見た目はノートブックを開いて確かめる。
+- 役割分担:目的と方針は著者が決める。`Kernel/` と `Scripts/` のコード、テスト、Python の参照実装、文書は、
+  Claude(Anthropic)が著者との対話の中で書く。Wolfram Language でのテストの実行とコミットは、著者の環境で
+  Claude Code が行い、全テストが通ってからコミットする。著者は `Examples/` のノートブックで結果を確かめる。
 
 ## 9. 検証状況
 
@@ -775,6 +819,8 @@ operad の側の候補:
   単独の層のロードと、16 層すべてのロードも確認済み。`ModularBetti`、`BarrattEcclesOrbitHomology`、`BraidGroupHomology`、`BraidGroupCohomology`、`KudoArakiDimensions`、`ApproximationTheoremModTwoQ` を含む。
 - v0.13.0:`wolframscript -file Scripts/RunTests.wls` で 327/327 が通過(2026-11-22、Wolfram Language 15.0.1、利用者の環境)。
   単独の層のロードと、17 層すべてのロードも確認済み。`Villain` の層(`VillainField`、`DeligneProduct`、`VillainChernSimons`)と、橋の `FlatVillainField`、`ChernSimonsWeight`、`ChernSimonsDijkgraafWittenQ` を含む。
+- v0.14.0:`wolframscript -file Scripts/RunTests.wls` で 331/331 が通過(2026-11-23、Wolfram Language 15.0.1、利用者の環境)。
+  単独の層のロードと、17 層すべてのロードも確認済み。`DeligneSwapGauge`、`DeligneSwapDefect`、`VillainThetaTerm`、`VillainWittenTerm` を含む。
 
 ### Python 参照実装(整数・有理数の厳密計算)
 
@@ -816,4 +862,6 @@ operad の側の候補:
   F₃E(3) と operad 全体で H₁ = Z₂)
 - `villain_reference.py`:Deligne–Beilinson 積の曲率とゲージ変換・大きいゲージ変換の恒等式(立方格子と単体、次数 (1,1)、(1,2)、(2,1)、(2,2)。
   2π を 3 通りの整数に置き換えて確認)、modified Villain の Chern–Simons が積の半分と ∪₁ の補正であること、
-  平坦な Z_N 場の上で偶数 level の Chern–Simons が level −k/2 の Dijkgraaf–Witten の類になること(N ≤ 5)、奇数 level では cocycle にならないこと
+  平坦な Z_N 場の上で偶数 level の Chern–Simons が level −k/2 の Dijkgraaf–Witten の類になること(N ≤ 5)、奇数 level では cocycle にならないこと、
+  積の次数付き可換性(ゲージ変換 λ、m と `F_A∪₁F_B` の項。この項を落とすと成り立たないこと)、
+  θ 項の分解と Witten 項のゲージ変分(p = 1 は立方格子と単体、p = 2 は単体)、四次元トーラスの位相電荷が Pfaffian であること

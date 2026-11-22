@@ -11,6 +11,13 @@ E-infinity structure they are part of). The aim is a path from the definitions
 to May's recognition theorem in which every statement along the way is checked
 by computation.
 
+A second direction is lattice gauge theory built constructively on cochains:
+actions are written with the operations of an E-infinity operad (cup-i products
+and the homotopies between them), checked symbolically, and read as cocycles on
+K(A, n).
+This part is work in progress; so far it reproduces known constructions
+(Pontryagin square, modified Villain Chern-Simons, Dijkgraaf-Witten).
+
 The design and the roadmap are in [docs/DESIGN.ja.md](docs/DESIGN.ja.md) (Japanese).
 
 ## Start here
@@ -45,7 +52,7 @@ automatically; the lattice and category layers do not need the operad layer.
 | lattice gauge theory | ``Operadica`Lattice` `` | | cochains, coboundary, cup and higher cup products, local multilinear operations |
 | lattice gauge theory | ``Operadica`Gauge` `` | Lattice | multilinear expansion, gauge variations, actions |
 | lattice gauge theory | ``Operadica`Simplicial` `` | Lattice | the same cochain expressions on simplices: Steenrod's cup-i products |
-| lattice gauge theory | ``Operadica`Villain` `` | Lattice | U(1) gauge fields in the modified Villain form, the Deligne-Beilinson product, BF and Chern-Simons actions |
+| lattice gauge theory | ``Operadica`Villain` `` | Lattice | U(1) gauge fields in the modified Villain form, the Deligne-Beilinson product, BF and Chern-Simons actions, the theta term |
 | bridge | ``Operadica`EInfinity` `` | Graded, BarrattEccles, Lattice | the E-infinity operad acts on lattice cochains: higher cup products and the homotopies between them |
 | bridge | ``Operadica`Bridge` `` | Trees, Operads, LittleCubes, Loops, Graded, Presented, BarrattEccles, BarConstruction, Lattice, Simplicial, Villain, EnCategories | statements connecting the layers |
 
@@ -226,9 +233,44 @@ CochainEqualQ[VillainChernSimons[k][A, phi], ModifiedVillainCS[k][Cochain[1, fa]
 
 The identities hold for generic cochains, on cubes and on simplices, with the
 terms proportional to `dn` written out; for flat fluxes the product is defined
-on gauge classes. This layer is a first step: the homotopy for the graded
-commutativity of the product, theta terms and the search for correction terms
-are not there yet.
+on gauge classes.
+
+The product is graded commutative up to a gauge transformation, and the
+homotopy is the cup-1 product. On the lattice one more term appears, the gauge
+invariant `F_A cup_1 F_B / 2 Pi`, which has no counterpart for differential
+forms and vanishes if one of the two fields has no curvature:
+
+```wolfram
+{lam, mm} = DeligneSwapGauge[A, B];
+
+(* the two BF Lagrangians, a db and b da; the last line holds the terms with dn *)
+CochainEqualQ[
+  VillainConnection[DeligneProduct[A, B]] - VillainConnection[DeligneProduct[B, A]],
+  Coboundary[lam] + 2 Pi mm + DeligneSwapDefect[A, B] -
+    (HigherCup[1][Cochain[1, fa], Coboundary[Cochain[2, fn2]]] - HigherCup[1][Coboundary[Cochain[2, fn]], Cochain[1, fb]]),
+  3]                                                                                        (* True *)
+```
+
+The theta term `(theta / 8 Pi^2) F cup F` is `theta / 4 Pi` times the curvature
+of `A * A`, plus a coupling of the connection to the monopole current `dn`. That
+coupling transforms like an electric charge `theta / 2 Pi` on the monopole (the
+Witten effect). On the four-torus the topological charge is the Pfaffian of the
+flux, for any connection:
+
+```wolfram
+CochainEqualQ[
+  VillainThetaTerm[theta][A],
+  (theta / (4 Pi)) VillainCurvature[DeligneProduct[A, A]] + VillainWittenTerm[theta][A],
+  4]                                                                                        (* True *)
+
+z = {{0, 1, 2, -1}, {-1, 0, 3, 5}, {-2, -3, 0, 7}, {1, -5, -7, 0}};
+dims = {2, 2, 2, 2};
+T = VillainField[(1/3) RandomCochain[1, dims], THooftFluxCochain[z, dims]];
+Expand[CochainIntegrate[VillainThetaTerm[1][T], dims]]                                      (* -6 *)
+```
+
+Products of three or more fields, the coupling to Z_N background fields and
+the search for correction terms are not there yet.
 
 ## Category layer
 
@@ -742,7 +784,7 @@ python3 reference/loops_reference.py        # the little cubes act on loop space
 python3 reference/braiding_reference.py     # braids of paths of little squares, braiding phases
 python3 reference/steenrod_reference.py     # Steenrod squares of cochains, the fermion on K(Z_2, 3)
 python3 reference/braidgroup_reference.py   # homology of braid groups, unordered configurations
-python3 reference/villain_reference.py      # Villain fields, the Deligne-Beilinson product, Chern-Simons
+python3 reference/villain_reference.py      # Villain fields, the Deligne-Beilinson product, Chern-Simons, the theta term
 ```
 
 ## Layout
@@ -774,3 +816,14 @@ Examples/*.nb             notebooks: start with Operadica-Tour.nb
 reference/*.py            Python references for the conventions
 docs/DESIGN.ja.md         design and roadmap
 ```
+
+## How this is developed
+
+The aims and the direction are set by the author. The code in `Kernel/` and
+`Scripts/`, the tests, the Python reference implementations and the
+documentation are written by Claude (Anthropic) in conversation with the
+author. Formulas with signs and conventions are checked first in the Python
+references, in exact arithmetic. The tests are run in the Wolfram Language on
+the author's machine with Claude Code, which also makes the commits; a version
+is committed after all tests have passed there. The author checks the results
+with the notebooks in `Examples/`.

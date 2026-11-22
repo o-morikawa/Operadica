@@ -42,6 +42,32 @@
 (*  theory: the modified Villain Lagrangian of arXiv:2303.06160, eq. (17), *)
 (*  is (k/2) (A * A) - (k/2) a cup_1 dn + phi cup dn.                      *)
 (*                                                                        *)
+(*  The product is graded commutative up to a gauge transformation: with  *)
+(*  e = (-1)^((p+1)(q+1)) and s = (-1)^(p+q),                              *)
+(*                                                                        *)
+(*    lambda = ((-1)^p a cup b - (-1)^q F_A cup_1 b) / (2 Pi) - s a cup_1 n' *)
+(*    m      = s n cup_1 n'                                                *)
+(*    conn(A * B) - e conn(B * A) = d lambda + 2 Pi m                      *)
+(*          - s F_A cup_1 F_B / (2 Pi) + (-1)^q (a cup_1 dn' - dn cup_1 b)  *)
+(*    flux(A * B) - e flux(B * A) = dm - s (dn cup_1 n' - (-1)^p n cup_1 dn') *)
+(*                                                                        *)
+(*  The homotopy is cup_1, the operation of the E-infinity operad that     *)
+(*  exchanges the two factors of the cup product.  The term with           *)
+(*  F_A cup_1 F_B is gauge invariant and is not a gauge transformation: it *)
+(*  comes from the cup product of cochains not being commutative, has no   *)
+(*  counterpart for differential forms, and vanishes if F_A = 0 or F_B = 0. *)
+(*                                                                        *)
+(*  The theta term of a field of degree p in 2p + 2 dimensions is          *)
+(*  (theta / 8 Pi^2) F cup F.  It equals (theta / 4 Pi) F(A * A) plus      *)
+(*                                                                        *)
+(*    W = - (-1)^p (theta / 4 Pi) (dn cup a - a cup dn),                   *)
+(*                                                                        *)
+(*  the coupling of the connection to the monopole current dn.  Under      *)
+(*  a -> a + d lambda, W changes by                                        *)
+(*  - (theta / 4 Pi) d(dn cup lambda - (-1)^p lambda cup dn): a monopole   *)
+(*  carries the electric charge theta / 2 Pi (the Witten effect), half of  *)
+(*  it from each of the two ways of placing dn next to a.                  *)
+(*                                                                        *)
 (*  Checked in reference/villain_reference.py.                            *)
 (*                                                                        *)
 (*  Layer: lattice gauge theory.  Depends on: Lattice.                    *)
@@ -66,6 +92,14 @@ VillainLargeGaugeTransform::usage = "VillainLargeGaugeTransform[A, m] gives the 
 DeligneProduct::usage = "DeligneProduct[A, B] gives the Deligne-Beilinson product of the Villain fields A = VillainField[a, n] of degree p and B = VillainField[b, n2] of degree q: the Villain field of degree p + q + 1 with the connection Cup[a, F_B] / (2 Pi) + (-1)^p Cup[n, b] and the flux -Cup[n, n2]. For flat fields its curvature is Cup[F_A, F_B] / (2 Pi), and gauge transformations of A or B change it by gauge transformations. The connection of DeligneProduct[A, B] is the Lagrangian of the BF theory of A and B.";
 
 VillainChernSimons::usage = "VillainChernSimons[k][A, phi] gives the Lagrangian of the U(1) Chern-Simons theory at level k for the Villain field A = VillainField[a, n] of degree 1, with the Lagrange multiplier phi (a 0-cochain) for the flatness of n: (k/2) times the connection of DeligneProduct[A, A], minus (k/2) HigherCup[1][a, Coboundary[n]], plus Cup[phi, Coboundary[n]]. It equals ModifiedVillainCS[k][a, n, phi] of Operadica`Gauge`.";
+
+DeligneSwapGauge::usage = "DeligneSwapGauge[A, B] gives the pair {lam, m} of the gauge transformation that relates DeligneProduct[A, B] to (-1)^((p + 1) (q + 1)) times DeligneProduct[B, A], for Villain fields A = VillainField[a, n] of degree p and B = VillainField[b, n2] of degree q: lam = ((-1)^p Cup[a, b] - (-1)^q HigherCup[1][F_A, b]) / (2 Pi) - (-1)^(p + q) HigherCup[1][a, n2] and m = (-1)^(p + q) HigherCup[1][n, n2]. For flat fields, the connection of DeligneProduct[A, B] minus the sign times that of DeligneProduct[B, A] is Coboundary[lam] + 2 Pi m + DeligneSwapDefect[A, B], and the difference of the fluxes is Coboundary[m].";
+
+DeligneSwapDefect::usage = "DeligneSwapDefect[A, B] gives -(-1)^(p + q) HigherCup[1][F_A, F_B] / (2 Pi), the gauge invariant term by which the Deligne-Beilinson product of Villain fields fails to be graded commutative up to gauge transformations. It vanishes if the curvature of A or of B vanishes.";
+
+VillainThetaTerm::usage = "VillainThetaTerm[theta][A] gives the theta term (theta / (8 Pi^2)) Cup[F, F] of the Villain field A = VillainField[a, n], with F its curvature. For a field of degree p it is a cochain of degree 2 p + 2. It does not change under gauge transformations and large gauge transformations, and equals (theta / (4 Pi)) VillainCurvature[DeligneProduct[A, A]] + VillainWittenTerm[theta][A].";
+
+VillainWittenTerm::usage = "VillainWittenTerm[theta][A] gives -(-1)^p (theta / (4 Pi)) (Cup[Coboundary[n], a] - Cup[a, Coboundary[n]]), the part of the theta term of A = VillainField[a, n] that couples the connection a to the monopole current Coboundary[n]. Under a -> a + Coboundary[lam] it changes by a coboundary, with the density that of an electric charge theta / (2 Pi) on the monopole (the Witten effect).";
 
 Begin["`Private`"];
 
@@ -94,6 +128,28 @@ VillainChernSimons[k_][VillainField[a_, n_], phi_] :=
   (k / 2) VillainConnection[DeligneProduct[VillainField[a, n], VillainField[a, n]]] -
     (k / 2) HigherCup[1][a, Coboundary[n]] +
     Cup[phi, Coboundary[n]];
+
+DeligneSwapGauge[VillainField[a_, n_], VillainField[b_, n2_]] :=
+  With[{p = CochainDegree[a], q = CochainDegree[b]},
+    {
+      (1 / (2 Pi)) ((-1)^p Cup[a, b] - (-1)^q HigherCup[1][Coboundary[a] - 2 Pi n, b]) -
+        (-1)^(p + q) HigherCup[1][a, n2],
+      (-1)^(p + q) HigherCup[1][n, n2]
+    }
+  ];
+
+DeligneSwapDefect[VillainField[a_, n_], VillainField[b_, n2_]] :=
+  With[{p = CochainDegree[a], q = CochainDegree[b]},
+    -((-1)^(p + q) / (2 Pi)) HigherCup[1][Coboundary[a] - 2 Pi n, Coboundary[b] - 2 Pi n2]
+  ];
+
+VillainThetaTerm[theta_][VillainField[a_, n_]] :=
+  (theta / (8 Pi^2)) Cup[Coboundary[a] - 2 Pi n, Coboundary[a] - 2 Pi n];
+
+VillainWittenTerm[theta_][VillainField[a_, n_]] :=
+  With[{p = CochainDegree[a]},
+    -((-1)^p theta / (4 Pi)) (Cup[Coboundary[n], a] - Cup[a, Coboundary[n]])
+  ];
 
 End[];
 
