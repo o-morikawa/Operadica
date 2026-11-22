@@ -32,8 +32,9 @@ automatically; the lattice and category layers do not need the operad layer.
 | category | ``Operadica`EnCategories` `` | | pointed E_n-monoidal categories: pentagon, hexagons, spins |
 | lattice gauge theory | ``Operadica`Lattice` `` | | cochains, coboundary, cup and higher cup products, local multilinear operations |
 | lattice gauge theory | ``Operadica`Gauge` `` | Lattice | multilinear expansion, gauge variations, actions |
+| lattice gauge theory | ``Operadica`Simplicial` `` | Lattice | the same cochain expressions on simplices: Steenrod's cup-i products |
 | bridge | ``Operadica`EInfinity` `` | Graded, BarrattEccles, Lattice | the E-infinity operad acts on lattice cochains: higher cup products and the homotopies between them |
-| bridge | ``Operadica`Bridge` `` | Trees, Operads, LittleCubes, Graded, Presented, BarrattEccles, BarConstruction, Lattice, EnCategories | statements connecting the layers |
+| bridge | ``Operadica`Bridge` `` | Trees, Operads, LittleCubes, Graded, Presented, BarrattEccles, BarConstruction, Lattice, Simplicial, EnCategories | statements connecting the layers |
 
 ```wolfram
 PacletDirectoryLoad["/path/to/Operadica"];
@@ -48,6 +49,9 @@ Requires Wolfram Language 12.1 or later.
 
 - **I work with lattice gauge fields and want to check an identity or a gauge
   variation.** Load ``Operadica`Gauge` ``. You never have to touch an operad.
+- **My lattice is a triangulation, not a hypercubic lattice.** Load
+  ``Operadica`Simplicial` `` and evaluate the same expressions with
+  `SimplexValue` and `SimplexCochainEqualQ`.
 - **I want to check F- and R-symbols of an abelian anyon theory, or see what
   E_1, E_2, E_3 mean concretely.** Load ``Operadica`EnCategories` ``.
 - **I want to learn operads by computing.** Load ``Operadica`Operads` ``,
@@ -138,6 +142,31 @@ Conventions:
   [arXiv:2106.05274](https://arxiv.org/abs/2106.05274).
 - Steenrod's original convention differs by `SteenrodCupSign[p, q, i] = (-1)^(i (p + q + 1))`.
 - `PontryaginSquare[b] = Cup[b, b] - HigherCup[1][b, Coboundary[b]]`.
+
+### Cochains on simplices
+
+``Operadica`Simplicial` `` evaluates the same expressions on an ordered simplex
+`{v0, ..., vn}`; a generic cochain `Cochain[p, f]` has the value
+`f[{v0, ..., vp}]`. `HigherCup[i]` is then Steenrod's cup-i product, with the
+sign for which the identity relating cup-i and cup-(i+1) (arXiv:2303.06160,
+(A3)) has the same form on both lattices. Identities that follow from it, such
+as the gauge variation of the Pontryagin square, hold on both.
+
+```wolfram
+Needs["Operadica`Simplicial`"]
+
+a = Cochain[1, fa]; b = Cochain[1, fb]; c = Cochain[1, fc]; u = Cochain[2, fu];
+
+SimplexValue[Coboundary[a], {0, 1, 2}]       (* fa[{1, 2}] - fa[{0, 2}] + fa[{0, 1}] *)
+SimplexValue[HigherCup[1][u, a], {0, 1, 2}]  (* fu[{0, 1, 2}] fa[{0, 1}] + fu[{0, 1, 2}] fa[{1, 2}] *)
+
+(* an identity is proved by one evaluation on the simplex {0, ..., p} *)
+SimplexCochainEqualQ[Coboundary[Cup[a, u]], Cup[Coboundary[a], u] - Cup[a, Coboundary[u]]]   (* True *)
+
+(* the Hirsch formula: exact on simplices, a defect on plaquettes *)
+hirsch = HigherCup[1][Cup[a, b], c] - Cup[a, HigherCup[1][b, c]] - Cup[HigherCup[1][a, c], b];
+{SimplexCochainZeroQ[hirsch], CochainZeroQ[hirsch, 2]}     (* {True, False} *)
+```
 
 ## Category layer
 
@@ -440,12 +469,33 @@ BarCochainValue[Semion[], BarWord[BarWord[{1}], BarWord[{1}]]]     (* 1/4 *)
 In the third bar construction `[a || a]` taken twice is a boundary, which is
 why a symmetric structure only has bosons and fermions.
 
+### Lattice actions are cocycles on K(Z_N, n)
+
+A simplex of `K(Z_N, n)` is a flat field on a simplex, so a lattice action can
+be evaluated on it. Its value modulo 1 is a cocycle on `K(Z_N, n)`, and that
+cocycle is the data of a category.
+
+```wolfram
+x = EMSimplex[3, {{3}, {1}, {0}, {2}, {1}, {3}}];   (* a flat Z_4 field on a tetrahedron *)
+DijkgraafWittenWeight[4, 1][x]                 (* 3/4 = (1/16) (A cup dA)(0123) *)
+VecZN[4, 1]["Associator"][{3}, {2}, {3}]       (* 3/4: the same number *)
+DijkgraafWittenAssociatorQ[4, 1]               (* True: for every flat field *)
+
+(* the Pontryagin square (p / 2N) P(B) on K(Z_2, 2), and the spins p / 4 *)
+Table[CharacteristicClassOrder[{2}, 2, 4, PontryaginWeight[2, p]], {p, 0, 3}]   (* {1, 4, 2, 4} *)
+PontryaginSpinQ[2, 1]                          (* True: the semion generates H^4 = Z_4 *)
+```
+
+The cup-1 term of the Pontryagin square is needed here: `B cup B / 4` alone
+is not a cocycle on `K(Z_2, 2)`.
+
 This is the recognition principle in its discrete form: an invertible E_n
 structure on a group is a cocycle on its n-fold delooping, and a map from a
 lattice to that delooping is a flat higher-form gauge field. The 't Hooft flux
-line above is the lattice side of it: the Pontryagin square is the pull-back
-of such a cocycle along the gauge field. (The comparison of the two at the
-level of cochains is not implemented yet; the test compares the values.)
+line above is the same statement on a torus. (For n = 2 the cocycle on
+K(Z_N, 2) and the cocycle on the bar construction are compared through the
+order of their classes; the comparison at the level of cochains is not
+implemented yet.)
 
 ## Tests
 
@@ -469,6 +519,7 @@ python3 reference/ainfinity_reference.py    # Koszul signs, A-infinity, associah
 python3 reference/presented_reference.py    # Lie, Poisson, Gerstenhaber; little-cubes homology
 python3 reference/einfinity_reference.py    # Barratt-Eccles operad and its action on cochains
 python3 reference/bar_reference.py          # bar construction, K(A, n), E_n structures as cocycles
+python3 reference/simplicial_reference.py   # cochains on simplices, characteristic classes (30 s)
 ```
 
 ## Layout
@@ -488,6 +539,7 @@ Kernel/BarConstruction.wl
 Kernel/EnCategories.wl    category layer
 Kernel/Lattice.wl         lattice gauge theory layer
 Kernel/Gauge.wl
+Kernel/Simplicial.wl
 Kernel/EInfinity.wl       bridge
 Kernel/Bridge.wl
 Tests/*.wlt               one VerificationTest file per layer file

@@ -1,6 +1,6 @@
 # Operadica 設計文書
 
-最終更新: 2026-11-22(v0.6.0)
+最終更新: 2026-11-22(v0.7.0)
 
 ## 1. 目的
 
@@ -37,8 +37,9 @@ operad の標準的な理論を、Mathematica 上で実際に計算しながら�
 | カテゴリ | ``Operadica`EnCategories` `` | なし | 点付き Eₙ モノイダル圏:五角形、六角形、spin |
 | 格子ゲージ理論 | ``Operadica`Lattice` `` | なし | cochain、δ、∪、∪ᵢ、局所的な多重線形演算 |
 | 格子ゲージ理論 | ``Operadica`Gauge` `` | Lattice | 多重線形展開、ゲージ変分、作用 |
+| 格子ゲージ理論 | ``Operadica`Simplicial` `` | Lattice | 同じ cochain の式を単体の上で評価する:Steenrod の ∪ᵢ |
 | 橋 | ``Operadica`EInfinity` `` | Graded, BarrattEccles, Lattice | 格子 cochain への E∞ operad の作用:∪ᵢ とその間のホモトピー |
-| 橋 | ``Operadica`Bridge` `` | Trees, Operads, LittleCubes, Graded, Presented, BarrattEccles, BarConstruction, Lattice, EnCategories | 層をつなぐ主張 |
+| 橋 | ``Operadica`Bridge` `` | Trees, Operads, LittleCubes, Graded, Presented, BarrattEccles, BarConstruction, Lattice, Simplicial, EnCategories | 層をつなぐ主張 |
 
 - 格子ゲージ理論の計算をしたい人は ``Operadica`Gauge` `` だけをロードすればよく、operad を知る必要はない。
 - カテゴリ層と格子層は operad 層に依存しない。三者が同じものであることは橋で初めて述べる。
@@ -102,6 +103,7 @@ arity n の部分は associahedron Kₙ の胞体鎖複体で、ホモロジー�
 有限な鎖複体のホモロジーは、有理数係数の Betti 数(`ChainBetti`)と、整数係数の群(`ChainHomology`)の
 両方を計算できる。後者は微分の行列の Smith 標準形(`SmithInvariants`)から求め、群を巡回群の直和として返す
 (0 は Z、t は Z_t。`{0, 2}` は Z + Z₂、`{}` は 0)。ねじれ(torsion)が見えるのは整数係数だけである。
+`IntegerKernel` は整数行列の核の、整数の上での基底を返す(cycle の基底。`NullSpace` は有理数の上の基底しか返さない)。
 
 ### 3.4 生成元と関係式による対称 operad
 
@@ -207,6 +209,11 @@ Eilenberg–MacLane 空間 K(A, n) = BⁿA(ホモトピー群が次数 n の A �
 - `EilenbergMacLaneHomotopy`:Moore 複体から計算したホモトピー群の位数。次数 n で |A|、ほかは 1。
 - `EilenbergMacLaneHomology`:退化していない単体の鎖複体のホモロジー。bar 構成のホモロジーと一致する。
   K(Z₂, 2) は次元 4 と 5 に退化していない単体を 41 個と 768 個持ち、H₄ = Z₄。
+- `EilenbergMacLaneCycles`:cycle の、整数の上での基底。
+- K(A, n) の k-単体の上の、1 を法とする値を持つ関数 w が cocycle であること(退化した単体の上で 0、
+  (k+1)-単体の面にわたる交代和が 0)を `CharacteristicCocycleQ` が検査する。そのような w は、
+  平坦な n-form ゲージ場の、k 次元での位相的作用である。`CharacteristicClassOrder` は、その類の
+  H^k(K(A, n); U(1)) での位数を、cycle の基底の上の値から求める。
 
 ### 3.7 点付き Eₙ モノイダル圏
 
@@ -241,6 +248,10 @@ braid 群の作用:右に寄せた積 `a₁(a₂(a₃…))` の上で、生成�
 - `LocalOperation[f, d][a1, …, ar]`:局所的な多重線形演算。n 次元の cell 上の値は、`f[n]` の項
   `{係数, {row₁, …, row_r}}` についての `係数 × ∏ⱼ aⱼ(x + shiftⱼ; Sⱼ)` の和(row の読み方は 3.5 と同じ)。
   ∪ も ∪ᵢ もこの形で、6 節の E∞ operad の作用はこれで表す。
+- **単体の上でも同じ式を評価できる**(``Operadica`Simplicial` ``)。`SimplexValue[c, {v0, …, vn}]` は、
+  cochain の式 c を頂点が順序づけられた単体の上で評価する。一般の cochain `Cochain[p, f]` の値は `f[{v0, …, vp}]`。
+  `SimplexCochainZeroQ`、`SimplexCochainEqualQ` は恒等式を単体 {0, …, p} の上の 1 回の評価で確かめる
+  (頂点に順序のついたすべての単体複体での証明)。規約は 5 節。
 
 ## 4. 自動検証の4つの強さ
 
@@ -272,6 +283,28 @@ braid 群の作用:右に寄せた積 `a₁(a₂(a₃…))` の上で、生成�
   に従う。同論文の付録 A の成分公式(Chen–Tata, arXiv:2106.05274 に従うもの)を再現する。
 - Steenrod の元の規約との差は `(−1)^(i(p+q+1))`(`SteenrodCupSign`)。
 - Pontryagin 平方:`P(B) = B∪B − B∪₁δB`。
+
+### 単体の上の cochain
+
+頂点に順序のついた単体 `{v0 < … < vn}` の上では(`reference/simplicial_reference.py` で確認)
+
+- δ:`(δc)(v0…v(p+1)) = Σₖ (−1)ᵏ c(v0 … vₖ を除く … v(p+1))`
+- ∪:`(a∪b)(v0…v(p+q)) = a(v0…vp) b(vp…v(p+q))`
+- ∪ᵢ(Steenrod):n = p+q−i として、切れ目 `0 ≤ j₀ < j₁ < … < jᵢ ≤ n` にわたる和
+
+  `(a∪ᵢb)(0…n) = Σ ± a(0…j₀, j₁…j₂, …) b(j₀…j₁, j₂…j₃, …)`
+
+  区間 `[0,j₀], [j₀,j₁], …, [jᵢ,n]` を交互に a と b に渡す。符号は、置換
+  「a の頂点、続けて b の頂点のうち切れ目でないもの」の符号。`SimplexHigherCupTerms`。
+
+この符号で、立方格子と**同じ形の (A3)** が成り立つ。したがって (A3) から従う恒等式は二つの格子で同じ形になる。
+下の Pontryagin 平方の二つの恒等式と `a∪δa − δa∪a` の恒等式は、単体の上でもそのまま成り立つ(`Tests/Simplicial.wlt`)。
+二つの格子が違うのは arity 3 からで、Hirsch 公式
+
+`(a∪b)∪₁c = a∪(b∪₁c) + (−1)^(q(r−1)) (a∪₁c)∪b`
+
+は単体の上では厳密に成り立ち、立方格子ではホモトピー H を除いてしか成り立たない(6 節)。
+同じ式 `HigherCup[1][Cup[a, b], c] − …` を `SimplexCochainZeroQ` と `CochainZeroQ` に渡すと、True と False が返る。
 
 ### ∪ᵢ の構成
 
@@ -325,6 +358,8 @@ Gerstenhaber operad の Leibniz 則が cochain の上ではホモトピーを除
 | 五角形方程式 ⇔ 結合則の書き換えの、位相つきの合流性(Mac Lane の coherence) | `MacLaneCoherenceQ` |
 | 圏のデータ (w, c) は Bⁿ の次数 n+2 の cochain。Eₙ 構造 ⇔ cocycle(n = 1, 2, 3 がモノイダル、braided、symmetric) | `BarCochainValue`、`BarCoboundaryTable`、`BarCocycleQ`、`DeloopingClassificationQ` |
 | A 上の Eₙ 構造の個数 = H_(n+2)(K(A, n)) の位数 | `EnStructureCount` |
+| 平坦な Z_N ゲージ場の上の格子作用 `(k/N²) A∪δA` は K(Z_N, 1) の 3-cocycle で、四面体の上の値が `VecZN[N, k]` の associator | `FlatFieldCochain`、`DijkgraafWittenWeight`、`DijkgraafWittenAssociatorQ` |
+| `(p/2N) P(B)` は K(Z_N, 2) の 4-cocycle で、その類の位数は `ZNAnyons[N, p]` の spin p/2N の分母 | `PontryaginWeight`、`PontryaginSpinQ` |
 | 四次元トーラス上の 't Hooft flux での重み `(p/2N)ΣP(B)` = flux の相互 braiding | `PontryaginFluxPhase`, `FluxBraidingPhase` |
 
 ### 格子 cochain は E∞ 代数
@@ -418,6 +453,26 @@ C_2(3) の Betti 数は 1, 3, 2 で、Gerstenhaber operad の arity 3
   すなわち (n−1)-form 対称性のアノマリーの inflow 作用である。n = 2、A = Z_N では Pontryagin 平方 `(p/2N)·P(B)` で、
   p は 2N を法とする整数(N が奇数なら偶数だけ)、あわせて N·gcd(2,N) 個。`ZNAnyons[N, p]` の p と同じものである。
 
+### 格子の作用は K(A, n) の cocycle
+
+K(Z_N, n) の k-単体は、k-単体の上の平坦な Z_N 値 n-form 場である(3.6)。その値を 0, …, N−1 の整数に持ち上げると
+整数 cochain になり(`FlatFieldCochain`)、5 節の単体の上の演算で格子の作用を評価できる。持ち上げた場は閉じていない
+(δÃ は N の倍数)。作用の値は 1 を法として K(Z_N, n) の cocycle になり、圏のデータと次のように対応する。
+
+- **n = 1(Dijkgraaf–Witten)**:`(k/N²)(A∪δA)(0123) = (k/N)·a·carry(b, c)`(a, b, c は辺 01, 12, 23 の上の値)。
+  これは `VecZN[N, k]` の associator `w(a, b, c)` と、すべての平坦な場の上で値として一致する。
+  K(Z_N, 1) の 3-単体は bar 構成の語 `[a|b|c]` と同じものなので、6 節の前の小節の φ そのものである。
+  k = 1 の類は H³(K(Z_N, 1); U(1)) = Z_N を生成する。
+- **n = 2(Pontryagin 平方)**:`(p/2N) P(B)(01234)`、`P(B) = B∪B − B∪₁δB`。N が偶数なら任意の p、
+  N が奇数なら偶数の p で cocycle になる。その類の位数は 2N/gcd(p, 2N) で、`ZNAnyons[N, p]` の生成元の
+  spin p/2N の分母に等しい。p = 1(N が偶数)、p = 2(N が奇数)の類が H⁴(K(Z_N, 2); U(1)) = Z_(N·gcd(2,N)) を生成する。
+  N = 2 では p = 1 が semion(位数 4)、p = 2 が fermion(位数 2)。
+- **∪₁ の項は必要である**:`(1/2N) B∪B` だけでは cocycle にならない(N = 2 で確認)。`(1/N) B∪B` は cocycle で、
+  N = 2 では fermion の類である。2N を法とする精密化に ∪₁ が要る。
+
+n = 2 では、cocycle を cochain として bar 構成の (w, c) と比べること(Eilenberg–MacLane の比較写像)はまだしていない。
+比べているのは類の位数である。
+
 ## 7. 道筋と到達判定
 
 | 段階 | 作るもの | 到達判定 | 状態 |
@@ -429,14 +484,14 @@ C_2(3) の Betti 数は 1, 3, 2 で、Gerstenhaber operad の arity 3
 | C | 点付き Eₙ モノイダル圏、coherence、braid 群の作用 | 五角形・六角形・分類の個数。coherence が長さ 6 まで | 実装済み(parenthesized braids の coherence は未着手) |
 | G | 多重線形展開、ゲージ変分、作用 | 5 節の恒等式が通る | 実装済み |
 | 4 | E∞ operad(Barratt–Eccles、table reduction で surjection へ)、Eₙ フィルトレーション、cochain への作用 | eᵢ ↦ (1,2,1,2,…) の作用が ∪ᵢ を再現。三つの法則 (L)・(C)・(E)。Hirsch 公式のホモトピー | 実装済み(surjection operad の合成は未実装) |
-| 5 | 単体的対象、bar 構成 B(Σⁿ, Cₙ, X) | 反復 bar 構成で作った BⁿA のホモトピー群が次数 n の A だけ。近似定理を有理 Poincaré 級数の一致で確認 | 離散群の場合を実装済み(BⁿA のホモロジーとホモトピー群、Eₙ 構造 = BⁿA の cocycle)。両側 bar 構成 B(Σⁿ, Cₙ, X) と近似定理は未着手 |
+| 5 | 単体的対象、bar 構成 B(Σⁿ, Cₙ, X) | 反復 bar 構成で作った BⁿA のホモトピー群が次数 n の A だけ。近似定理を有理 Poincaré 級数の一致で確認 | 離散群の場合を実装済み(BⁿA のホモロジーとホモトピー群、Eₙ 構造 = BⁿA の cocycle、格子の作用 = K(A, n) の cocycle)。両側 bar 構成 B(Σⁿ, Cₙ, X) と近似定理は未着手 |
 
 次の候補:
 
 - arity 4 のホモトピー:Cartan 公式、∪₁ の結合性のずれ、Steenrod 平方の関係式
 - Pontryagin 平方や高次 cup 積を含む作用のゲージ変分を、E∞ の演算で系統的に書くこと
-- 単体的 cochain と Steenrod の ∪ᵢ(単体の上の公式)。K(A, n) の上の特性類を cochain で書き、
-  bar 構成の cocycle と比べる(Pontryagin 平方が H⁴(K(Z_N, 2); U(1)) の生成元であること)
+- K(A, 2) の 4-cocycle と bar 構成 B² の cocycle (w, c) を cochain として比べること(Eilenberg–MacLane の比較写像)
+- surjection operad の、単体的 cochain への作用(arity 3 以上。単体の上では Hirsch のホモトピーが 0 になること)
 - 両側 bar 構成 B(Σⁿ, Cₙ, X) と近似定理 CₙX ≃ ΩⁿΣⁿX(有理 Poincaré 級数の一致)
 - Koszul 双対の計算(関係式の直交補空間)と operad の bar 構成
 
@@ -462,6 +517,8 @@ C_2(3) の Betti 数は 1, 3, 2 で、Gerstenhaber operad の arity 3
   単独の層のロードと、13 層すべてのロードも確認済み。`BarrattEccles`、`EInfinity`、`LocalOperation` を含む。
 - v0.6.0:`wolframscript -file Scripts/RunTests.wls` で 258/258 が通過(2026-11-22、Wolfram Language 15.0.1、利用者の環境)。
   単独の層のロードと、14 層すべてのロードも確認済み。`BarConstruction`、`SmithInvariants`、`ChainHomology`、橋の delooping の主張を含む。
+- v0.7.0:`wolframscript -file Scripts/RunTests.wls` で 281/281 が通過(2026-11-22、Wolfram Language 15.0.1、利用者の環境)。
+  単独の層のロードと、15 層すべてのロードも確認済み。`Simplicial`、`IntegerKernel`、`EilenbergMacLaneCycles`、`CharacteristicCocycleQ`、`CharacteristicClassOrder`、橋の格子作用の主張を含む。
 
 ### Python 参照実装(整数・有理数の厳密計算)
 
@@ -484,3 +541,6 @@ C_2(3) の Betti 数は 1, 3, 2 で、Gerstenhaber operad の arity 3
   K(Z_N, n) のホモロジー(n ≤ 3 で N ≤ 6、n = 4 で N ≤ 4)と Z₂ × Z₂、単体的な K(A, n) のホモトピー群とホモロジー、
   余境界が五角形・六角形・二重 braiding の式であること、cocycle ⇔ Eₙ 構造(102 個の圏)、cycle の上の値が spin と
   相互 braiding であること、構造の個数
+- `simplicial_reference.py`:単体の上の δ² = 0、Leibniz 則、結合則、(A3)(次数 3 まで)、Hirsch 公式が厳密に成り立つこと、
+  Pontryagin 平方の恒等式、整数核、`(k/N²) A∪δA` が Vec の associator であること(N ≤ 5)、
+  `(p/2N) P(B)` が cocycle でその類の位数が spin の分母であること(N ≤ 4)、∪₁ の項が必要であること。実行に 30 秒ほどかかる

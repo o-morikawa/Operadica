@@ -51,11 +51,22 @@
 (*                            (pentagon and hexagons: left side minus      *)
 (*                            right side, as in Operadica`EnCategories`.)  *)
 (*                                                                        *)
+(*   lattice <-> delooping <-> category                                    *)
+(*     FlatFieldCochain,      a simplex of K(Z_N, n) is a flat n-form      *)
+(*     DijkgraafWittenWeight, field on a simplex; its lift to integers is  *)
+(*     PontryaginWeight,      a cochain, and a lattice action evaluated on *)
+(*     DijkgraafWittenAssociatorQ,  it is a cocycle on K(Z_N, n):          *)
+(*     PontryaginSpinQ          (k / N^2) A cup dA on a tetrahedron is the *)
+(*                            associator of Vec_(Z_N)^k, and the class of  *)
+(*                            (p / 2N) P(B) on a 4-simplex has the order   *)
+(*                            of the spin p / 2N of the anyons Z_N^(p).    *)
+(*                                                                        *)
 (*  The action of an E-infinity operad on lattice cochains is in          *)
 (*  Operadica`EInfinity`.                                                 *)
 (*                                                                        *)
 (*  Layer: bridge.  Depends on: Trees, Operads, LittleCubes, Graded,      *)
-(*  Presented, BarrattEccles, BarConstruction, Lattice, EnCategories.     *)
+(*  Presented, BarrattEccles, BarConstruction, Lattice, Simplicial,       *)
+(*  EnCategories.                                                         *)
 (* ====================================================================== *)
 
 BeginPackage["Operadica`Bridge`", {
@@ -67,6 +78,7 @@ BeginPackage["Operadica`Bridge`", {
   "Operadica`BarrattEccles`",
   "Operadica`BarConstruction`",
   "Operadica`Lattice`",
+  "Operadica`Simplicial`",
   "Operadica`EnCategories`"
 }];
 
@@ -99,6 +111,16 @@ BarCocycleQ::usage = "BarCocycleQ[cat, n] gives True if the cochain of the point
 DeloopingClassificationQ::usage = "DeloopingClassificationQ[cat] gives True if, for n = 1, 2, 3, the data of the pointed category cat are a cocycle on the n-fold bar construction exactly when cat is E_n-monoidal: PentagonQ for n = 1, with HexagonQ for n = 2, and with SymmetricBraidingQ for n = 3. The data of cat must be normalized.";
 
 EnStructureCount::usage = "EnStructureCount[orders, n] gives the order of the homology group H_(n+2)(K(A, n)) of the group A with the given orders, computed with the n-fold bar construction: the number of E_n-monoidal structures on the pointed category with the group A, up to equivalence (monoidal for n = 1, braided for n = 2, symmetric for n >= 3).";
+
+FlatFieldCochain::usage = "FlatFieldCochain[n][x] gives the integer cochain of degree n on the simplex {0, ..., k} that lifts the flat field x = EMSimplex[k, values], a simplex of K(Z_N, n): its value on a face is the representative in 0, ..., N - 1. FlatFieldCochain[n, j][x] takes the j-th component for a group with several cyclic factors.";
+
+DijkgraafWittenWeight::usage = "DijkgraafWittenWeight[nn, k][x] gives the value modulo 1 of the lattice action (k / nn^2) A cup dA on the tetrahedron, for the flat Z_nn gauge field x, a 3-simplex of K(Z_nn, 1), with A = FlatFieldCochain[1][x].";
+
+PontryaginWeight::usage = "PontryaginWeight[nn, p][x] gives the value modulo 1 of (p / (2 nn)) P(B) on the 4-simplex, for the flat Z_nn 2-form field x, a 4-simplex of K(Z_nn, 2), with B = FlatFieldCochain[2][x] and P the Pontryagin square B cup B - B cup_1 dB.";
+
+DijkgraafWittenAssociatorQ::usage = "DijkgraafWittenAssociatorQ[nn, k] gives True if DijkgraafWittenWeight[nn, k], on every flat field on the tetrahedron with the values a, b, c on the edges 01, 12, 23, equals the associator w(a, b, c) of VecZN[nn, k].";
+
+PontryaginSpinQ::usage = "PontryaginSpinQ[nn, p] gives True if PontryaginWeight[nn, p] is a cocycle on K(Z_nn, 2) and the order of its class in H^4(K(Z_nn, 2); U(1)) is the denominator of the spin p / (2 nn) of the generator of ZNAnyons[nn, p].";
 
 Begin["`Private`"];
 
@@ -297,6 +319,46 @@ EnStructureCount[orders : {__Integer}, n_Integer?Positive] :=
   With[{h = BarHomology[orders, n, n + 2]},
     If[MemberQ[h, 0], Infinity, Times @@ h]
   ];
+
+
+(* ---------------------------------------------------------------------- *)
+(* lattice <-> delooping <-> category                                     *)
+(* ---------------------------------------------------------------------- *)
+
+FlatFieldCochain[n_Integer?Positive][x_EMSimplex] := FlatFieldCochain[n, 1][x];
+
+FlatFieldCochain[n_Integer?Positive, j_Integer?Positive][EMSimplex[k_Integer, vals_List]] :=
+  With[{val = AssociationThread[Subsets[Range[0, k], {n + 1}], Map[Function[g, g[[j]]], vals]]},
+    Cochain[n, Function[v, Lookup[val, Key[v], 0]]]
+  ];
+
+DijkgraafWittenWeight[nn_Integer?Positive, kk_Integer][x_EMSimplex] :=
+  With[{a = FlatFieldCochain[1][x]},
+    Mod[(kk / nn^2) * SimplexValue[Cup[a, Coboundary[a]], Range[0, 3]], 1]
+  ];
+
+PontryaginWeight[nn_Integer?Positive, p_Integer][x_EMSimplex] :=
+  With[{b = FlatFieldCochain[2][x]},
+    Mod[(p / (2 nn)) * SimplexValue[PontryaginSquare[b], Range[0, 4]], 1]
+  ];
+
+(* the values of a 3-simplex of K(A, 1) are listed for the edges
+   01, 02, 03, 12, 13, 23 *)
+DijkgraafWittenAssociatorQ[nn_Integer?Positive, kk_Integer] :=
+  With[{w = VecZN[nn, kk]["Associator"]},
+    AllTrue[
+      EilenbergMacLaneSimplices[{nn}, 1, 3],
+      Function[x,
+        DijkgraafWittenWeight[nn, kk][x] ===
+          Mod[w[x[[2, 1]], x[[2, 4]], x[[2, 6]]], 1]
+      ]
+    ]
+  ];
+
+PontryaginSpinQ[nn_Integer?Positive, p_Integer] :=
+  CharacteristicCocycleQ[{nn}, 2, 4, PontryaginWeight[nn, p]] &&
+    CharacteristicClassOrder[{nn}, 2, 4, PontryaginWeight[nn, p]] ===
+      Denominator[TopologicalSpin[ZNAnyons[nn, p], {1}]];
 
 
 (* ---------------------------------------------------------------------- *)

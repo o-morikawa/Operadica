@@ -33,6 +33,8 @@
 (*  k-simplex: a flat n-form gauge field on it.  Faces restrict the field  *)
 (*  and degeneracies pull it back.  A flat n-form gauge field on a         *)
 (*  triangulated space is the same as a simplicial map to K(A, n).         *)
+(*  A cocycle w on K(A, n) with values modulo 1 is then a topological      *)
+(*  action: CharacteristicCocycleQ, CharacteristicClassOrder.              *)
 (*                                                                        *)
 (*  Checked in reference/bar_reference.py.                                *)
 (*                                                                        *)
@@ -72,6 +74,12 @@ EilenbergMacLaneCocycleQ::usage = "EilenbergMacLaneCocycleQ[orders, n][x] gives 
 EilenbergMacLaneHomotopy::usage = "EilenbergMacLaneHomotopy[orders, n, kmax] gives the orders of the homotopy groups pi_0, ..., pi_kmax of K(A, n), computed from the Moore complex of the simplicial group: the simplices whose faces 1, ..., k are trivial, with the face 0 as differential. The result is |A| in degree n and 1 elsewhere.";
 
 EilenbergMacLaneHomology::usage = "EilenbergMacLaneHomology[orders, n, k] gives the integral homology H_k of K(A, n), computed from the nondegenerate simplices of the simplicial set, in the format of BarHomology. It agrees with BarHomology[orders, n, k] for k >= 1.";
+
+EilenbergMacLaneCycles::usage = "EilenbergMacLaneCycles[orders, n, k] gives a basis over the integers of the cycles of degree k >= 1 of K(A, n), as linear combinations of nondegenerate simplices (normalized chains).";
+
+CharacteristicCocycleQ::usage = "CharacteristicCocycleQ[orders, n, k, w] gives True if the function w on the k-simplices of K(A, n), with values understood modulo 1, is a normalized cocycle: it vanishes on degenerate simplices, and the alternating sum of its values on the faces of every (k+1)-simplex vanishes modulo 1. Such a w is a topological action for flat n-form gauge fields in k dimensions.";
+
+CharacteristicClassOrder::usage = "CharacteristicClassOrder[orders, n, k, w] gives the order of the class of the cocycle w in H^k(K(A, n); U(1)): the least common multiple of the denominators of its values on a basis of the cycles. w must satisfy CharacteristicCocycleQ.";
 
 Begin["`Private`"];
 
@@ -325,17 +333,84 @@ EilenbergMacLaneHomotopy[orders : {__Integer}, n_Integer?Positive, kmax_Integer?
   ];
 
 
+nondegenerate[orders_List, n_Integer, j_Integer] :=
+  If[j < 0,
+    {},
+    Select[
+      EilenbergMacLaneSimplices[orders, n, j],
+      Function[x, ! EilenbergMacLaneDegenerateQ[orders, n][x]]
+    ]
+  ];
+
+(* the cycles: the integer kernel of the boundary of the normalized chains.
+   cycleData gives the nondegenerate k-simplices and the coefficient vectors
+   of a basis of the cycles *)
+cycleData[orders_List, n_Integer, k_Integer] :=
+  Module[{low = nondegenerate[orders, n, k - 1], high = nondegenerate[orders, n, k], index, m, col, i},
+    Which[
+      high === {}, {{}, {}},
+      low === {}, {high, IdentityMatrix[Length[high]]},
+      True,
+        index = AssociationThread[low, Range[Length[low]]];
+        m = ConstantArray[0, {Length[low], Length[high]}];
+        Do[
+          With[{f = EilenbergMacLaneFace[n][high[[col]], i]},
+            If[KeyExistsQ[index, f],
+              m[[Lookup[index, Key[f]], col]] += (-1)^i
+            ]
+          ],
+          {col, 1, Length[high]}, {i, 0, k}
+        ];
+        {high, IntegerKernel[m]}
+    ]
+  ];
+
+EilenbergMacLaneCycles[orders : {__Integer}, n_Integer?Positive, k_Integer?Positive] :=
+  With[{data = cycleData[orders, n, k]},
+    Map[Function[z, z . Map[LBasis, data[[1]]]], data[[2]]]
+  ];
+
+CharacteristicCocycleQ[orders : {__Integer}, n_Integer?Positive, k_Integer?Positive, w_] :=
+  Module[{table},
+    table = Association[
+      Map[Function[x, x -> Mod[w[x], 1]], EilenbergMacLaneSimplices[orders, n, k]]
+    ];
+    AllTrue[
+      Keys[table],
+      Function[x,
+        ! EilenbergMacLaneDegenerateQ[orders, n][x] || Lookup[table, Key[x]] === 0
+      ]
+    ] &&
+    AllTrue[
+      EilenbergMacLaneSimplices[orders, n, k + 1],
+      Function[y,
+        Mod[
+          Total[
+            Table[
+              (-1)^i Lookup[table, Key[EilenbergMacLaneFace[n][y, i]]],
+              {i, 0, k + 1}
+            ]
+          ],
+          1
+        ] === 0
+      ]
+    ]
+  ];
+
+CharacteristicClassOrder[orders : {__Integer}, n_Integer?Positive, k_Integer?Positive, w_] :=
+  With[{data = cycleData[orders, n, k]},
+    If[data[[2]] === {},
+      1,
+      Apply[LCM, Join[{1}, Denominator[Mod[data[[2]] . Map[w, data[[1]]], 1]]]]
+    ]
+  ];
+
+
 (* normalized chains: the nondegenerate simplices, with the alternating sum
    of the faces; degenerate faces are dropped *)
 EilenbergMacLaneHomology[orders : {__Integer}, n_Integer?Positive, k_Integer?Positive] :=
   Module[{nd, member, boundary},
-    nd = Table[
-      Select[
-        EilenbergMacLaneSimplices[orders, n, j],
-        Function[x, ! EilenbergMacLaneDegenerateQ[orders, n][x]]
-      ],
-      {j, k - 1, k + 1}
-    ];
+    nd = Table[nondegenerate[orders, n, j], {j, k - 1, k + 1}];
     member = Association[Map[Function[x, x -> True], Join[nd[[1]], nd[[2]]]]];
     boundary = Function[x,
       LinearCollect[

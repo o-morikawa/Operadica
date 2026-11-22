@@ -449,3 +449,118 @@ VerificationTest[
   },
   TestID -> "Bridge-gauge-transformations-are-coboundaries"
 ]
+
+(* ---------------------------------------------------------------------- *)
+(* lattice <-> delooping <-> category                                     *)
+(*   a lattice action, evaluated on a flat field on a simplex, is a       *)
+(*   cocycle on K(Z_N, n)                                                 *)
+(* ---------------------------------------------------------------------- *)
+
+(* a flat Z_4 gauge field on a tetrahedron, with the values 3, 2, 3 on the
+   edges 01, 12, 23.  Its lift to integers is not closed: dA = 4 on the
+   triangle 012, the carry of 3 + 2 *)
+
+VerificationTest[
+  With[{x = EMSimplex[3, {{3}, {1}, {0}, {2}, {1}, {3}}]},
+    {
+      EilenbergMacLaneCocycleQ[{4}, 1][x],
+      SimplexValue[FlatFieldCochain[1][x], {1, 2}],
+      SimplexValue[Coboundary[FlatFieldCochain[1][x]], {0, 1, 2}],
+      SimplexValue[Cup[FlatFieldCochain[1][x], Coboundary[FlatFieldCochain[1][x]]], {0, 1, 2, 3}],
+      DijkgraafWittenWeight[4, 1][x],
+      Mod[VecZN[4, 1]["Associator"][{3}, {2}, {3}], 1]
+    }
+  ],
+  {True, 2, 4, 12, 3/4, 3/4},
+  TestID -> "Bridge-flat-field-cochain"
+]
+
+(* the Dijkgraaf-Witten action (k / N^2) A cup dA on a tetrahedron is the
+   associator of Vec_(Z_N)^k, for every flat field *)
+
+VerificationTest[
+  Table[DijkgraafWittenAssociatorQ[nn, kk], {nn, 2, 4}, {kk, 0, nn - 1}],
+  {{True, True}, {True, True, True}, {True, True, True, True}},
+  TestID -> "Bridge-Dijkgraaf-Witten-is-associator"
+]
+
+(* it is a cocycle on K(Z_N, 1), and for k = 1 its class generates
+   H^3(K(Z_N, 1); U(1)) = Z_N *)
+
+VerificationTest[
+  {
+    Table[
+      {
+        CharacteristicCocycleQ[{nn}, 1, 3, DijkgraafWittenWeight[nn, kk]],
+        CharacteristicClassOrder[{nn}, 1, 3, DijkgraafWittenWeight[nn, kk]]
+      },
+      {nn, 2, 3}, {kk, 0, nn - 1}
+    ],
+    Table[EnStructureCount[{nn}, 1], {nn, 2, 3}]
+  },
+  {
+    {{{True, 1}, {True, 2}}, {{True, 1}, {True, 3}, {True, 3}}},
+    {2, 3}
+  },
+  TestID -> "Bridge-Dijkgraaf-Witten-class"
+]
+
+(* the Pontryagin square (p / 2N) P(B) on K(Z_2, 2): a cocycle for every p,
+   and the order of its class is the denominator of the spin p / 4 of the
+   anyons Z_2^(p).  The semion (p = 1) generates H^4(K(Z_2, 2); U(1)) = Z_4 *)
+
+VerificationTest[
+  {
+    Union[Map[PontryaginWeight[2, 1], EilenbergMacLaneSimplices[{2}, 2, 4]]],
+    Table[PontryaginSpinQ[2, p], {p, 0, 3}],
+    Table[CharacteristicClassOrder[{2}, 2, 4, PontryaginWeight[2, p]], {p, 0, 3}],
+    Table[Denominator[TopologicalSpin[ZNAnyons[2, p], {1}]], {p, 0, 3}],
+    EnStructureCount[{2}, 2]
+  },
+  {
+    {0, 1/4, 1/2, 3/4},
+    {True, True, True, True},
+    {1, 4, 2, 4},
+    {1, 4, 2, 4},
+    4
+  },
+  TestID -> "Bridge-Pontryagin-spin"
+]
+
+(* on K(Z_3, 2), with 636 nondegenerate 4-simplices: p must be even, and
+   p = 2 generates H^4(K(Z_3, 2); U(1)) = Z_3 *)
+
+VerificationTest[
+  {
+    CharacteristicClassOrder[{3}, 2, 4, PontryaginWeight[3, 2]],
+    Denominator[TopologicalSpin[ZNAnyons[3, 2], {1}]],
+    EnStructureCount[{3}, 2]
+  },
+  {3, 3, 3},
+  TestID -> "Bridge-Pontryagin-generates-Z3"
+]
+
+(* the cup-1 term of the Pontryagin square is needed: B cup B / 4 alone is
+   not a cocycle on K(Z_2, 2).  B cup B / 2 is one, of order 2: the fermion *)
+
+VerificationTest[
+  {
+    CharacteristicCocycleQ[{2}, 2, 4,
+      Function[x,
+        Mod[SimplexValue[Cup[FlatFieldCochain[2][x], FlatFieldCochain[2][x]], Range[0, 4]] / 4, 1]
+      ]
+    ],
+    CharacteristicCocycleQ[{2}, 2, 4,
+      Function[x,
+        Mod[SimplexValue[Cup[FlatFieldCochain[2][x], FlatFieldCochain[2][x]], Range[0, 4]] / 2, 1]
+      ]
+    ],
+    CharacteristicClassOrder[{2}, 2, 4,
+      Function[x,
+        Mod[SimplexValue[Cup[FlatFieldCochain[2][x], FlatFieldCochain[2][x]], Range[0, 4]] / 2, 1]
+      ]
+    ]
+  },
+  {False, True, 2},
+  TestID -> "Bridge-Pontryagin-needs-cup-1"
+]

@@ -30,6 +30,8 @@
 (*    lattice gauge theory layer                                          *)
 (*      Operadica`Lattice`       cochains, coboundary, cup, higher cup    *)
 (*      Operadica`Gauge`         expansion, gauge variations, actions     *)
+(*      Operadica`Simplicial`    the same cochain expressions on simplices: *)
+(*                               Steenrod's cup-i products                *)
 (*    bridge                                                              *)
 (*      Operadica`EInfinity`     the E-infinity operad acts on lattice    *)
 (*                               cochains: higher cup products and the    *)
@@ -47,7 +49,7 @@ With[{dir = DirectoryName[$InputFileName]},
         Get[FileNameJoin[{dir, name <> ".wl"}]]
       ]
     ],
-    {"Trees", "Operads", "Rewriting", "LittleCubes", "Graded", "AInfinity", "Presented", "BarrattEccles", "BarConstruction", "Lattice", "Gauge", "EnCategories", "EInfinity", "Bridge"}
+    {"Trees", "Operads", "Rewriting", "LittleCubes", "Graded", "AInfinity", "Presented", "BarrattEccles", "BarConstruction", "Lattice", "Gauge", "Simplicial", "EnCategories", "EInfinity", "Bridge"}
   ]
 ];
 
@@ -63,6 +65,7 @@ BeginPackage["Operadica`", {
   "Operadica`BarConstruction`",
   "Operadica`Lattice`",
   "Operadica`Gauge`",
+  "Operadica`Simplicial`",
   "Operadica`EnCategories`",
   "Operadica`EInfinity`",
   "Operadica`Bridge`"
@@ -84,6 +87,7 @@ $OperadicaLayers = {
   "Operadica`BarConstruction`",
   "Operadica`Lattice`",
   "Operadica`Gauge`",
+  "Operadica`Simplicial`",
   "Operadica`EnCategories`",
   "Operadica`EInfinity`",
   "Operadica`Bridge`"

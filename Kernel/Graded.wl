@@ -57,6 +57,8 @@ ChainBetti::usage = "ChainBetti[{basis0, basis1, ...}, d] gives the Betti number
 
 SmithInvariants::usage = "SmithInvariants[m] gives the non-zero diagonal entries d1, d2, ... of the Smith normal form of the integer matrix m, each dividing the next. The cokernel of m is the sum of the cyclic groups Z_di and of a free group.";
 
+IntegerKernel::usage = "IntegerKernel[m] gives a basis over the integers of the lattice of integer vectors x with m . x = 0, for an integer matrix m: every integer solution is an integer combination of the vectors returned. (NullSpace gives a basis over the rationals only.)";
+
 ChainHomology::usage = "ChainHomology[{basis0, basis1, ...}, d] gives the integral homology of the chain complex with the given bases in degrees 0, 1, ... and the differential d of degree -1, a function from basis labels to linear combinations with integer coefficients. Each group is given as the list of its cyclic summands: 0 for Z and t for Z_t, so that {0, 0, 2} is Z + Z + Z_2 and {} is the trivial group. In the top degree the chains of the next degree are taken to be absent.";
 
 Begin["`Private`"];
@@ -402,6 +404,41 @@ SmithInvariants[m0_?MatrixQ] :=
       t = t + 1
     ];
     out
+  ];
+
+(* column operations m . v = (h | 0) with v unimodular: row by row, the entry of
+   smallest absolute value in the columns not yet used divides out the others
+   (Euclid), until one is left.  The columns of v over the zero block are the
+   basis *)
+IntegerKernel[m0_?MatrixQ] :=
+  Module[{m = m0, nr, nc, v, c = 1, r, nz, j0, q, cleared},
+    {nr, nc} = Dimensions[m];
+    v = IdentityMatrix[nc];
+    Do[
+      If[c <= nc,
+        cleared = False;
+        While[! cleared,
+          nz = Select[Range[c, nc], Function[j, m[[r, j]] =!= 0]];
+          If[nz === {},
+            cleared = True,
+            j0 = First[SortBy[nz, Function[j, Abs[m[[r, j]]]]]];
+            m[[All, {c, j0}]] = m[[All, {j0, c}]];
+            v[[All, {c, j0}]] = v[[All, {j0, c}]];
+            If[c < nc,
+              q = Quotient[m[[r, c + 1 ;; nc]], m[[r, c]]];
+              m[[All, c + 1 ;; nc]] = m[[All, c + 1 ;; nc]] - Outer[Times, m[[All, c]], q];
+              v[[All, c + 1 ;; nc]] = v[[All, c + 1 ;; nc]] - Outer[Times, v[[All, c]], q]
+            ];
+            If[AllTrue[Range[c + 1, nc], Function[j, m[[r, j]] === 0]],
+              c = c + 1;
+              cleared = True
+            ]
+          ]
+        ]
+      ],
+      {r, 1, nr}
+    ];
+    If[c > nc, {}, Transpose[v[[All, c ;; nc]]]]
   ];
 
 ChainHomology[bases_List, d_] :=

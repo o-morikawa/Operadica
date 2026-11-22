@@ -217,3 +217,36 @@ VerificationTest[
   },
   TestID -> "Graded-ChainHomology"
 ]
+
+(* a basis over the integers of the integer solutions of m . x = 0: the
+   solutions, the right number of them, and nothing missing (the basis is
+   saturated: its invariant factors are all 1) *)
+
+VerificationTest[
+  {
+    IntegerKernel[{{2, 4, 6}}],
+    IntegerKernel[{{1, 0}, {0, 1}}],
+    IntegerKernel[{{0, 0}}],
+    AllTrue[
+      {
+        {{2, 4, 6}},
+        {{1, 1, 0}, {0, 1, 1}},
+        {{2, 0, 3}, {0, 4, 6}},
+        {{6, 10, 15}},
+        {{1, 2}, {2, 4}, {3, 6}},
+        {{2, 4, 4}, {-6, 6, 12}, {10, 4, 16}},
+        {{1, 2, 3, 4}, {2, 4, 6, 8}, {3, 6, 9, 13}},
+        {{0, 0, 0}, {0, 0, 0}}
+      },
+      Function[m,
+        With[{ker = IntegerKernel[m]},
+          Length[ker] === Length[First[m]] - Length[SmithInvariants[m]] &&
+            AllTrue[ker, Function[z, AllTrue[m . z, Function[e, e === 0]]]] &&
+            (ker === {} || SmithInvariants[ker] === ConstantArray[1, Length[ker]])
+        ]
+      ]
+    ]
+  },
+  {{{-2, 1, 0}, {-3, 0, 1}}, {}, {{1, 0}, {0, 1}}, True},
+  TestID -> "Graded-IntegerKernel"
+]

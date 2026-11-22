@@ -548,3 +548,54 @@ VerificationTest[
   {{4}, {4}},
   TestID -> "BarConstruction-EM-homology-K-Z2-2-degree-4"
 ]
+
+(* ---------------------------------------------------------------------- *)
+(* cycles and cocycles on K(A, n)                                         *)
+(* ---------------------------------------------------------------------- *)
+
+(* K(Z_2, 1) has one nondegenerate simplex in each dimension, with boundary
+   0, 2, 0, ...: one cycle in odd dimensions *)
+
+VerificationTest[
+  {
+    EilenbergMacLaneCycles[{2}, 1, 1],
+    Table[Length[EilenbergMacLaneCycles[{2}, 1, k]], {k, 1, 3}],
+    {Length[EilenbergMacLaneCycles[{2}, 2, 3]], Length[EilenbergMacLaneCycles[{2}, 2, 4]]}
+  },
+  {
+    {LBasis[EMSimplex[1, {{1}}]]},
+    {1, 0, 1},
+    {3, 38}
+  },
+  TestID -> "BarConstruction-EM-cycles"
+]
+
+(* a cocycle of degree 1 on K(Z_4, 1) is a character of Z_4; a / 3 is not one.
+   The values of a simplex x are x[[2]], one group element for each face *)
+
+VerificationTest[
+  {
+    CharacteristicCocycleQ[{4}, 1, 1, Function[x, x[[2, 1, 1]] / 4]],
+    CharacteristicClassOrder[{4}, 1, 1, Function[x, x[[2, 1, 1]] / 4]],
+    CharacteristicClassOrder[{4}, 1, 1, Function[x, 2 x[[2, 1, 1]] / 4]],
+    CharacteristicCocycleQ[{4}, 1, 1, Function[x, x[[2, 1, 1]] / 3]]
+  },
+  {True, 4, 2, False},
+  TestID -> "BarConstruction-characteristic-cocycle-degree-1"
+]
+
+(* the value of the field itself is a cocycle of degree n on K(Z_2, n); the
+   product a b c / 2 of the values on the edges 01, 12, 23 is the cocycle of
+   degree 3 on K(Z_2, 1); a / 2 on the edge 01 alone is not normalized *)
+
+VerificationTest[
+  {
+    CharacteristicCocycleQ[{2}, 2, 2, Function[x, x[[2, 1, 1]] / 2]],
+    CharacteristicClassOrder[{2}, 2, 2, Function[x, x[[2, 1, 1]] / 2]],
+    CharacteristicCocycleQ[{2}, 1, 3, Function[x, x[[2, 1, 1]] x[[2, 4, 1]] x[[2, 6, 1]] / 2]],
+    CharacteristicClassOrder[{2}, 1, 3, Function[x, x[[2, 1, 1]] x[[2, 4, 1]] x[[2, 6, 1]] / 2]],
+    CharacteristicCocycleQ[{2}, 1, 3, Function[x, x[[2, 1, 1]] / 2]]
+  },
+  {True, 2, True, 2, False},
+  TestID -> "BarConstruction-characteristic-cocycle"
+]
