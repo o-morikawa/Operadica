@@ -184,3 +184,19 @@ VerificationTest[
   {True, False},
   TestID -> "Gauge-ZN-flat"
 ]
+
+
+(* local multilinear operations expand like the cup products *)
+
+VerificationTest[
+  With[{a = Cochain[1, al], b = Cochain[1, be], c = Cochain[2, ga]},
+    {
+      CochainExpand[LocalOperation[f, 1][a + 2 b, 3 c]] ===
+        3 LocalOperation[f, 1][a, c] + 6 LocalOperation[f, 1][b, c],
+      CochainExpand[LocalOperation[f, 2][a, b, Coboundary[Coboundary[c]]]],
+      GaugeVariation[LocalOperation[f, 1][a, c], a -> a + Coboundary[Cochain[0, la]]]
+    }
+  ],
+  {True, 0, LocalOperation[f, 1][Coboundary[Cochain[0, la]], Cochain[2, ga]]},
+  TestID -> "Gauge-expand-local-operation"
+]

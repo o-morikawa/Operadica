@@ -17,6 +17,9 @@
 (*                            little n-cubes are the dimensions of the     *)
 (*                            operad P_n in arity k (for n = 2 the         *)
 (*                            Gerstenhaber operad): H_*(E_n) = P_n         *)
+(*     BarrattEcclesHomologyQ the same for the stage F_n of the            *)
+(*                            Barratt-Eccles operad, a combinatorial E_n   *)
+(*                            operad; it reaches larger n and k            *)
 (*                                                                        *)
 (*   operad <-> category                                                   *)
 (*     MacLaneCoherenceQ      the pentagon equation is the confluence of   *)
@@ -29,8 +32,11 @@
 (*     PontryaginFluxPhase    on a 't Hooft flux background equals the     *)
 (*                            mutual braiding of the fluxes                *)
 (*                                                                        *)
+(*  The action of an E-infinity operad on lattice cochains is in          *)
+(*  Operadica`EInfinity`.                                                 *)
+(*                                                                        *)
 (*  Layer: bridge.  Depends on: Trees, Operads, LittleCubes, Presented,   *)
-(*  Lattice, EnCategories.                                                *)
+(*  BarrattEccles, Lattice, EnCategories.                                 *)
 (* ====================================================================== *)
 
 BeginPackage["Operadica`Bridge`", {
@@ -38,6 +44,7 @@ BeginPackage["Operadica`Bridge`", {
   "Operadica`Operads`",
   "Operadica`LittleCubes`",
   "Operadica`Presented`",
+  "Operadica`BarrattEccles`",
   "Operadica`Lattice`",
   "Operadica`EnCategories`"
 }];
@@ -59,6 +66,8 @@ EInfinityArityTwoQ::usage = "EInfinityArityTwoQ[d] gives True if, on the d-dimen
 FluxBraidingPhase::usage = "FluxBraidingPhase[cat, z] gives b(z12, z34) - b(z13, z24) + b(z14, z23) modulo 1, where b is the mutual braiding of the braided category cat on a cyclic group and z is an antisymmetric 4 x 4 integer matrix of 't Hooft fluxes.";
 
 PontryaginFluxPhase::usage = "PontryaginFluxPhase[n, p, z, dims] gives p / (2 n) times the sum of the Pontryagin square of the 't Hooft flux cochain of z over the four-torus with side lengths dims, modulo 1.";
+
+BarrattEcclesHomologyQ::usage = "BarrattEcclesHomologyQ[n, k] gives True if the Betti numbers of the stage F_n of the Barratt-Eccles operad in arity k are the dimensions by degree of the arity-k part of PoissonOperad[n]: H_*(E_n) = P_n on dimensions, for a combinatorial E_n operad. (n, k) = (2, 3), (3, 3) are fast; (2, 4) and (4, 3) need matrices with several thousand rows.";
 
 Begin["`Private`"];
 
@@ -191,6 +200,15 @@ EInfinityArityTwoQ[d_Integer?Positive] :=
 LittleCubesHomologyQ[n_Integer?Positive, k_Integer /; k >= 2] :=
   Module[{betti, dims, j},
     betti = SimplicialBetti[FacetNerve[SeparationNerve[n, k]]];
+    dims = OperadDimensionsByDegree[PoissonOperad[n], k];
+    Max[Keys[dims]] <= Length[betti] - 1 &&
+      betti === Table[Lookup[dims, Key[j], 0], {j, 0, Length[betti] - 1}]
+  ];
+
+
+BarrattEcclesHomologyQ[n_Integer?Positive, k_Integer?Positive] :=
+  Module[{betti, dims, j},
+    betti = BarrattEcclesBetti[n, k];
     dims = OperadDimensionsByDegree[PoissonOperad[n], k];
     Max[Keys[dims]] <= Length[betti] - 1 &&
       betti === Table[Lookup[dims, Key[j], 0], {j, 0, Length[betti] - 1}]

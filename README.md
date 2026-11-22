@@ -6,9 +6,10 @@ A Mathematica expression is a tree, and grafting trees is operadic composition.
 Operadica uses that to make the standard theory of operads something you can
 run, with two neighbours that physicists meet in practice: pointed braided
 categories (anyons, higher-form symmetries) and cochains on the hypercubic
-lattice (coboundary, cup product, Steenrod's higher cup products). The aim is
-a path from the definitions to May's recognition theorem in which every
-statement along the way is checked by computation.
+lattice (coboundary, cup product, Steenrod's higher cup products, and the
+E-infinity structure they are part of). The aim is a path from the definitions
+to May's recognition theorem in which every statement along the way is checked
+by computation.
 
 The design and the roadmap are in [docs/DESIGN.ja.md](docs/DESIGN.ja.md) (Japanese).
 
@@ -26,10 +27,12 @@ automatically; the lattice and category layers do not need the operad layer.
 | operad | ``Operadica`Graded` `` | Trees | linear combinations, graded operads with Koszul signs, differentials |
 | operad | ``Operadica`AInfinity` `` | Trees, Graded, Rewriting | the A-infinity operad, associahedra |
 | operad | ``Operadica`Presented` `` | Graded | symmetric operads by generators and relations: Com, Lie, Ass, Poisson, Gerstenhaber, P_n |
+| operad | ``Operadica`BarrattEccles` `` | Graded | the Barratt-Eccles operad (E-infinity), its E_n stages, its action on cubes |
 | category | ``Operadica`EnCategories` `` | | pointed E_n-monoidal categories: pentagon, hexagons, spins |
-| lattice gauge theory | ``Operadica`Lattice` `` | | cochains, coboundary, cup and higher cup products |
+| lattice gauge theory | ``Operadica`Lattice` `` | | cochains, coboundary, cup and higher cup products, local multilinear operations |
 | lattice gauge theory | ``Operadica`Gauge` `` | Lattice | multilinear expansion, gauge variations, actions |
-| bridge | ``Operadica`Bridge` `` | Trees, Operads, LittleCubes, Presented, Lattice, EnCategories | statements connecting the layers |
+| bridge | ``Operadica`EInfinity` `` | Graded, BarrattEccles, Lattice | the E-infinity operad acts on lattice cochains: higher cup products and the homotopies between them |
+| bridge | ``Operadica`Bridge` `` | Trees, Operads, LittleCubes, Presented, BarrattEccles, Lattice, EnCategories | statements connecting the layers |
 
 ```wolfram
 PacletDirectoryLoad["/path/to/Operadica"];
@@ -51,6 +54,9 @@ Requires Wolfram Language 12.1 or later.
 - **I want to know whether an identity follows from the Jacobi and Leibniz
   rules, with the right signs for a bracket of odd degree.** Load
   ``Operadica`Presented` `` and ask `OperadZeroQ`.
+- **I use higher cup products and want the identities beyond arity two: what
+  replaces the Leibniz rule for the cup-1 product, and where the correction
+  terms come from.** Load ``Operadica`EInfinity` ``.
 - **I want to see why these are the same subject.** Load ``Operadica`Bridge` ``.
 
 ## Lattice gauge theory layer
@@ -269,6 +275,80 @@ Every check reports its strength in the key `"Strength"`:
 | confluence | critical pairs up to an arity: normal forms in all arities |
 | supplied or sampled | only the elements you passed in |
 
+### The Barratt-Eccles operad
+
+``Operadica`BarrattEccles` `` is an E-infinity operad small enough to compute
+with. An element of arity `r` and degree `d` is a list of `d + 1` words
+(permutations of `1..r` written as lists), consecutive words different. In
+degree 0 it is the operad of words.
+
+```wolfram
+e1 = HigherCupElement[1]                       (* {{1, 2}, {2, 1}} *)
+BarrattEcclesDifferential[e1]                  (* LBasis[{{2, 1}}] - LBasis[{{1, 2}}] *)
+BarrattEcclesCompose[e1, 1, {{1, 2}}]          (* LBasis[{{1, 2, 3}, {3, 1, 2}}] *)
+DGOperadQ[BarrattEcclesOperad[1], 3]           (* True: a differential graded operad *)
+
+(* Berger's filtration: the stage F_n is an E_n operad *)
+BarrattEcclesLevel /@ {HigherCupElement[0], e1, HigherCupElement[2]}     (* {1, 2, 3} *)
+
+(* its homology is P_n: three points in the plane, and in three dimensions *)
+BarrattEcclesBetti[2, 3]                       (* {1, 3, 2, 0} *)
+BarrattEcclesBetti[3, 3]                       (* {1, 0, 3, 0, 2, 0, 0} *)
+
+(* the table reduction of Berger and Fresse, to the surjection operad *)
+TableReduction[HigherCupElement[3]]            (* LBasis[{1, 2, 1, 2, 1}] *)
+```
+
+## E-infinity structure of lattice cochains
+
+``Operadica`EInfinity` `` lets the Barratt-Eccles operad act on lattice cochains.
+`EInfinityOperation[s][a1, ..., ar]` is a cochain expression like `Cup` and
+`HigherCup`: it can be evaluated on a cell, differentiated and compared.
+
+```wolfram
+a = Cochain[1, A];  b = Cochain[1, B];  c = Cochain[2, W];
+
+(* arity 2 is the higher cup product, up to a sign *)
+CochainEqualQ[EInfinityOperation[{{1, 2}}][a, b], Cup[a, b], 3]                    (* True *)
+EInfinityHigherCupQ[1, {1, 2}, 3]     (* theta(e_1)(a, b) = (-1)^(p+q) a u_1 b: True *)
+
+(* the cup-1 product is not a derivation of the cup product ... *)
+CochainEqualQ[HigherCup[1][Cup[a, b], c],
+  Cup[a, HigherCup[1][b, c]] - Cup[HigherCup[1][a, c], b], 3]                       (* False *)
+
+(* ... but it is one up to an explicit homotopy of arity 3 *)
+HirschFormulaQ[{1, 1, 2}, 3]                                                        (* True *)
+CochainValue[HirschHomotopy[a, b, c], {x1, x2}, {1, 2}]
+(* -A[{x1, x2}, {2}] B[{x1, 1 + x2}, {1}] W[{x1, x2}, {1, 2}] *)
+```
+
+The three laws that make the cochains an algebra over the operad, for an
+element `s` of degree `m` and cochains of degrees `p1, ..., pr`:
+
+- (L) `d theta_s(a) = (-1)^m [ Sum_j (-1)^(p1+..+p(j-1)) theta_s(.., d aj, ..) - theta_(ds)(a) ]`
+- (C) `theta_(s o_j t)(a) = (-1)^(|s||t| + |t|(p1+..+p(j-1))) theta_s(a1, .., theta_t(aj, ..), ..)`
+- (E) `theta_(s.p)(a1, .., ar) = sign theta_s(a_(p^-1(1)), .., a_(p^-1(r)))`
+
+They are checked on generic cochains by `EInfinityLeibnizQ`,
+`EInfinityCompositionQ` and `EInfinityEquivarianceQ`. The Hirsch formula up to
+homotopy, with `H = HirschHomotopy`, reads
+
+```
+(a u b) u_1 c - a u (b u_1 c) - (-1)^(q(r-1)) (a u_1 c) u b
+   = (-1)^(p+q+r) [ dH(a,b,c) - H(da,b,c) - (-1)^p H(a,db,c) - (-1)^(p+q) H(a,b,dc) ]
+```
+
+`H` comes from the element `HirschElement[] = {{1,2,3},{1,3,2},{3,1,2}}`, which
+lies in the E_2 stage: the Leibniz rule of the Gerstenhaber operad holds on
+cochains up to this homotopy. Any other local multilinear formula can be
+entered as `LocalOperation[f, d][a1, ..., ar]`.
+
+Conventions: the action on the interval is the table reduction of Berger and
+Fresse; cubes are tensor powers of the interval and the operad acts through
+its diagonal. The cup-i products obtained in this way are those of the
+lattice layer (Chen-Tata, arXiv:2106.05274, in the convention of
+arXiv:2303.06160).
+
 ## Bridge
 
 ```wolfram
@@ -291,6 +371,8 @@ LittleCubesHomologyQ[2, 3]                            (* True *)
 `n`-cubes by convex sets (for each pair of cubes, an axis along which one lies
 before the other), so it has the homotopy type of that space. The nerve grows
 quickly: `k = 2` for any `n`, and `(n, k) = (1, 3), (1, 4), (2, 3)` are feasible.
+The stages of the Barratt-Eccles operad reach further:
+`BarrattEcclesHomologyQ[3, 3]` compares `1, 0, 3, 0, 2` with `PoissonOperad[3]`.
 
 The last two lines are small instances of the recognition principle: an
 invertible E_n structure on a group is the same thing as a cocycle on its
@@ -316,6 +398,7 @@ python3 reference/encategory_reference.py   # pentagon, hexagons, coherence
 python3 reference/operad_reference.py       # symmetric groups, little cubes
 python3 reference/ainfinity_reference.py    # Koszul signs, A-infinity, associahedra
 python3 reference/presented_reference.py    # Lie, Poisson, Gerstenhaber; little-cubes homology
+python3 reference/einfinity_reference.py    # Barratt-Eccles operad and its action on cochains
 ```
 
 ## Layout
@@ -330,10 +413,12 @@ Kernel/LittleCubes.wl
 Kernel/Graded.wl
 Kernel/AInfinity.wl
 Kernel/Presented.wl
+Kernel/BarrattEccles.wl
 Kernel/EnCategories.wl    category layer
 Kernel/Lattice.wl         lattice gauge theory layer
 Kernel/Gauge.wl
-Kernel/Bridge.wl          bridge
+Kernel/EInfinity.wl       bridge
+Kernel/Bridge.wl
 Tests/*.wlt               one VerificationTest file per layer file
 Scripts/RunTests.wls      test runner
 reference/*.py            Python references for the conventions

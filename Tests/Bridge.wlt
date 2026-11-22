@@ -51,6 +51,22 @@ VerificationTest[
   TestID -> "Bridge-little-cubes-homology-control"
 ]
 
+(* the same for the stages of the Barratt-Eccles operad, a combinatorial E_n
+   operad; it reaches three points in three dimensions, and it agrees with the
+   nerve of the little squares *)
+
+VerificationTest[
+  {
+    Table[BarrattEcclesHomologyQ[n, 2], {n, 1, 4}],
+    BarrattEcclesHomologyQ[1, 3],
+    BarrattEcclesHomologyQ[2, 3],
+    BarrattEcclesHomologyQ[3, 3],
+    BarrattEcclesBetti[2, 3] === Take[SimplicialBetti[FacetNerve[SeparationNerve[2, 3]]], 4]
+  },
+  {{True, True, True, True}, True, True, True, True},
+  TestID -> "Bridge-Barratt-Eccles-homology"
+]
+
 (* ---------------------------------------------------------------------- *)
 (* operad <-> category                                                    *)
 (* ---------------------------------------------------------------------- *)

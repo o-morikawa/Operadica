@@ -1,8 +1,8 @@
 PacletObject[<|
   "Name" -> "Operadica",
-  "Version" -> "0.4.0",
+  "Version" -> "0.5.0",
   "WolframVersion" -> "12.1+",
-  "Description" -> "Operads, E_n-monoidal categories and lattice cochains, computed: trees, operad axioms, little cubes, Lie, Poisson and Gerstenhaber operads, pentagon and hexagon equations, cup and higher cup products, gauge variations.",
+  "Description" -> "Operads, E_n-monoidal categories and lattice cochains, computed: trees, operad axioms, little cubes, Lie, Poisson and Gerstenhaber operads, the Barratt-Eccles operad, pentagon and hexagon equations, cup and higher cup products as an E-infinity algebra, gauge variations.",
   "Extensions" -> {
     {
       "Kernel",
@@ -16,9 +16,11 @@ PacletObject[<|
         "Operadica`Graded`",
         "Operadica`AInfinity`",
         "Operadica`Presented`",
+        "Operadica`BarrattEccles`",
         "Operadica`Lattice`",
         "Operadica`Gauge`",
         "Operadica`EnCategories`",
+        "Operadica`EInfinity`",
         "Operadica`Bridge`"
       }
     }

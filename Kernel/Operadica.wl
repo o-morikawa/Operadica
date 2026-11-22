@@ -20,12 +20,17 @@
 (*      Operadica`Presented`     symmetric operads by generators and      *)
 (*                               relations: Com, Lie, Ass, Poisson,       *)
 (*                               Gerstenhaber, P_n                        *)
+(*      Operadica`BarrattEccles` the Barratt-Eccles operad (E-infinity),  *)
+(*                               its E_n stages, its action on cubes      *)
 (*    category layer                                                      *)
 (*      Operadica`EnCategories`  pointed E_n-monoidal categories          *)
 (*    lattice gauge theory layer                                          *)
 (*      Operadica`Lattice`       cochains, coboundary, cup, higher cup    *)
 (*      Operadica`Gauge`         expansion, gauge variations, actions     *)
 (*    bridge                                                              *)
+(*      Operadica`EInfinity`     the E-infinity operad acts on lattice    *)
+(*                               cochains: higher cup products and the    *)
+(*                               homotopies between them                  *)
 (*      Operadica`Bridge`        statements connecting the layers         *)
 (* ====================================================================== *)
 
@@ -39,7 +44,7 @@ With[{dir = DirectoryName[$InputFileName]},
         Get[FileNameJoin[{dir, name <> ".wl"}]]
       ]
     ],
-    {"Trees", "Operads", "Rewriting", "LittleCubes", "Graded", "AInfinity", "Presented", "Lattice", "Gauge", "EnCategories", "Bridge"}
+    {"Trees", "Operads", "Rewriting", "LittleCubes", "Graded", "AInfinity", "Presented", "BarrattEccles", "Lattice", "Gauge", "EnCategories", "EInfinity", "Bridge"}
   ]
 ];
 
@@ -51,9 +56,11 @@ BeginPackage["Operadica`", {
   "Operadica`Graded`",
   "Operadica`AInfinity`",
   "Operadica`Presented`",
+  "Operadica`BarrattEccles`",
   "Operadica`Lattice`",
   "Operadica`Gauge`",
   "Operadica`EnCategories`",
+  "Operadica`EInfinity`",
   "Operadica`Bridge`"
 }];
 
@@ -69,9 +76,11 @@ $OperadicaLayers = {
   "Operadica`Graded`",
   "Operadica`AInfinity`",
   "Operadica`Presented`",
+  "Operadica`BarrattEccles`",
   "Operadica`Lattice`",
   "Operadica`Gauge`",
   "Operadica`EnCategories`",
+  "Operadica`EInfinity`",
   "Operadica`Bridge`"
 };
 

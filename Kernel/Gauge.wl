@@ -76,6 +76,14 @@ terms[HigherCup[i_][a_, b_]] :=
     1
   ];
 
+terms[LocalOperation[f_, d_][as__]] :=
+  Map[
+    Function[choice,
+      {Times @@ Map[First, choice], LocalOperation[f, d] @@ Map[Last, choice]}
+    ],
+    Tuples[Map[terms, {as}]]
+  ];
+
 terms[u_] := (Message[CochainExpand::notcochain, u]; {});
 
 

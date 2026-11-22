@@ -43,7 +43,9 @@ Coboundary::usage = "Coboundary[c] is the lattice coboundary (exterior derivativ
 
 HigherCup::usage = "HigherCup[i][a, b] is the higher cup product of a p-cochain a and a q-cochain b, of degree p + q - i. HigherCup[0] is the cup product Cup[a, b]. The sign convention is that of eq. (A3) of arXiv:2303.06160; see SteenrodCupSign for Steenrod's original convention.";
 
-CochainQ::usage = "CochainQ[c] gives True if c is a cochain expression: built from Cochain, Coboundary, Cup, HigherCup, sums and scalar multiples.";
+LocalOperation::usage = "LocalOperation[f, d][a1, ..., ar] is the cochain of degree p1 + ... + pr - d given by a local multilinear formula. On a cell with base point x and directions s = {mu_1 < ... < mu_n} its value is the sum, over the terms {c, {row_1, ..., row_r}} of the list f[n], of c a1(x + shift_1; s_1) ... ar(x + shift_r; s_r): row_j is a list of n entries, 2 if aj extends in the direction mu_k, 1 if aj is shifted by one step in that direction, 0 otherwise. Cup and HigherCup are of this form; Operadica`EInfinity` builds the operations of an E-infinity operad in this way.";
+
+CochainQ::usage = "CochainQ[c] gives True if c is a cochain expression: built from Cochain, Coboundary, Cup, HigherCup, LocalOperation, sums and scalar multiples.";
 
 CochainDegree::usage = "CochainDegree[c] gives the degree of a homogeneous cochain expression.";
 
@@ -95,6 +97,7 @@ CochainQ[_Cochain] = True;
 CochainQ[Coboundary[c_]] := CochainQ[c];
 CochainQ[Cup[a_, b__]] := AllTrue[{a, b}, CochainQ];
 CochainQ[HigherCup[_][a_, b_]] := CochainQ[a] && CochainQ[b];
+CochainQ[LocalOperation[_, _][as__]] := AllTrue[{as}, CochainQ];
 CochainQ[u_Plus] := AllTrue[List @@ u, CochainQ];
 CochainQ[u_Times] := Count[List @@ u, _?CochainQ, {1}] === 1;
 CochainQ[_] = False;
@@ -106,6 +109,10 @@ CochainDegree[Cochain[p_, _]] := p;
 CochainDegree[Coboundary[c_]] := CochainDegree[c] + 1;
 CochainDegree[Cup[a_, b__]] := Total[Map[CochainDegree, {a, b}]];
 CochainDegree[HigherCup[i_][a_, b_]] := CochainDegree[a] + CochainDegree[b] - i;
+CochainDegree[LocalOperation[_, d_][as__]] :=
+  With[{ds = Map[CochainDegree, {as}]},
+    If[AllTrue[ds, IntegerQ], Total[ds] - d, $Failed]
+  ];
 CochainDegree[u_Plus] :=
   With[{ds = Union[Map[CochainDegree, List @@ u]]},
     If[Length[ds] === 1,
@@ -238,6 +245,30 @@ cv[HigherCup[i_Integer][a_, b_], x_, s_] :=
             {w, hcWords[p, q, i]}
           ]
         ]
+    ]
+  ];
+
+(* ---- local multilinear operations --------------------------------------- *)
+
+cv[LocalOperation[f_, d_Integer][as__], x_, s_] :=
+  With[{args = {as}, degs = Map[CochainDegree, {as}], n = Length[s]},
+    If[Total[degs] - d =!= n,
+      0,
+      Total[
+        Map[
+          Function[term,
+            If[Map[Function[row, Count[row, 2]], term[[2]]] === degs,
+              term[[1]] *
+                Product[
+                  cv[args[[j]], latShift[x, Pick[s, term[[2, j]], 1]], Pick[s, term[[2, j]], 2]],
+                  {j, 1, Length[args]}
+                ],
+              0
+            ]
+          ],
+          f[n]
+        ]
+      ]
     ]
   ];
 

@@ -549,3 +549,40 @@ VerificationTest[
   {True, True, True},
   TestID -> "Lattice-Hirsch-closed"
 ]
+
+
+(* ---------------------------------------------------------------------- *)
+(* local multilinear operations                                           *)
+(* ---------------------------------------------------------------------- *)
+
+(* a term is {coefficient, rows}: a row has an entry for each direction of the
+   cell, 2 = extends, 1 = shifted by one step, 0 = neither.  Here: the cup
+   product of two 1-cochains on a plaquette, written as a LocalOperation *)
+
+VerificationTest[
+  With[{
+      a = Cochain[1, al], b = Cochain[1, be],
+      f = Function[n, If[n === 2, {{1, {{2, 0}, {1, 2}}}, {-1, {{0, 2}, {2, 1}}}}, {}]]
+    },
+    {
+      CochainQ[LocalOperation[f, 0][a, b]],
+      CochainDegree[LocalOperation[f, 0][a, b]],
+      CochainDegree[LocalOperation[f, 1][a, Coboundary[b]]],
+      CochainValue[LocalOperation[f, 0][a, b], {x1, x2}, {1, 2}],
+      CochainEqualQ[LocalOperation[f, 0][a, b], Cup[a, b], 2],
+      CochainEqualQ[Coboundary[LocalOperation[f, 0][a, b]], Coboundary[Cup[a, b]], 3],
+      (* terms whose rows do not have the degrees of the arguments do not contribute *)
+      CochainValue[LocalOperation[f, 0][Cochain[2, al], Cochain[0, be]], {x1, x2}, {1, 2}]
+    }
+  ],
+  {
+    True,
+    2,
+    2,
+    al[{x1, x2}, {1}] be[{1 + x1, x2}, {2}] - al[{x1, x2}, {2}] be[{x1, 1 + x2}, {1}],
+    True,
+    True,
+    0
+  },
+  TestID -> "Lattice-local-operation"
+]
