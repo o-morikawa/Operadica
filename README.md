@@ -361,8 +361,36 @@ two-torus, which identifies the eight functions with boundary conditions: the
 fermion is periodic in a direction exactly if the straight flux tube along it
 has the sign -1.
 
-A local expression for `z` (Majorana fermions) and the coupling to Z_N
-background fields are not there yet.
+A local expression for `z` (Majorana fermions) is not there yet.
+
+Background fields of the 1-form symmetry enter as fractional fluxes `n + B / N`.
+The level `k` is the level `k N^2` with fluxes in `Z / N`, and the anomaly of
+the Z_N 1-form symmetry at level `K` is the class of the line of charge `K / N`,
+whose spin `K / (2 N^2)` decides whether the symmetry can be gauged (0), needs a
+spin structure (1/2) or neither:
+
+```wolfram
+ChernSimonsOneFormAnomalyQ[4, 2]                    (* True *)
+TopologicalSpin[ChernSimonsAnyons[4], {2}]          (* 1/2: level 4 = 1 * 2^2, an odd level *)
+TopologicalSpin[ChernSimonsAnyons[8], {4}]          (* 0: level 8 = 2 * 2^2 *)
+```
+
+A flat Villain field is also a cocycle of Cech-de Rham type for the cover of
+the three-torus by the unit cubes, the form of the lattice Deligne-Beilinson
+cohomology of Y. Ikeda (arXiv:2601.15939): a local connection `A_p` on each
+cube, integer transition functions `Lambda_pq` on intersections and integers
+`N_pqr` on triple intersections. They are built from `(a, n)` by descent, and
+the Chern numbers of the Cech cocycle `N` are the fluxes of `n`:
+
+```wolfram
+(* A = VillainField[a, n] with concrete fields on a periodic lattice, dims = {3, 3, 3} *)
+CechDeRhamCocycleQ[A, dims]                         (* {True, True, True} *)
+CechDeRhamChernNumbers[A, dims] === THooftFlux[n, dims]      (* True *)
+```
+
+The transition functions and `N` depend on the flux `n` alone, which is why the
+modified Villain form needs no transition functions. The comparison of the
+actions (the star product of that paper) is not done yet.
 
 ## Category layer
 
@@ -890,6 +918,7 @@ python3 reference/steenrod_reference.py     # Steenrod squares of cochains, the 
 python3 reference/braidgroup_reference.py   # homology of braid groups, unordered configurations
 python3 reference/villain_reference.py      # Villain fields, differential cochains, Chern-Simons, the theta term
 python3 reference/oddlevel_reference.py     # Chern-Simons at odd level: the anomaly and the signs that cancel it
+python3 reference/cech_reference.py         # a flat Villain field as a Cech-de Rham cocycle; background fields
 ```
 
 ## Layout

@@ -886,3 +886,27 @@ VerificationTest[
   },
   TestID -> "Bridge-Chern-Simons-on-flat-fields"
 ]
+
+(* the anomaly of the Z_N 1-form symmetry of U(1) Chern-Simons theory at
+   level K: the inflow term (K / 2 N^2) Q(B) of the flux n + B / N is the
+   Pontryagin weight with p = K / N, the class of the line of charge K / N.
+   Its spin K / (2 N^2) decides: 0, the symmetry can be gauged (level
+   K / N^2); 1/2, a spin structure is needed (odd level K / N^2);
+   otherwise it cannot be gauged *)
+
+VerificationTest[
+  {
+    Map[Function[kn, ChernSimonsOneFormAnomalyQ[kn[[1]], kn[[2]]]], {{2, 2}, {4, 2}, {8, 2}}],
+    {ChernSimonsOneFormAnomalyQ[3, 3], ChernSimonsOneFormAnomalyQ[4, 3]},
+    Map[
+      Function[kn, TopologicalSpin[ChernSimonsAnyons[kn[[1]]], {Quotient[kn[[1]], kn[[2]]]}]],
+      {{2, 2}, {4, 2}, {8, 2}, {12, 2}, {6, 3}, {18, 3}, {36, 3}}
+    ]
+  },
+  {
+    {True, True, True},
+    {False, False},
+    {1/4, 1/2, 0, 1/2, 1/3, 0, 0}
+  },
+  TestID -> "Bridge-Chern-Simons-one-form-anomaly"
+]

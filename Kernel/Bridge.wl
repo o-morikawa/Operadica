@@ -186,6 +186,8 @@ ChernSimonsWeight::usage = "ChernSimonsWeight[nn, k][x] gives the value modulo 1
 
 ChernSimonsDijkgraafWittenQ::usage = "ChernSimonsDijkgraafWittenQ[nn, k] gives True if k is even, ChernSimonsWeight[nn, k] is a cocycle on K(Z_nn, 1), and its class is that of DijkgraafWittenWeight[nn, -k / 2]: the U(1) Chern-Simons theory at level k, restricted to flat Z_nn fields, is the Dijkgraaf-Witten theory of level -k / 2 modulo nn. For odd k the weight is not a cocycle and the result is False.";
 
+ChernSimonsOneFormAnomalyQ::usage = "ChernSimonsOneFormAnomalyQ[kk, nn] gives True if kk is even, nn divides kk, and the anomaly of the Z_nn 1-form symmetry of U(1) Chern-Simons theory at level kk is the class of the line of charge kk / nn. With the flux n + B / nn in VillainChernSimons[kk], B a Z_nn background field of degree 2, the inflow term is 2 Pi (kk / (2 nn^2)) Q(B), Q(B) = Cup[B, B] + HigherCup[1][B, Coboundary[B]]. The function checks that this weight equals PontryaginWeight[nn, kk / nn] on every flat field on the 4-simplex, that PontryaginSpinQ[nn, kk / nn] holds, and that the line of charge kk / nn of ChernSimonsAnyons[kk] has the spin of the generator of ZNAnyons[nn, kk / nn], which is kk / (2 nn^2). The symmetry can be gauged if this spin is 0 (the result is the theory at level kk / nn^2), it needs a spin structure if the spin is 1/2 (the level kk / nn^2 is odd), and it cannot be gauged otherwise.";
+
 Begin["`Private`"];
 
 (* ---------------------------------------------------------------------- *)
@@ -519,6 +521,25 @@ PontryaginSpinQ[nn_Integer?Positive, p_Integer] :=
   CharacteristicCocycleQ[{nn}, 2, 4, PontryaginWeight[nn, p]] &&
     CharacteristicClassOrder[{nn}, 2, 4, PontryaginWeight[nn, p]] ===
       Denominator[TopologicalSpin[ZNAnyons[nn, p], {1}]];
+
+(* the anomaly of the Z_N 1-form symmetry of U(1) Chern-Simons theory *)
+ChernSimonsOneFormAnomalyQ[kk_Integer?Positive, nn_Integer?Positive] :=
+  EvenQ[kk] && Divisible[kk, nn] &&
+    AllTrue[
+      EilenbergMacLaneSimplices[{nn}, 2, 4],
+      Function[x,
+        With[{b = FlatFieldCochain[2][x]},
+          Mod[
+              (kk / (2 nn^2)) *
+                SimplexValue[Cup[b, b] + HigherCup[1][b, Coboundary[b]], Range[0, 4]],
+              1
+            ] === PontryaginWeight[nn, Quotient[kk, nn]][x]
+        ]
+      ]
+    ] &&
+    PontryaginSpinQ[nn, Quotient[kk, nn]] &&
+    TopologicalSpin[ChernSimonsAnyons[kk], {Quotient[kk, nn]}] ===
+      TopologicalSpin[ZNAnyons[nn, Quotient[kk, nn]], {1}];
 
 (* U(1) Chern-Simons theory on flat Z_N fields *)
 FlatVillainField[nn_Integer?Positive, n_Integer?Positive][x_EMSimplex] :=

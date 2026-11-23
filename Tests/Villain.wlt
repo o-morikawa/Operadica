@@ -823,3 +823,145 @@ VerificationTest[
   },
   TestID -> "Villain-spin-structure-planar"
 ]
+
+(* ---------------------------------------------------------------------- *)
+(* a flat Villain field as a Cech-de Rham cocycle (the form of the lattice *)
+(* Deligne-Beilinson cohomology of arXiv:2601.15939)                       *)
+(* ---------------------------------------------------------------------- *)
+
+(* the cover of the three-torus by the unit cubes: A_p = a / 2 Pi - m_p with
+   d m_p = n on the cube p, A_q - A_p = d Lambda_pq, and
+   Lambda_qr - Lambda_pr + Lambda_pq = - N_pqr.  The Chern numbers of the
+   Cech cocycle N are the fluxes of n, and the coboundary of A_p is the
+   curvature over 2 Pi *)
+
+VerificationTest[
+  With[{dims = {3, 3, 3}},
+    With[{
+        field = Function[{p, f},
+          PeriodicCochain[p, dims,
+            Association[Map[Function[c, {c[[1]], c[[2]]} -> f[c[[1]], c[[2]]]], LCells[dims, p]]]
+          ]
+        ],
+        flux = THooftFluxCochain[{{0, 1, -2}, {-1, 0, 3}, {2, -3, 0}}, dims]
+      },
+      With[{
+          e0 = field[1, Function[{y, s}, Mod[y[[1]] + 2 y[[2]] + 3 y[[3]] + s[[1]] (1 + y[[1]] y[[2]] + y[[3]]), 3] - 1]],
+          a = field[1, Function[{y, s}, Mod[2 y[[1]] + y[[2]] y[[3]] + s[[1]] y[[2]] + s[[1]], 5] - 2]]
+        },
+        With[{
+            n = field[2, Function[{y, s}, CochainValue[flux + Coboundary[e0], y, s]]]
+          },
+          With[{
+              aa = VillainField[a, n],
+              m = VillainPatchPrimitive[n, dims]
+            },
+            With[{
+                conn = CechDeRhamConnection[aa, dims],
+                lam = CechDeRhamTransition[aa, dims],
+                nn = CechDeRhamChern[aa, dims]
+              },
+              {
+                CechDeRhamCocycleQ[aa, dims],
+                CechDeRhamChernNumbers[aa, dims],
+                THooftFlux[n, dims],
+                CechDeRhamChernNumbers[VillainLargeGaugeTransform[aa, e0], dims],
+                {m[{0, 0, 0}, {1, 0, 0}, 2], m[{0, 0, 0}, {1, 1, 0}, 3], m[{2, 2, 2}, {0, 0, 2}, 3]},
+                {lam[{0, 0, 0}, {1, 0, 0}, {1, 1, 0}], lam[{0, 0, 0}, {0, 1, 0}, {1, 1, 1}]},
+                {nn[{0, 0, 0}, {1, 0, 0}, {1, 1, 0}], nn[{2, 2, 2}, {0, 2, 2}, {0, 0, 2}],
+                  nn[{0, 0, 0}, {0, 1, 0}, {1, 1, 0}]},
+                AllTrue[{{1, 2, 3}, {1, 3, 2}, {2, 3, 1}},
+                  Function[pl,
+                    AllTrue[{0, 1},
+                      Function[t,
+                        With[{
+                            p = {2, 1, 0}, mu = pl[[1]], nu = pl[[2]],
+                            x = Mod[{2, 1, 0} + t UnitVector[3, pl[[3]]], dims]
+                          },
+                          Expand[
+                              conn[p, Mod[x + UnitVector[3, mu], dims], nu] - conn[p, x, nu] -
+                                conn[p, Mod[x + UnitVector[3, nu], dims], mu] + conn[p, x, mu]
+                            ] ===
+                            Expand[CochainValue[VillainCurvature[aa], x, {mu, nu}] / (2 Pi)]
+                        ]
+                      ]
+                    ]
+                  ]
+                ],
+                {m[{0, 0, 0}, {2, 0, 0}, 2], lam[{0, 0, 0}, {1, 0, 0}, {0, 0, 0}],
+                  nn[{0, 0, 0}, {1, 0, 0}, {2, 0, 0}]}
+              }
+            ]
+          ]
+        ]
+      ]
+    ]
+  ],
+  {
+    {True, True, True},
+    {{0, 1, -2}, {-1, 0, 3}, {2, -3, 0}},
+    {{0, 1, -2}, {-1, 0, 3}, {2, -3, 0}},
+    {{0, 1, -2}, {-1, 0, 3}, {2, -3, 0}},
+    {-1, 0, 4},
+    {-1, 3},
+    {1, 1, 0},
+    True,
+    {$Failed, $Failed, $Failed}
+  },
+  TestID -> "Villain-Cech-de-Rham-cocycle"
+]
+
+(* ---------------------------------------------------------------------- *)
+(* background fields of the 1-form symmetry                               *)
+(* ---------------------------------------------------------------------- *)
+
+(* the level k is the level k N^2 with fluxes in Z / N.  With the flux
+   n + b / N the inflow term k Pi Q(n) becomes
+   k Pi (Q(n) + X(n, b) / N + Q(b) / N^2); the cross term X is, for closed n
+   and db a multiple of N, a coboundary plus N times an even cochain *)
+
+VerificationTest[
+  With[{
+      a = Cochain[1, fa], n = Cochain[2, fn], phi = Cochain[0, fp], b = Cochain[2, fb],
+      qq = Function[u, Cup[u, u] + HigherCup[1][u, Coboundary[u]]]
+    },
+    With[{
+        cross = Cup[n, b] + Cup[b, n] + HigherCup[1][n, Coboundary[b]] + HigherCup[1][b, Coboundary[n]],
+        shifted = n + b / 3
+      },
+      With[{
+          lhs = Coboundary[VillainChernSimons[kk][VillainField[a, shifted], phi]],
+          rhs = (kk / (4 Pi)) qq[Coboundary[a] - 2 Pi shifted] -
+            kk Pi (qq[n] + cross / 3 + qq[b] / 9) +
+            Cup[kk a + Coboundary[phi], Coboundary[shifted]]
+        },
+        {
+          Table[
+            CochainEqualQ[
+              VillainChernSimons[kk][VillainField[a, n], phi],
+              VillainChernSimons[kk num^2][VillainField[a / num, n / num], num phi],
+              3
+            ],
+            {num, {2, 3}}
+          ],
+          CochainEqualQ[qq[shifted], qq[n] + cross / 3 + qq[b] / 9, 4],
+          CochainEqualQ[
+            cross,
+            2 Cup[b, n] - Coboundary[HigherCup[1][n, b]] + HigherCup[1][Coboundary[n], b] +
+              2 HigherCup[1][n, Coboundary[b]] + HigherCup[1][b, Coboundary[n]],
+            4
+          ],
+          SimplexCochainEqualQ[
+            cross,
+            2 Cup[b, n] - Coboundary[HigherCup[1][n, b]] + HigherCup[1][Coboundary[n], b] +
+              2 HigherCup[1][n, Coboundary[b]] + HigherCup[1][b, Coboundary[n]]
+          ],
+          CochainEqualQ[lhs, rhs, 4],
+          SimplexCochainEqualQ[lhs, rhs]
+        }
+      ]
+    ]
+  ],
+  {{True, True}, True, True, True, True, True},
+  TestID -> "Villain-background-field"
+]

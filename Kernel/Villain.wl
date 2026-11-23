@@ -146,8 +146,24 @@
 (*  in the direction rho if and only if s_(mu nu) = -1, and on a curve     *)
 (*  that is not contractible in the plane z is minus the holonomy.         *)
 (*                                                                        *)
-(*  Checked in reference/villain_reference.py and                         *)
-(*  reference/oddlevel_reference.py.                                      *)
+(*  Cech-de Rham form.  The lattice Deligne-Beilinson cohomology of        *)
+(*  Y. Ikeda, arXiv:2601.15939, has the unit cubes as patches; a class of  *)
+(*  degree 2 on a three-torus is a triple (A_p, Lambda_pq, N_pqr) with     *)
+(*  A_q - A_p = d Lambda_pq, Lambda_qr - Lambda_pr + Lambda_pq = - N_pqr    *)
+(*  and N a Cech cocycle.  A flat Villain field (a, n) gives such a triple *)
+(*  by descent: with m_p the integer 1-cochain on the cube p with          *)
+(*  d m_p = n (zero on a tree of links),                                   *)
+(*                                                                        *)
+(*    A_p = a / 2 Pi - m_p,                                                *)
+(*    Lambda_pq = the sum of m_p - m_q along a path in the intersection,   *)
+(*    N_pqr = - (Lambda_qr - Lambda_pr + Lambda_pq).                       *)
+(*                                                                        *)
+(*  Lambda and N are functions of the flux n alone, and the class of N is  *)
+(*  the Chern class: its sums over the triangulated coordinate tori of     *)
+(*  the nerve are the fluxes of n.                                         *)
+(*                                                                        *)
+(*  Checked in reference/villain_reference.py,                            *)
+(*  reference/oddlevel_reference.py and reference/cech_reference.py.      *)
 (*                                                                        *)
 (*  Layer: lattice gauge theory.  Depends on: Lattice.                    *)
 (* ====================================================================== *)
@@ -203,6 +219,18 @@ ChernSimonsLargeGaugeAnomaly::usage = "ChernSimonsLargeGaugeAnomaly[m, n] gives 
 SpinStructureSign::usage = "SpinStructureSign[{L1, L2, L3}, {s12, s13, s23}][n] gives the sign z(n) = 1 or -1 of the integer 2-cochain n on the periodic lattice with sides L1, L2, L3; n has to be closed modulo 2, otherwise the result is $Failed. The function z satisfies z(n + dm) = z(n) (-1)^(sum of ChernSimonsLargeGaugeAnomaly[m, n]) for every integer 1-cochain m, so that exp(i S) z(n) is invariant under large gauge transformations at odd level, and z(n + n') = z(n) z(n') (-1)^(sum of HigherCup[1][n, n']). The signs s12, s13, s23 (each 1 or -1) are the values of z on the unit fluxes THooftFluxCochain in the (1, 2), (1, 3) and (2, 3) planes. There are eight such functions, and they play the role of the spin structures of the three-torus: on the fluxes in a coordinate plane z is 1 on contractible curves and minus the holonomy of the spin structure otherwise, see SpinStructureHolonomy. z is computed by solving n = THooftFluxCochain[c, dims] + dm modulo 2.";
 
 SpinStructureHolonomy::usage = "SpinStructureHolonomy[{s12, s13, s23}] gives {h1, h2, h3} = {-s23, -s13, -s12}: the boundary conditions of the fermion in the directions 1, 2, 3 for the spin structure of the three-torus that SpinStructureSign[dims, {s12, s13, s23}] defines, 1 for periodic and -1 for antiperiodic. For a flux n on the plaquettes that contain the direction rho, at one value of the coordinate in that direction, the dual curve lies in a plane orthogonal to rho, and SpinStructureSign gives 1 if the curve is contractible in that plane and minus the product of the h of the directions it winds around an odd number of times otherwise. This is the quadratic form of a spin structure on the two-torus (Johnson): it takes the value -1 on all three nonzero classes exactly if the fermion is periodic in both directions.";
+
+VillainPatchPrimitive::usage = "VillainPatchPrimitive[n, {L1, L2, L3}][p, x, mu] gives the value on the link (x; mu) of the integer 1-cochain m_p on the unit cube with the lowest corner p, with Coboundary[m_p] = n on the plaquettes of that cube, for a closed integer 2-cochain n on the periodic lattice with sides L1, L2, L3 >= 3. m_p vanishes on the tree of the links (.; 1), ((0, ., .); 2), ((0, 0, .); 3) of the cube. The result is $Failed if the link is not in the cube.";
+
+CechDeRhamConnection::usage = "CechDeRhamConnection[A, dims][p, x, mu] gives the value on the link (x; mu) of the local connection A_p = a / (2 Pi) - m_p of the flat Villain field A = VillainField[a, n] on the unit cube with the lowest corner p, with m_p = VillainPatchPrimitive[n, dims]. Its coboundary on the cube is the curvature F / (2 Pi). Together with CechDeRhamTransition and CechDeRhamChern it is a cocycle of Cech-de Rham type for the cover of the three-torus by the unit cubes, in the form of the lattice Deligne-Beilinson cohomology of arXiv:2601.15939: A_q - A_p = d Lambda_pq, Lambda_qr - Lambda_pr + Lambda_pq = - N_pqr, and N is a Cech cocycle.";
+
+CechDeRhamTransition::usage = "CechDeRhamTransition[A, dims][p, q, x] gives the value at the site x of the transition function Lambda_pq of the flat Villain field A on the intersection of the unit cubes with the lowest corners p and q: the sum of m_p - m_q along a path from the lowest corner of the intersection to x. It is an integer, it depends on the flux n only, and A_q - A_p = d Lambda_pq on the links of the intersection. The result is $Failed if x is not in both cubes.";
+
+CechDeRhamChern::usage = "CechDeRhamChern[A, dims][p, q, r] gives the integer N_pqr = -(Lambda_qr - Lambda_pr + Lambda_pq) of the flat Villain field A for three unit cubes with a common point, evaluated at the lowest corner of their intersection (it is the same at every common site). N is a Cech 2-cocycle on the nerve of the cover by the cubes, and its class is the Chern class of the field. The result is $Failed if the three cubes have no common point.";
+
+CechDeRhamCocycleQ::usage = "CechDeRhamCocycleQ[A, {L1, L2, L3}] gives a list of three truth values for the Villain field A = VillainField[a, n] on the periodic lattice: whether Coboundary[m_p] = n on every unit cube (this fails if n is not closed), whether A_q - A_p = d Lambda_pq on the links of every intersection of two cubes, and whether Lambda_qr - Lambda_pr + Lambda_pq is the same integer -N_pqr at every common site of three cubes.";
+
+CechDeRhamChernNumbers::usage = "CechDeRhamChernNumbers[A, {L1, L2, L3}] gives the antisymmetric matrix of the Chern numbers of the Cech cocycle N = CechDeRhamChern[A, dims]: the entry (mu, nu), mu < nu, is minus the sum of N(p, p + e_mu, p + e_mu + e_nu) - N(p, p + e_nu, p + e_mu + e_nu) over the cubes p of a coordinate plane, the pairing of N with the triangulated two-torus in the nerve. It equals THooftFlux[n, dims].";
 
 StaggeredMomentumCount::usage = "StaggeredMomentumCount[{L1, ..., Ld}] gives the number of momenta p on the periodic lattice with sides L1, ..., Ld whose components add up to Pi modulo 2 Pi: L1 ... Ld / lcm(L1, ..., Ld) if the lcm is even, and 0 if all sides are odd.";
 
@@ -392,6 +420,175 @@ SpinStructureSign[
   ];
 
 SpinStructureHolonomy[{s12 : (1 | -1), s13 : (1 | -1), s23 : (1 | -1)}] := {-s23, -s13, -s12};
+
+(* ---------------------------------------------------------------------- *)
+(* a flat Villain field as a Cech-de Rham cocycle for the cover of the     *)
+(* three-torus by the unit cubes; a cube is labelled by its lowest corner  *)
+(* ---------------------------------------------------------------------- *)
+
+VillainPatchPrimitive[n_, dims : {_Integer, _Integer, _Integer}][p_List, x_List, mu_Integer] :=
+  With[{r = Mod[x - p, dims]},
+    Which[
+      ! (SubsetQ[{0, 1}, r] && MemberQ[{1, 2, 3}, mu] && r[[mu]] === 0), $Failed,
+      mu === 1, 0,
+      mu === 2, If[r[[1]] === 1, CochainValue[n, Mod[p + {0, 0, r[[3]]}, dims], {1, 2}], 0],
+      r[[1]] === 0 && r[[2]] === 0, 0,
+      r[[1]] === 1 && r[[2]] === 0, CochainValue[n, Mod[p, dims], {1, 3}],
+      r[[1]] === 0 && r[[2]] === 1, CochainValue[n, Mod[p, dims], {2, 3}],
+      True, CochainValue[n, Mod[p + {0, 1, 0}, dims], {1, 3}] + CochainValue[n, Mod[p, dims], {2, 3}]
+    ]
+  ];
+
+(* the lowest corner of the intersection of the cubes with the lowest
+   corners ps, or $Failed if they have no common point *)
+cdrCorner[ps_List, dims_List] :=
+  With[{ds = Map[Function[q, Mod[q - First[ps], dims, -1]], ps]},
+    If[Max[Abs[ds]] > 1 || AnyTrue[Transpose[ds], Function[col, Max[col] - Min[col] > 1]],
+      $Failed,
+      Mod[First[ps] + Map[Max, Transpose[ds]], dims]
+    ]
+  ];
+
+(* the sites common to the cubes ps *)
+cdrSites[ps_List, dims_List] :=
+  With[{c = cdrCorner[ps, dims]},
+    If[c === $Failed,
+      {},
+      Select[
+        Map[Function[r, Mod[c + r, dims]], Tuples[{0, 1}, 3]],
+        Function[x, AllTrue[ps, Function[p, SubsetQ[{0, 1}, Mod[x - p, dims]]]]]
+      ]
+    ]
+  ];
+
+CechDeRhamConnection[VillainField[a_, n_], dims : {_Integer, _Integer, _Integer}][p_List, x_List, mu_Integer] :=
+  With[{m = VillainPatchPrimitive[n, dims][p, x, mu]},
+    If[m === $Failed, $Failed, CochainValue[a, Mod[x, dims], {mu}] / (2 Pi) - m]
+  ];
+
+CechDeRhamTransition[VillainField[a_, n_], dims : {_Integer, _Integer, _Integer}][p_List, q_List, x_List] :=
+  With[{c = cdrCorner[{p, q}, dims], m = VillainPatchPrimitive[n, dims]},
+    If[c === $Failed || ! MemberQ[cdrSites[{p, q}, dims], Mod[x, dims]],
+      $Failed,
+      With[{r = Mod[x - c, dims]},
+        With[{y2 = Mod[c + {r[[1]], 0, 0}, dims], y3 = Mod[c + {r[[1]], r[[2]], 0}, dims]},
+          If[r[[1]] === 1, m[p, c, 1] - m[q, c, 1], 0] +
+            If[r[[2]] === 1, m[p, y2, 2] - m[q, y2, 2], 0] +
+            If[r[[3]] === 1, m[p, y3, 3] - m[q, y3, 3], 0]
+        ]
+      ]
+    ]
+  ];
+
+CechDeRhamChern[aa_VillainField, dims : {_Integer, _Integer, _Integer}][p_List, q_List, r_List] :=
+  With[{c = cdrCorner[{p, q, r}, dims], lam = CechDeRhamTransition[aa, dims]},
+    If[c === $Failed, $Failed, -(lam[q, r, c] - lam[p, r, c] + lam[p, q, c])]
+  ];
+
+(* the eight cubes that contain the site x *)
+cdrCubesAt[x_List, dims_List] := Map[Function[r, Mod[x - r, dims]], Tuples[{0, 1}, 3]];
+
+CechDeRhamCocycleQ[aa : VillainField[a_, n_], dims : {_Integer, _Integer, _Integer}] :=
+  With[{
+      pts = Tuples[Map[Function[len, Range[0, len - 1]], dims]],
+      m = VillainPatchPrimitive[n, dims],
+      conn = CechDeRhamConnection[aa, dims],
+      lam = CechDeRhamTransition[aa, dims],
+      nn = CechDeRhamChern[aa, dims]
+    },
+    {
+      AllTrue[pts,
+        Function[p,
+          AllTrue[{{1, 2, 3}, {1, 3, 2}, {2, 3, 1}},
+            Function[pl,
+              AllTrue[{0, 1},
+                Function[t,
+                  With[{
+                      mu = pl[[1]], nu = pl[[2]],
+                      x = Mod[p + t UnitVector[3, pl[[3]]], dims]
+                    },
+                    m[p, Mod[x + UnitVector[3, mu], dims], nu] - m[p, x, nu] -
+                        m[p, Mod[x + UnitVector[3, nu], dims], mu] + m[p, x, mu] ===
+                      CochainValue[n, x, {mu, nu}]
+                  ]
+                ]
+              ]
+            ]
+          ]
+        ]
+      ],
+      AllTrue[pts,
+        Function[x,
+          AllTrue[Subsets[cdrCubesAt[x, dims], {2}],
+            Function[pq,
+              With[{sites = cdrSites[pq, dims]},
+                AllTrue[sites,
+                  Function[y,
+                    AllTrue[{1, 2, 3},
+                      Function[mu,
+                        With[{y2 = Mod[y + UnitVector[3, mu], dims]},
+                          ! MemberQ[sites, y2] ||
+                            Expand[conn[pq[[2]], y, mu] - conn[pq[[1]], y, mu]] ===
+                              lam[pq[[1]], pq[[2]], y2] - lam[pq[[1]], pq[[2]], y]
+                        ]
+                      ]
+                    ]
+                  ]
+                ]
+              ]
+            ]
+          ]
+        ]
+      ],
+      AllTrue[pts,
+        Function[x,
+          AllTrue[Subsets[cdrCubesAt[x, dims], {3}],
+            Function[pqr,
+              Union[
+                  Map[
+                    Function[y,
+                      lam[pqr[[2]], pqr[[3]], y] - lam[pqr[[1]], pqr[[3]], y] + lam[pqr[[1]], pqr[[2]], y]
+                    ],
+                    cdrSites[pqr, dims]
+                  ]
+                ] === {-nn[pqr[[1]], pqr[[2]], pqr[[3]]]}
+            ]
+          ]
+        ]
+      ]
+    }
+  ];
+
+CechDeRhamChernNumbers[aa_VillainField, dims : {_Integer, _Integer, _Integer}] :=
+  With[{
+      nn = CechDeRhamChern[aa, dims],
+      pts = Tuples[Map[Function[len, Range[0, len - 1]], dims]]
+    },
+    With[{
+        plane = Function[{mu, nu},
+          -Total[
+            Map[
+              Function[p,
+                With[{
+                    pm = Mod[p + UnitVector[3, mu], dims],
+                    pn = Mod[p + UnitVector[3, nu], dims],
+                    pmn = Mod[p + UnitVector[3, mu] + UnitVector[3, nu], dims]
+                  },
+                  nn[p, pm, pmn] - nn[p, pn, pmn]
+                ]
+              ],
+              Select[pts, Function[p, p[[6 - mu - nu]] === 0]]
+            ]
+          ]
+        ]
+      },
+      {
+        {0, plane[1, 2], plane[1, 3]},
+        {-plane[1, 2], 0, plane[2, 3]},
+        {-plane[1, 3], -plane[2, 3], 0}
+      }
+    ]
+  ];
 
 End[];
 
