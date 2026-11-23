@@ -1,6 +1,6 @@
 # Operadica 設計文書
 
-最終更新: 2026-11-23(v0.16.0)
+最終更新: 2026-11-23(v0.17.0)
 
 ## 1. 目的
 
@@ -352,6 +352,15 @@ braid 群の作用:右に寄せた積 `a₁(a₂(a₃…))` の上で、生成�
 - `CochainValue[c, x, s]` で cell 上の値に展開する。
 - `CochainExpand` で多重線形に展開し(δ² = 0 を使う)、`GaugeVariation` でゲージ変分を出し、
   `TotalDerivativeQ` で全微分であることを確かめる。
+- **補正項の探索**(`CochainLinearSolve[target, {c1, …, cr}, d]`。`reference/correction_reference.py` で確認):
+  `target = x₁c₁ + … + x_r c_r` が cochain の恒等式になる係数を探す。記号的な基点での値を一般の cochain の値の多項式として展開し、
+  単項式ごとの係数を比べた線形方程式を解く。解があるか、一意か、解の 1 つを返す。係数は式の中のパラメータ(k、π)に依ってよい。
+  - 候補に「原始関数の候補の余境界」と「補正項の候補の変分」を並べると、補正項と全微分を同時に求めることになる。
+  - 例:modified Villain の Chern–Simons から ∪₁ の項を除いたラグランジアンのゲージ変分は、
+    `δλ∪₁δn`、`δ(λ∪δa)`、`δ(λ∪n)`、`δ(δλ∪₁n)` の結合として一意に `(k/2, k/4π, −k, k/2)` と書ける。
+    最初の係数が「補正項は `−(k/2) a∪₁δn`」を意味し、残りが 5 節の全微分である。候補から `δλ∪₁δn` を外すと解がない(補正項なしでは不変にできない)。
+  - (A3) そのものも、3 つの ∪₁ の項の一意な結合として出る。符号を取り違えた左辺には解がない。
+  - 候補は人が与える。∪ᵢ と E∞ の演算から候補を自動的に並べること、単体の上で解くことはまだない。
 - `LocalOperation[f, d][a1, …, ar]`:局所的な多重線形演算。n 次元の cell 上の値は、`f[n]` の項
   `{係数, {row₁, …, row_r}}` についての `係数 × ∏ⱼ aⱼ(x + shiftⱼ; Sⱼ)` の和(row の読み方は 3.5 と同じ)。
   ∪ も ∪ᵢ もこの形で、6 節の E∞ operad の作用はこれで表す。
@@ -478,7 +487,7 @@ Hopkins–Singer の differential cocycle の、微分形式を実 cochain に�
   その対称部分は (A3) で `m∪m′ + m′∪m = −δ(m∪₁m′) + δm∪₁m′ − m∪₁δm′` と ∪₁ で書ける。
   k が奇数のときに残る障害がこれで、消すには spin 構造が要る。奇数 level の構成(Majorana、fermion condensation)はまだない。
 
-Z_N の背景場との結合、奇数 level(spin 構造)、補正項の自動探索はまだない(7 節)。
+Z_N の背景場との結合と、奇数 level の格子での構成(spin 構造)はまだない(7 節)。補正項の探索は 3.8 節にある。
 
 ## 4. 自動検証の4つの強さ
 
@@ -816,14 +825,15 @@ c(a, b) とする。これは平面の向きの選び方で、逆に取ると `c
 | 2 | little intervals、A∞ operad(自由 dg operad) | 公理が端点を記号にして通る。d²=0。associahedron の面の総数 1, 3, 11, 45。A∞ が As の分解 | 実装済み |
 | 3 | little 2-cubes、Gerstenhaber operad、Pₙ | C_n(2) ≃ S^(n−1)。k 点成分の Poincaré 多項式が ∏(1+jt) | 実装済み(Pₙ の次元は arity 4 まで、参照実装で arity 5 まで。Betti 数との照合は、脈体で k = 2 と (n, k) = (2, 3)、Barratt–Eccles の段で (3, 3) まで、参照実装で (2, 4) と (4, 3) まで) |
 | C | 点付き Eₙ モノイダル圏、coherence、braid 群の作用 | 五角形・六角形・分類の個数。coherence が長さ 6 まで | 実装済み(little squares の道の braid とその位相、六角形 = operad の合成との両立まで。parenthesized braids を operad として扱う一般の coherence は未着手) |
-| G | 多重線形展開、ゲージ変分、作用 | 5 節の恒等式が通る | 実装済み |
-| V | Villain 形式の U(1) 場、Deligne–Beilinson 積、構成的な格子作用 | 積がゲージ同値類の上で定まる。BF と Chern–Simons が積から出る。平坦な Z_N 場の上で Dijkgraaf–Witten になる | 実装済み(対象、ゲージ変換、積、BF、Chern–Simons、Z_N への制限、積の可換性のホモトピー、θ 項と Witten 効果、differential cochain としての定式化、Chern–Simons の零モードの数)。奇数 level、背景場との結合、補正項の探索は未着手 |
+| G | 多重線形展開、ゲージ変分、作用、補正項の探索 | 5 節の恒等式が通る。Chern–Simons の ∪₁ の補正項が線形方程式の一意な解として出る | 実装済み(補正項の探索は、与えた候補の線形結合の中から。候補の自動生成は未着手) |
+| V | Villain 形式の U(1) 場、Deligne–Beilinson 積、構成的な格子作用 | 積がゲージ同値類の上で定まる。BF と Chern–Simons が積から出る。平坦な Z_N 場の上で Dijkgraaf–Witten になる | 実装済み(対象、ゲージ変換、積、BF、Chern–Simons、Z_N への制限、積の可換性のホモトピー、θ 項と Witten 効果、differential cochain としての定式化、Chern–Simons の零モードの数)。奇数 level の格子での構成、背景場との結合は未着手 |
 | 4 | E∞ operad(Barratt–Eccles、table reduction で surjection へ)、Eₙ フィルトレーション、cochain への作用 | eᵢ ↦ (1,2,1,2,…) の作用が ∪ᵢ を再現。三つの法則 (L)・(C)・(E)。Hirsch 公式のホモトピー | 実装済み(surjection operad の合成は未実装) |
 | 5 | 単体的対象、bar 構成 B(Σⁿ, Cₙ, X) | 反復 bar 構成で作った BⁿA のホモトピー群が次数 n の A だけ。近似定理を有理 Poincaré 級数の一致で確認 | 離散群の場合を実装済み(BⁿA のホモロジーとホモトピー群、Eₙ 構造 = BⁿA の cocycle、格子の作用 = K(A, n) の cocycle)。ΩⁿY への little cubes の作用と近似写像 α は実装済み。近似定理は、球面の楔について有理 Poincaré 級数の一致を arity 4 まで確認済み。n = 2 の Z₂ 係数では球面 1 個について重み 8 まで(braid 群のホモロジーと Kudo–Araki の多項式代数)。両側 bar 構成 B(Σⁿ, Cₙ, X) そのものは未着手 |
 
 次の候補(研究で使う計算機としての方向。cochain の式を入れると、ゲージ変分・補正項・アノマリーの類が出てくること):
 
-- **補正項の探索**:`δX = Y` を解いて X を返すこと。コホモロジーで成り立つ等式の cochain での補正項を、∪ᵢ と E∞ の演算の線形結合の中から探す
+- **補正項の探索の続き**:最初の版(与えた候補の中から係数を解く)は 3.8 節にある。次は、次数を指定して ∪ᵢ と E∞ の演算から候補を自動的に並べること、
+  整数性(2π × 整数になるか)を条件に入れること、単体の上で解くこと
 - 奇数 level の Chern–Simons の格子での構成:spin 構造(w₂ の自明化)と fermion condensation。圏の側(3.7 節の分解)は検査済みで、
   障害は 6 節の fermion の類 `(1/2) P(B)` にあたるはずである
 - Ikeda の格子 Deligne–Beilinson コホモロジー(arXiv:2601.15939。双対格子の点を patch とする Čech–de Rham 型)との比較写像
@@ -891,12 +901,16 @@ operad の側の候補:
   単独の層のロードと、17 層すべてのロードも確認済み。`DifferentialCochain`、`DifferentialCoboundary`、`DifferentialProduct`、`DifferentialSwapHomotopy`、`VillainDifferentialCochain`、`ChernSimonsZeroModeCount`、`StaggeredMomentumCount` を含む。
 - v0.16.0:`wolframscript -file Scripts/RunTests.wls` で 337/337 が通過(2026-11-23、Wolfram Language 15.0.1、利用者の環境)。
   単独の層のロードと、17 層すべてのロードも確認済み。`ChernSimonsAnyons`、`ChernSimonsSpinSplitQ`、`ChernSimonsFermionCondensationQ` を含む。
+- v0.17.0:`wolframscript -file Scripts/RunTests.wls` で 339/339 が通過(2026-11-23、Wolfram Language 15.0.1、利用者の環境)。
+  単独の層のロードと、17 層すべてのロードも確認済み。`CochainLinearSolve` を含む。
 
 ### Python 参照実装(整数・有理数の厳密計算)
 
 - `cubical_reference.py`:δ²=0、Leibniz 則、∪ の結合則、(A3)(d ≤ 4 の全次数)、
   Steenrod の規約、arXiv:2303.06160 付録 A の 1〜3 次元の成分公式、Hirsch 公式の欠損
 - `gauge_reference.py`:5 節の恒等式、't Hooft flux で ΣP(B) = 2 Pf(z)、相互 braiding との一致
+- `correction_reference.py`:係数の探索(乱数で作った cochain の上の線形方程式として。立方格子と単体)。(A3) が 3 つの ∪₁ の項の一意な結合であること
+  (次数 (2, 2) まで)、Chern–Simons のゲージ変分から補正項 `−(k/2) a∪₁δn` と全微分の係数が一意に決まること、補正項の候補がないと解がないこと
 - `encategory_reference.py`:標準例が公理を満たすこと、ゲージ不変性、符号を変えた六角形が
   落ちること、Z_N 上の構造の個数、coherence(長さ 6 まで)、
   U(1)_k の線の圏(k ≤ 9 の奇数で、`Z_2k^(2) = Z_k^(4) ⊠ sVec` と、level 4k の fermion の中心化部分であること)

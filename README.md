@@ -144,6 +144,28 @@ TotalDerivativeQ[
   3]                                                    (* True *)
 ```
 
+The cup-1 term of that Lagrangian can be found instead of checked.
+`CochainLinearSolve` looks for the coefficients that make a cochain expression
+a combination of given candidates. Take the Lagrangian without its cup-1 term;
+its gauge variation is a unique combination of the variation of a candidate
+correction term and of three coboundaries:
+
+```wolfram
+bare[u_, ph_] := ModifiedVillainCS[k][u, n, ph] + (k/2) HigherCup[1][u, Coboundary[n]];
+
+CochainLinearSolve[
+  bare[a + Coboundary[lam], phi - k lam] - bare[a, phi],
+  {HigherCup[1][Coboundary[lam], Coboundary[n]],       (* the variation of a cup_1 dn *)
+   Coboundary[Cup[lam, Coboundary[a]]],
+   Coboundary[Cup[lam, n]],
+   Coboundary[HigherCup[1][Coboundary[lam], n]]},
+  3]
+(* <|"Solvable" -> True, "Unique" -> True, "Coefficients" -> {k/2, k/(4 Pi), -k, k/2}|> *)
+```
+
+The first coefficient says that the correction term is `-(k/2) a cup_1 dn`.
+Without that candidate there is no solution.
+
 The Pontryagin square on a 't Hooft flux background of the four-torus:
 
 ```wolfram
@@ -821,6 +843,7 @@ pure-Python references, which use exact integer and rational arithmetic:
 ```
 python3 reference/cubical_reference.py      # d, cup, higher cup products
 python3 reference/gauge_reference.py        # gauge-variation identities
+python3 reference/correction_reference.py   # the search for correction terms as linear algebra
 python3 reference/encategory_reference.py   # pentagon, hexagons, coherence
 python3 reference/operad_reference.py       # symmetric groups, little cubes
 python3 reference/ainfinity_reference.py    # Koszul signs, A-infinity, associahedra

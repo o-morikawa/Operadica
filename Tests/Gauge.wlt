@@ -200,3 +200,73 @@ VerificationTest[
   {True, 0, LocalOperation[f, 1][Coboundary[Cochain[0, la]], Cochain[2, ga]]},
   TestID -> "Gauge-expand-local-operation"
 ]
+
+(* ---------------------------------------------------------------------- *)
+(* the search for coefficients                                            *)
+(* ---------------------------------------------------------------------- *)
+
+(* (A3) is the unique combination of its three cup-1 terms; with the other
+   sign of the second term there is no solution; candidates of another
+   degree are refused *)
+
+VerificationTest[
+  With[{a = Cochain[1, fa], b = Cochain[1, fb], c = Cochain[2, fc]},
+    With[{
+        terms = Function[{u, v},
+          {Coboundary[HigherCup[1][u, v]], HigherCup[1][Coboundary[u], v], HigherCup[1][u, Coboundary[v]]}
+        ]
+      },
+      {
+        CochainLinearSolve[Cup[a, b] + Cup[b, a], terms[a, b], 2],
+        CochainLinearSolve[Cup[a, c] - Cup[c, a], terms[a, c], 3],
+        CochainLinearSolve[Cup[a, b] - Cup[b, a], terms[a, b], 2],
+        CochainLinearSolve[Cup[a, b], {Cup[a, c]}, 3]
+      }
+    ]
+  ],
+  {
+    <|"Solvable" -> True, "Unique" -> True, "Coefficients" -> {-1, 1, -1}|>,
+    <|"Solvable" -> True, "Unique" -> True, "Coefficients" -> {1, -1, 1}|>,
+    <|"Solvable" -> False, "Unique" -> False, "Coefficients" -> $Failed|>,
+    $Failed
+  },
+  TestID -> "Gauge-linear-solve"
+]
+
+(* the cup-1 term of the modified Villain Chern-Simons Lagrangian, found:
+   the gauge variation of the Lagrangian without that term is a unique
+   combination of the variation of a cup_1 dn and of three coboundaries.
+   The first coefficient k/2 means the correction -(k/2) a cup_1 dn; the
+   others are the primitive of section 5 of the design document *)
+
+VerificationTest[
+  With[{a = Cochain[1, fa], n = Cochain[2, fn], phi = Cochain[0, fp], lam = Cochain[0, fl]},
+    With[{
+        bare = Function[{u, ph},
+          ModifiedVillainCS[kk][u, n, ph] + (kk / 2) HigherCup[1][u, Coboundary[n]]],
+        cands = {
+          HigherCup[1][Coboundary[lam], Coboundary[n]],
+          Coboundary[Cup[lam, Coboundary[a]]],
+          Coboundary[Cup[lam, n]],
+          Coboundary[HigherCup[1][Coboundary[lam], n]]
+        }
+      },
+      With[{variation = bare[a + Coboundary[lam], phi - kk lam] - bare[a, phi]},
+        With[{
+            full = CochainLinearSolve[variation, cands, 3],
+            short = CochainLinearSolve[variation, Rest[cands], 3]
+          },
+          {
+            full["Solvable"],
+            full["Unique"],
+            Simplify[full["Coefficients"] - {kk / 2, kk / (4 Pi), -kk, kk / 2}],
+            short["Solvable"],
+            short["Coefficients"]
+          }
+        ]
+      ]
+    ]
+  ],
+  {True, True, {0, 0, 0, 0}, False, $Failed},
+  TestID -> "Gauge-correction-search"
+]
