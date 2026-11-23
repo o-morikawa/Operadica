@@ -1439,6 +1439,107 @@ VerificationTest[
   TestID -> "Villain-Cech-de-Rham-anomaly"
 ]
 
+(* the sites of the chain are the tetrahedra of the triangulation of the
+   dual lattice with six tetrahedra in a dual cube, a closed 3-manifold.  On
+   its cocycles there is a sign that extends SpinStructureSign: it changes by
+   (-1)^(the anomaly) under the coboundary of a function on the edges, and
+   it is a quadratic refinement of the cup-1 pairing of Steenrod *)
+
+VerificationTest[
+  With[{dims = {3, 3, 3}},
+    With[{
+        field = Function[{p, f},
+          PeriodicCochain[p, dims,
+            Association[Map[Function[c, {c[[1]], c[[2]]} -> f[c[[1]], c[[2]]]], LCells[dims, p]]]
+          ]
+        ],
+        flux = THooftFluxCochain[{{0, 1, -2}, {-1, 0, 3}, {2, -3, 0}}, dims],
+        n2 = THooftFluxCochain[{{0, 2, 0}, {-2, 0, -1}, {0, 1, 0}}, dims],
+        one = PeriodicCochain[1, dims, <|{{0, 0, 0}, {1}} -> 1|>],
+        mm = Function[{p, q},
+          With[{
+              w = Mod[q - p, dims, -1] . {1, 2, 4},
+              g = Function[c, Mod[c[[1]] + 2 c[[2]] c[[3]] + c[[3]] + c[[1]] c[[2]], 3]]
+            },
+            If[w === 0, 0, Sign[w] (Mod[g[p] + g[q] + Abs[w], 3] - 1)]
+          ]
+        ],
+        tets = Lookup[CechDeRhamFundamentalCycle[dims], 0],
+        down = Function[{x, mus}, Mod[x - Total[Map[Function[dir, UnitVector[3, dir]], mus]], dims]]
+      },
+      With[{
+          e0 = field[1, Function[{y, s}, Mod[y[[1]] + 2 y[[2]] + 3 y[[3]] + s[[1]] (1 + y[[1]] y[[2]] + y[[3]]), 3] - 1]],
+          m2 = field[1, Function[{y, s}, Mod[s[[1]] y[[1]] + y[[2]] y[[3]] + 2 s[[1]] y[[3]] + y[[1]] + s[[1]], 2]]],
+          lg = CechDeRhamLargeGauge[one, dims][[2]]
+        },
+        With[{
+            n = field[2, Function[{y, s}, CochainValue[flux + Coboundary[e0], y, s]]]
+          },
+          With[{
+              n3 = field[2, Function[{y, s}, CochainValue[n + Coboundary[m2], y, s]]],
+              nna = CechDeRhamChern[VillainField[0, n], dims],
+              nnb = CechDeRhamChern[VillainField[0, n2], dims],
+              odd = Function[{p, q}, mm[p, q] + lg[p, q]]
+            },
+            With[{
+                z = CechDeRhamSpinStructureSign[dims, {1, 1, 1}],
+                z2 = CechDeRhamSpinStructureSign[dims, {-1, 1, -1}],
+                nnc = CechDeRhamChern[VillainField[0, n3], dims]
+              },
+              {
+                Sort[Map[Function[term, {term[[1]], term[[4]]}], tets]] ===
+                  Sort[
+                    Flatten[
+                      Table[
+                        {Signature[perm], {down[site, perm], down[site, Rest[perm]], down[site, {Last[perm]}], site}},
+                        {site, Tuples[{0, 1, 2}, 3]}, {perm, Permutations[{1, 2, 3}]}
+                      ],
+                      1
+                    ]
+                  ],
+                With[{faces = Flatten[Map[Function[term, Subsets[term[[4]], {3}]], tets], 1]},
+                  {Length[Union[faces]], Union[Values[Counts[faces]]]}
+                ],
+                With[{va = z[nna], vc = z[nnc], wa = z2[nna]},
+                  {
+                    {va, vc, z[nnb], z[Function[{p, q, r}, nna[p, q, r] + nnb[p, q, r]]]},
+                    {wa, z2[nnb]},
+                    {
+                      va === SpinStructureSign[dims, {1, 1, 1}][n],
+                      vc === SpinStructureSign[dims, {1, 1, 1}][n3],
+                      wa === SpinStructureSign[dims, {-1, 1, -1}][n]
+                    }
+                  }
+                ],
+                {CechDeRhamAnomaly[mm, nna, dims], CechDeRhamAnomaly[odd, nna, dims]},
+                {
+                  z[Function[{p, q, r}, nna[p, q, r] + mm[q, r] - mm[p, r] + mm[p, q]]],
+                  z[Function[{p, q, r}, nna[p, q, r] + odd[q, r] - odd[p, r] + odd[p, q]]]
+                },
+                {
+                  CechDeRhamCupOnePairing[nna, nnb, dims],
+                  Mod[CochainIntegrate[HigherCup[1][n, n2], dims], 2]
+                },
+                z[Function[{p, q, r}, nna[p, q, r] + Boole[{p, q, r} === {{0, 0, 0}, {1, 0, 0}, {1, 1, 0}}]]]
+              }
+            ]
+          ]
+        ]
+      ]
+    ]
+  ],
+  {
+    True,
+    {324, {2}},
+    {{-1, 1, 1, 1}, {-1, -1}, {True, True, True}},
+    {-6, -7},
+    {-1, 1},
+    {1, 1},
+    $Failed
+  },
+  TestID -> "Villain-Cech-de-Rham-spin-structure"
+]
+
 (* ---------------------------------------------------------------------- *)
 (* background fields of the 1-form symmetry                               *)
 (* ---------------------------------------------------------------------- *)

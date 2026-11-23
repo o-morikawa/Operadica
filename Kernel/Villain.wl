@@ -172,8 +172,8 @@
 (*                                                                        *)
 (*  Checked in reference/villain_reference.py,                            *)
 (*  reference/oddlevel_reference.py, reference/cech_reference.py,         *)
-(*  reference/star_reference.py, reference/grassmann_reference.py and     *)
-(*  reference/wilson_reference.py.                                        *)
+(*  reference/star_reference.py, reference/grassmann_reference.py,        *)
+(*  reference/wilson_reference.py and reference/kuhn_reference.py.        *)
 (*                                                                        *)
 (*  Layer: lattice gauge theory.  Depends on: Lattice.                    *)
 (* ====================================================================== *)
@@ -257,6 +257,10 @@ CechDeRhamLargeGauge::usage = "CechDeRhamLargeGauge[m, {L1, L2, L3}] gives the p
 CechDeRhamAnomaly::usage = "CechDeRhamAnomaly[mm, nn, {L1, L2, L3}] gives the integer pairing of the Cech cochain mm_pq N_qrs + N_pqr mm_rs + (mm_qr - mm_pr + mm_pq) mm_rs with the sites of CechDeRhamFundamentalCycle, for an alternating integer function mm[p, q] and a Cech cocycle nn[p, q, r]: m cup N + N cup m + dm cup m with the Cech cup product. The total of CechDeRhamStarIntegral of a cocycle with itself changes by minus this integer under CechDeRhamGaugeTransform with mm. It is the Cech form of ChernSimonsLargeGaugeAnomaly: for the mm of CechDeRhamLargeGauge[m, dims] and the cocycle of a flat Villain field with the flux n it is the sum of ChernSimonsLargeGaugeAnomaly[m, n].";
 
 VillainFramedWilsonLoop::usage = "VillainFramedWilsonLoop[b][A] gives the cochain (Cup[a, b] + Cup[b, a]) / 2 - Pi HigherCup[1][b, n] for the Villain field A = VillainField[a, n] of degree 1 and an integer 2-cochain b in three dimensions. For b the Poincare dual of a closed curve of the dual lattice, Exp[I (its sum)] is the framed Wilson loop of arXiv:2303.06160, eq. (33): two lines of charge 1/2, displaced along the diagonal, and the sheet of n between them. For closed b the sum does not change under VillainGaugeTransform and changes by 2 Pi times an integer under VillainLargeGaugeTransform. The cochain is the response of VillainChernSimons[k] to the background flux n - b / k, and VillainFramedWilsonLoop[k b] is the shift of the flux n by b. Moving the curve, b -> b + Coboundary[v], multiplies the expectation value by Exp[-2 Pi I q / (2 k)] with q the sum of ChernSimonsLargeGaugeAnomaly[v, b]: the spin c^2 / (2 k) of the line of charge c and the linking phase 1 / k.";
+
+CechDeRhamSpinStructureSign::usage = "CechDeRhamSpinStructureSign[{L1, L2, L3}, {s12, s13, s23}][nn] gives the sign 1 or -1 of the Cech 2-cocycle nn[p, q, r] (integer, a cocycle modulo 2) on the triangulation formed by the sites of CechDeRhamFundamentalCycle: the tetrahedra {x - e_a - e_b - e_c, x - e_b - e_c, x - e_c, x} of cubes, six in every dual cube, with the coefficient the sign of the permutation (a, b, c). The cocycle is written as the cocycle of the flux THooftFluxCochain with its Chern numbers plus the coboundary of an integer function m on the edges (row reduction modulo 2), and the sign is that of the flux for the spin structure {s12, s13, s23} times (-1)^CechDeRhamAnomaly[m, .]. It is SpinStructureSign[dims, s][n] on the cocycle of a flat Villain field with the flux n; it changes by (-1)^CechDeRhamAnomaly[mm, nn, dims] when the coboundary of mm is added to nn, so that Exp[I Pi k (the total of CechDeRhamStarIntegral of a cocycle with itself)] times its k-th power is invariant under CechDeRhamGaugeTransform for odd k; and it is a quadratic refinement of CechDeRhamCupOnePairing. The result is $Failed if nn is not a cocycle modulo 2 on the triangulation.";
+
+CechDeRhamCupOnePairing::usage = "CechDeRhamCupOnePairing[nn1, nn2, {L1, L2, L3}] gives, modulo 2, the sum over the tetrahedra {p, q, r, s} of the triangulation of CechDeRhamSpinStructureSign of nn1[p, r, s] nn2[p, q, r] + nn1[p, q, s] nn2[q, r, s]: the cup-1 product of Steenrod of two Cech 2-cochains. For the cocycles of two flat Villain fields with the fluxes n and n2 it is the sum of HigherCup[1][n, n2] modulo 2.";
 
 StaggeredMomentumCount::usage = "StaggeredMomentumCount[{L1, ..., Ld}] gives the number of momenta p on the periodic lattice with sides L1, ..., Ld whose components add up to Pi modulo 2 Pi: L1 ... Ld / lcm(L1, ..., Ld) if the lcm is even, and 0 if all sides are odd.";
 
@@ -824,6 +828,93 @@ CechDeRhamAnomaly[mm_, nn_, dims : {_Integer, _Integer, _Integer}] :=
 
 VillainFramedWilsonLoop[b_][VillainField[a_, n_]] :=
   (1 / 2) (Cup[a, b] + Cup[b, a]) - Pi HigherCup[1][b, n];
+
+(* ---------------------------------------------------------------------- *)
+(* the triangulation formed by the sites of the chain, and the sign on its *)
+(* cocycles                                                                *)
+(* ---------------------------------------------------------------------- *)
+
+cdrTetrahedra[dims_List] :=
+  Map[Function[term, term[[4]]], Lookup[CechDeRhamFundamentalCycle[dims], 0]];
+
+(* the Chern numbers {c12, c13, c23} of a Cech cocycle, modulo 2 *)
+cdrChernParity[nn_, dims_List] :=
+  With[{pts = Tuples[Map[Function[len, Range[0, len - 1]], dims]]},
+    Map[
+      Function[pl,
+        Mod[
+          Total[
+            Map[
+              Function[p,
+                With[{
+                    pm = Mod[p + UnitVector[3, pl[[1]]], dims],
+                    pn = Mod[p + UnitVector[3, pl[[2]]], dims],
+                    pmn = Mod[p + UnitVector[3, pl[[1]]] + UnitVector[3, pl[[2]]], dims]
+                  },
+                  nn[p, pm, pmn] + nn[p, pn, pmn]
+                ]
+              ],
+              Select[pts, Function[p, p[[6 - pl[[1]] - pl[[2]]]] === 0]]
+            ]
+          ],
+          2
+        ]
+      ],
+      {{1, 2}, {1, 3}, {2, 3}}
+    ]
+  ];
+
+CechDeRhamCupOnePairing[nn1_, nn2_, dims : {_Integer, _Integer, _Integer}] :=
+  Mod[
+    Total[
+      Map[
+        Function[t,
+          nn1[t[[1]], t[[3]], t[[4]]] nn2[t[[1]], t[[2]], t[[3]]] +
+            nn1[t[[1]], t[[2]], t[[4]]] nn2[t[[2]], t[[3]], t[[4]]]
+        ],
+        cdrTetrahedra[dims]
+      ]
+    ],
+    2
+  ];
+
+CechDeRhamSpinStructureSign[dims : {_Integer, _Integer, _Integer}, signs : {(1 | -1), (1 | -1), (1 | -1)}][nn_] :=
+  Module[{tets, tris, edges, ne, index, tube, base, table, mat, rhs, red, pivots, rows, sol},
+    tets = cdrTetrahedra[dims];
+    tris = Union[Flatten[Map[Function[t, Subsets[t, {3}]], tets], 1]];
+    edges = Union[Flatten[Map[Function[t, Subsets[t, {2}]], tets], 1]];
+    ne = Length[edges];
+    index = Association[Table[edges[[i]] -> i, {i, 1, ne}]];
+    tube = THooftFluxCochain[ssMatrix[cdrChernParity[nn, dims]], dims];
+    base = CechDeRhamChern[VillainField[0, tube], dims];
+    table = Association[Map[Function[f, f -> base[f[[1]], f[[2]], f[[3]]]], tris]];
+    mat = Normal[
+      SparseArray[
+        Flatten[
+          Table[
+            Map[Function[e, {i, Lookup[index, Key[e]]} -> 1], Subsets[tris[[i]], {2}]],
+            {i, 1, Length[tris]}
+          ],
+          1
+        ],
+        {Length[tris], ne}
+      ]
+    ];
+    rhs = Map[Function[f, Mod[nn[f[[1]], f[[2]], f[[3]]] - Lookup[table, Key[f]], 2]], tris];
+    red = RowReduce[Join[mat, Map[List, rhs], 2], Modulus -> 2];
+    pivots = Map[ssPivot, red];
+    rows = Select[Range[Length[red]], Function[i, 1 <= pivots[[i]] <= ne]];
+    If[MemberQ[pivots, ne + 1],
+      $Failed,
+      sol = Association[Map[Function[i, edges[[pivots[[i]]]] -> red[[i, ne + 1]]], rows]];
+      GuWenGrassmannSign[dims, SpinStructureHolonomy[signs]][tube] *
+        (-1)^CechDeRhamAnomaly[
+          Function[{p, q}, Lookup[sol, Key[{p, q}], 0]],
+          Function[{p, q, r}, Lookup[table, Key[{p, q, r}]]],
+          dims
+        ]
+    ]
+  ];
 
 End[];
 

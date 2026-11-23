@@ -1,6 +1,6 @@
 # Operadica 設計文書
 
-最終更新: 2026-11-23(v0.24.0)
+最終更新: 2026-11-23(v0.25.0)
 
 ## 1. 目的
 
@@ -718,6 +718,31 @@ cocycle の段階での対応を与えておらず、Villain 形式で Λ を省
 
 成り立つ範囲:辺の長さが 3 以上の三次元トーラス、平坦な場(`δn = 0`。monopole があると降下の最初の段階で失敗する)。
 
+**鎖の site は三角形分割である。その上の符号**(`CechDeRhamSpinStructureSign`、`CechDeRhamCupOnePairing`。`reference/kuhn_reference.py` で確認)
+
+`σ₀₃` に現れる立方体の 4 つ組は
+
+`(x − e_a − e_b − e_c, x − e_b − e_c, x − e_c, x)`((a, b, c) は (1, 2, 3) の並べ替え。係数は置換の符号)
+
+で、双対の立方体 1 個を 6 個の四面体に分ける三角形分割(Kuhn、Freudenthal)の四面体である。頂点は対角線に沿って順序づけられている。
+これは閉じた 3 次元多様体で(四面体 6V 個、三角形 12V 個でそれぞれ 2 つの四面体の面、辺 7V 本)、`σ₀₃` はその基本 cycle である。
+したがって上の Čech の形のアノマリーは、この三角形分割の上の**単体の** `q(m, N) = m∪N + N∪m + δm∪m` の和で、m は辺の上、N は三角形の上の値だけで決まる。
+
+2 を法とする 2-cocycle N の上に、符号 ž を次のように置く(`CechDeRhamSpinStructureSign[dims, {s12, s13, s23}][N]`):
+N の Chern 数(2 を法として)を flux に持つ `THooftFluxCochain` を n₀ とし、`N = N(n₀) + δm` を 2 を法として解いて、
+`ž(N) = z(n₀) (−1)^(Σ q(m, N(n₀)))`。確かめていること(参照実装で 3×3×3 と 3×3×4。8 個の spin 構造):
+
+- **解 m の取り方に依らない**。N が cocycle でなければ値はない。
+- **z の拡張である**:平坦な Villain 場の cocycle の上で `ž(N(n)) = z(n)`(`SpinStructureSign`)。
+- **(i)**:`ž(N + δm) = ž(N) (−1)^(Σ q(m, N))`。したがって k が奇数のとき、`exp(iπk ∫A⋆A) · ž(N)^k` は 3 つ組のゲージ変換で不変である。
+  奇数 level の重みが、Čech–de Rham の側でも、降下の像に限らず定まる。
+- **(ii)**:`ž(N + N′) = ž(N) ž(N′) (−1)^(Σ N∪₁N′)`。ここで ∪₁ は Steenrod の単体の ∪₁(5 節)で、
+  2 を法として `(N∪₁N′)(pqrs) = N(prs)N′(pqr) + N(pqs)N′(qrs)`(`CechDeRhamCupOnePairing`)。
+- **降下は ∪₁ の対を保つ**:`Σ N(n)∪₁N(n′) = Σ n∪₁n′`(2 を法として)。立方格子の ∪₁(Chen–Tata)と単体の ∪₁(Steenrod)が、降下で対応する。
+
+つまり、立方格子の上の条件 (i)・(ii) は、双対格子の三角形分割の上の同じ形の条件(単体の ∪ と ∪₁ で書いたもの)に移る。
+ここでの ž は方程式を解いて決めたもので、三角形分割の上の局所的な式(単体の Grassmann 積分と w₂ の代表)はまだ作っていない。
+
 まだしていないこと:同論文の対称化した積(∪₁ の補正が入る)と奇数 level の扱い(13.1 節)を、上の非対称性および 3.9 節の符号 z と比べること。
 Čech–de Rham の類から Villain 場への逆向きの写像。同論文の式は本文から読み取ったもので、`σ₂₁` と cocycle 条件のほかは、符号の規約を 1 つずつ照合してはいない。
 
@@ -1061,7 +1086,7 @@ c(a, b) とする。これは平面の向きの選び方で、逆に取ると `c
 | 3 | little 2-cubes、Gerstenhaber operad、Pₙ | C_n(2) ≃ S^(n−1)。k 点成分の Poincaré 多項式が ∏(1+jt) | 実装済み(Pₙ の次元は arity 4 まで、参照実装で arity 5 まで。Betti 数との照合は、脈体で k = 2 と (n, k) = (2, 3)、Barratt–Eccles の段で (3, 3) まで、参照実装で (2, 4) と (4, 3) まで) |
 | C | 点付き Eₙ モノイダル圏、coherence、braid 群の作用 | 五角形・六角形・分類の個数。coherence が長さ 6 まで | 実装済み(little squares の道の braid とその位相、六角形 = operad の合成との両立まで。parenthesized braids を operad として扱う一般の coherence は未着手) |
 | G | 多重線形展開、ゲージ変分、作用、補正項の探索 | 5 節の恒等式が通る。Chern–Simons の ∪₁ の補正項が線形方程式の一意な解として出る | 実装済み(補正項の探索は、与えた候補の線形結合の中から。候補の自動生成は未着手) |
-| V | Villain 形式の U(1) 場、Deligne–Beilinson 積、構成的な格子作用 | 積がゲージ同値類の上で定まる。BF と Chern–Simons が積から出る。平坦な Z_N 場の上で Dijkgraaf–Witten になる | 実装済み(対象、ゲージ変換、積、BF、Chern–Simons、Z_N への制限、積の可換性のホモトピー、θ 項と Witten 効果、differential cochain としての定式化、Chern–Simons の零モードの数、奇数 level の障害と三次元トーラスの上でそれを消す符号、その符号と境界条件の対応、Čech–de Rham の形の cocycle、背景場と 1-form 対称性のアノマリー、星積とその積分が level 2 の作用に等しいこと、符号の局所的な式(Grassmann 積分)、framing のある Wilson loop とその spin・絡み)。単体複体の上の符号は未着手 |
+| V | Villain 形式の U(1) 場、Deligne–Beilinson 積、構成的な格子作用 | 積がゲージ同値類の上で定まる。BF と Chern–Simons が積から出る。平坦な Z_N 場の上で Dijkgraaf–Witten になる | 実装済み(対象、ゲージ変換、積、BF、Chern–Simons、Z_N への制限、積の可換性のホモトピー、θ 項と Witten 効果、differential cochain としての定式化、Chern–Simons の零モードの数、奇数 level の障害と三次元トーラスの上でそれを消す符号、その符号と境界条件の対応、Čech–de Rham の形の cocycle、背景場と 1-form 対称性のアノマリー、星積とその積分が level 2 の作用に等しいこと、符号の局所的な式(Grassmann 積分)、framing のある Wilson loop とその spin・絡み、双対格子の三角形分割の cocycle の上の符号)。単体の Grassmann 積分(w₂ の代表)は未着手 |
 | 4 | E∞ operad(Barratt–Eccles、table reduction で surjection へ)、Eₙ フィルトレーション、cochain への作用 | eᵢ ↦ (1,2,1,2,…) の作用が ∪ᵢ を再現。三つの法則 (L)・(C)・(E)。Hirsch 公式のホモトピー | 実装済み(surjection operad の合成は未実装) |
 | 5 | 単体的対象、bar 構成 B(Σⁿ, Cₙ, X) | 反復 bar 構成で作った BⁿA のホモトピー群が次数 n の A だけ。近似定理を有理 Poincaré 級数の一致で確認 | 離散群の場合を実装済み(BⁿA のホモロジーとホモトピー群、Eₙ 構造 = BⁿA の cocycle、格子の作用 = K(A, n) の cocycle)。ΩⁿY への little cubes の作用と近似写像 α は実装済み。近似定理は、球面の楔について有理 Poincaré 級数の一致を arity 4 まで確認済み。n = 2 の Z₂ 係数では球面 1 個について重み 8 まで(braid 群のホモロジーと Kudo–Araki の多項式代数)。両側 bar 構成 B(Σⁿ, Cₙ, X) そのものは未着手 |
 
@@ -1073,7 +1098,8 @@ c(a, b) とする。これは平面の向きの選び方で、逆に取ると `c
   符号の局所的な式(Gu–Wen 型の Grassmann 積分)と、framing のある Wilson loop(電荷 k の線が fermion であること)も 3.9 節にある。
   次は、単体複体(w₂ の代表)、開いた線と monopole 演算子、正準量子化(arXiv:2401.09597)の線の演算子との照合、
   文献の Majorana の重みとの項ごとの照合。アノマリーの Čech の形(脈体の上の `m∪N + N∪m + δ̌m∪m`)も 3.9 節にある。
-  次は、降下の像に限らない一般の Čech cocycle N の上で、それを消す符号を作ること
+  鎖の site が双対格子の三角形分割であることと、その cocycle の上の符号 ž も 3.9 節にある。
+  次は、その三角形分割の上の局所的な式(単体の Grassmann 積分と w₂ の代表)
 - Ikeda の格子 Deligne–Beilinson コホモロジー(arXiv:2601.15939)との比較の続き:Villain 場から Čech–de Rham の cocycle への写像と、
   星積の積分が level 2 の Chern–Simons の作用に等しいことは 3.9 節にある。次は、同論文の対称化した積と奇数 level の扱いを
   3.9 節の符号 z と比べること、逆向きの写像、framing のある Wilson loop の比較、`σ₁₂`・`σ₀₃` の符号を同論文の式と照合すること
@@ -1158,6 +1184,8 @@ operad の側の候補:
   単独の層のロードと、17 層すべてのロードも確認済み。`CechDeRhamLargeGauge`、`CechDeRhamAnomaly` を含む。
 - v0.24.0:`wolframscript -file Scripts/RunTests.wls` で 356/356 が通過(2026-11-23、Wolfram Language 15.0.1、利用者の環境)。
   単独の層のロードと、17 層すべてのロードも確認済み。`VillainFramedWilsonLoop` を含む。
+- v0.25.0:`wolframscript -file Scripts/RunTests.wls` で 357/357 が通過(2026-11-23、Wolfram Language 15.0.1、利用者の環境)。
+  単独の層のロードと、17 層すべてのロードも確認済み。`CechDeRhamSpinStructureSign`、`CechDeRhamCupOnePairing` を含む。
 
 ### Python 参照実装(整数・有理数の厳密計算)
 
@@ -1228,3 +1256,6 @@ operad の側の候補:
 - `wilson_reference.py`:framing のある Wilson loop。背景の flux への応答、ゲージ変換と大きいゲージ変換での変化(3×3×3 と 3×4×5、level 1〜3)、
   曲線の変形での位相が `−Σ q(v, b)/2k` であること(3×3×3 と 3×3×4、level 1〜4)、自己絡み数 0・1 と絡み 2(3 通りの大きさ)、
   奇数 level で電荷 k の線が Grassmann 積分の符号になること
+- `kuhn_reference.py`:鎖の site が双対格子の三角形分割(1 つの双対の立方体に 6 個の四面体)で、閉じた多様体の基本 cycle であること(3×3×3 と 3×4×5)、
+  その cocycle の上の符号が解の取り方に依らないこと、z の拡張であること、(i)、Steenrod の ∪₁ についての (ii)、
+  降下が ∪₁ の対を保つこと(3×3×3 と 3×3×4、8 個の spin 構造)

@@ -445,6 +445,11 @@ again. On the Cech side the same integer is the pairing of
 `m cup N + N cup m + dm cup m` (Cech cup product) with the sites of the chain
 (`CechDeRhamAnomaly`), and a large gauge transformation of the Villain field
 is a gauge transformation of the cocycle (`CechDeRhamLargeGauge`).
+The sites of the chain are the tetrahedra of the triangulation of the dual
+lattice with six tetrahedra in every dual cube, so this integer is a simplicial
+expression; on the cocycles of that triangulation
+`CechDeRhamSpinStructureSign` extends `SpinStructureSign`, cancels the integer
+at odd level, and is a quadratic refinement of the cup-1 pairing of Steenrod.
 The pieces of the chain on the links and on the sites are fixed here by
 the cycle conditions; their signs have not been compared with the formulas of
 that paper.
@@ -979,6 +984,7 @@ python3 reference/cech_reference.py         # a flat Villain field as a Cech-de 
 python3 reference/star_reference.py         # the star product and its integral on the Cech-de Rham cocycle
 python3 reference/grassmann_reference.py    # the sign at odd level as a Grassmann integral
 python3 reference/wilson_reference.py       # framed Wilson loops: spin and linking
+python3 reference/kuhn_reference.py         # the triangulation of the dual lattice and the sign on its cocycles
 ```
 
 ## Layout
