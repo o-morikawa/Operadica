@@ -162,8 +162,17 @@
 (*  the Chern class: its sums over the triangulated coordinate tori of     *)
 (*  the nerve are the fluxes of n.                                         *)
 (*                                                                        *)
+(*  The star product of two triples, A cup dA', Lambda cup dA', N A',      *)
+(*  N Lambda', is summed over a chain of cells with their cubes that is    *)
+(*  built by cones (the last cube of a term is the cube based at the base  *)
+(*  point of its cell).  The sum is defined modulo 1.  On the triples of   *)
+(*  flat Villain fields it is the sum of the connection of DeligneProduct  *)
+(*  over 2 Pi, term by term: for the square, the Chern-Simons action at    *)
+(*  level 2.                                                               *)
+(*                                                                        *)
 (*  Checked in reference/villain_reference.py,                            *)
-(*  reference/oddlevel_reference.py and reference/cech_reference.py.      *)
+(*  reference/oddlevel_reference.py, reference/cech_reference.py and      *)
+(*  reference/star_reference.py.                                          *)
 (*                                                                        *)
 (*  Layer: lattice gauge theory.  Depends on: Lattice.                    *)
 (* ====================================================================== *)
@@ -231,6 +240,14 @@ CechDeRhamChern::usage = "CechDeRhamChern[A, dims][p, q, r] gives the integer N_
 CechDeRhamCocycleQ::usage = "CechDeRhamCocycleQ[A, {L1, L2, L3}] gives a list of three truth values for the Villain field A = VillainField[a, n] on the periodic lattice: whether Coboundary[m_p] = n on every unit cube (this fails if n is not closed), whether A_q - A_p = d Lambda_pq on the links of every intersection of two cubes, and whether Lambda_qr - Lambda_pr + Lambda_pq is the same integer -N_pqr at every common site of three cubes.";
 
 CechDeRhamChernNumbers::usage = "CechDeRhamChernNumbers[A, {L1, L2, L3}] gives the antisymmetric matrix of the Chern numbers of the Cech cocycle N = CechDeRhamChern[A, dims]: the entry (mu, nu), mu < nu, is minus the sum of N(p, p + e_mu, p + e_mu + e_nu) - N(p, p + e_nu, p + e_mu + e_nu) over the cubes p of a coordinate plane, the pairing of N with the triangulated two-torus in the nerve. It equals THooftFlux[n, dims].";
+
+CechDeRhamTriple::usage = "CechDeRhamTriple[A, {L1, L2, L3}] gives the list {CechDeRhamConnection[A, dims], CechDeRhamTransition[A, dims], CechDeRhamChern[A, dims]} of the flat Villain field A: the three functions conn[p, x, mu], lam[p, q, x], nn[p, q, r] of a cocycle of Cech-de Rham type for the cover of the three-torus by the unit cubes.";
+
+CechDeRhamFundamentalCycle::usage = "CechDeRhamFundamentalCycle[{L1, L2, L3}] gives the chain over which a cocycle of Cech-de Rham type of degree 3 is summed on the periodic lattice with sides L1, L2, L3 >= 3, as an association: the key i = 3, 2, 1, 0 has the list of the terms {c, x, dirs, {p0, ..., pj}}, j = 3 - i, the cell (x; dirs) of dimension i in the cubes p0, ..., pj with the coefficient c = 1 or -1. Key 3: every cube x in itself. Key 2: the plaquette at x normal to mu in the cubes x - e_mu, x with the coefficient (-1)^(mu - 1). Key 1: two triples of cubes for every link. Key 0: six quadruples of cubes for every site. The last cube of every term is the cube with the lowest corner x. With b the boundary of the cells and bc the Cech boundary on ordered tuples, b s3 + bc s2 = 0, b s2 - bc s1 = 0 and b s1 + bc s0 = 0.";
+
+CechDeRhamStarIntegral::usage = "CechDeRhamStarIntegral[{conn1, lam1, nn1}, {conn2, lam2, nn2}, {L1, L2, L3}] gives the list of the four contributions to the integral of the star product of two cocycles of Cech-de Rham type over CechDeRhamFundamentalCycle: the sums of A_p cup dA'_p over the cubes, of Lambda_pq cup dA'_q over the plaquettes, of N_pqr A'_r over the links and of N_pqr Lambda'_rs over the sites (the product of the lattice Deligne-Beilinson cohomology of arXiv:2601.15939). Their total does not change under CechDeRhamGaugeTransform of either factor with mm = 0, and changes by an integer with mm not 0: it is defined modulo 1. CechDeRhamStarIntegral[A, B, dims] for flat Villain fields A = VillainField[a, n] and B = VillainField[b, n2] uses CechDeRhamTriple; then the four contributions are the sum of Cup[a, F_B] / (2 Pi)^2, 0, minus the sum of Cup[n, b] / (2 Pi), and 0, and the total is the sum of VillainConnection[DeligneProduct[A, B]] / (2 Pi). For A = B it is the sum of VillainChernSimons[2] / (2 Pi): the weight at the even level 2 j is Exp[2 Pi I j (the total)]. Half of the total is not defined modulo 1 (odd level).";
+
+CechDeRhamGaugeTransform::usage = "CechDeRhamGaugeTransform[{conn, lam, nn}, xi, mm, {L1, L2, L3}] gives the cocycle of Cech-de Rham type after the gauge transformation A_p -> A_p + d xi_p, Lambda_pq -> Lambda_pq + xi_q - xi_p - mm_pq, N_pqr -> N_pqr + mm_qr - mm_pr + mm_pq, for a function xi[p, x] on the sites x of the cube p and an alternating integer function mm[p, q] of two cubes with a common point.";
 
 StaggeredMomentumCount::usage = "StaggeredMomentumCount[{L1, ..., Ld}] gives the number of momenta p on the periodic lattice with sides L1, ..., Ld whose components add up to Pi modulo 2 Pi: L1 ... Ld / lcm(L1, ..., Ld) if the lcm is even, and 0 if all sides are odd.";
 
@@ -589,6 +606,120 @@ CechDeRhamChernNumbers[aa_VillainField, dims : {_Integer, _Integer, _Integer}] :
       }
     ]
   ];
+
+(* ---------------------------------------------------------------------- *)
+(* the star product of two cocycles of Cech-de Rham type and its integral  *)
+(* ---------------------------------------------------------------------- *)
+
+CechDeRhamTriple[aa_VillainField, dims : {_Integer, _Integer, _Integer}] :=
+  {CechDeRhamConnection[aa, dims], CechDeRhamTransition[aa, dims], CechDeRhamChern[aa, dims]};
+
+(* the cube with the lowest corner x - e_mu1 - e_mu2 - ... *)
+cdrDown[x_List, mus_List, dims_List] :=
+  Mod[x - Total[Map[Function[dir, UnitVector[3, dir]], mus]], dims];
+
+cdrOthers[mu_Integer] := DeleteCases[{1, 2, 3}, mu];
+
+(* the two terms of the chain on the link (x; mu) *)
+cdrLinkTerms[x_List, mu_Integer, dims_List] :=
+  With[{al = First[cdrOthers[mu]], be = Last[cdrOthers[mu]], sg = (-1)^(mu - 1)},
+    With[{low = cdrDown[x, {al, be}, dims]},
+      {
+        {sg, x, {mu}, {low, cdrDown[x, {be}, dims], x}},
+        {-sg, x, {mu}, {low, cdrDown[x, {al}, dims], x}}
+      }
+    ]
+  ];
+
+(* the two terms of the chain at the site x from the link (x - e_mu; mu) *)
+cdrSiteTerms[x_List, mu_Integer, dims_List] :=
+  Map[
+    Function[term, {term[[1]], x, {}, Append[term[[4]], x]}],
+    cdrLinkTerms[cdrDown[x, {mu}, dims], mu, dims]
+  ];
+
+CechDeRhamFundamentalCycle[dims : {_Integer, _Integer, _Integer}] :=
+  With[{sites = Tuples[Map[Function[len, Range[0, len - 1]], dims]]},
+    Association[
+      3 -> Map[Function[x, {1, x, {1, 2, 3}, {x}}], sites],
+      2 -> Flatten[
+        Map[
+          Function[x,
+            Map[Function[mu, {(-1)^(mu - 1), x, cdrOthers[mu], {cdrDown[x, {mu}, dims], x}}], {1, 2, 3}]
+          ],
+          sites
+        ],
+        1
+      ],
+      1 -> Flatten[
+        Map[Function[x, Map[Function[mu, cdrLinkTerms[x, mu, dims]], {1, 2, 3}]], sites],
+        2
+      ],
+      0 -> Flatten[
+        Map[Function[x, Map[Function[mu, cdrSiteTerms[x, mu, dims]], {1, 2, 3}]], sites],
+        2
+      ]
+    ]
+  ];
+
+(* the coboundary of the local connection on the plaquette (x; al, be) *)
+cdrCurvature[conn_, dims_List][p_List, x_List, {al_Integer, be_Integer}] :=
+  conn[p, x, al] + conn[p, Mod[x + UnitVector[3, al], dims], be] -
+    conn[p, Mod[x + UnitVector[3, be], dims], al] - conn[p, x, be];
+
+CechDeRhamStarIntegral[{conn1_, lam1_, nn1_}, {conn2_, lam2_, nn2_}, dims : {_Integer, _Integer, _Integer}] :=
+  With[{cyc = CechDeRhamFundamentalCycle[dims], curv = cdrCurvature[conn2, dims]},
+    {
+      Total[
+        Map[
+          Function[term,
+            With[{x = term[[2]], p = term[[4, 1]]},
+              term[[1]] (
+                conn1[p, x, 1] curv[p, Mod[x + UnitVector[3, 1], dims], {2, 3}] -
+                  conn1[p, x, 2] curv[p, Mod[x + UnitVector[3, 2], dims], {1, 3}] +
+                  conn1[p, x, 3] curv[p, Mod[x + UnitVector[3, 3], dims], {1, 2}]
+              )
+            ]
+          ],
+          Lookup[cyc, 3]
+        ]
+      ],
+      Total[
+        Map[
+          Function[term,
+            term[[1]] lam1[term[[4, 1]], term[[4, 2]], term[[2]]] curv[term[[4, 2]], term[[2]], term[[3]]]
+          ],
+          Lookup[cyc, 2]
+        ]
+      ],
+      Total[
+        Map[
+          Function[term,
+            term[[1]] nn1[term[[4, 1]], term[[4, 2]], term[[4, 3]]] conn2[term[[4, 3]], term[[2]], term[[3, 1]]]
+          ],
+          Lookup[cyc, 1]
+        ]
+      ],
+      Total[
+        Map[
+          Function[term,
+            term[[1]] nn1[term[[4, 1]], term[[4, 2]], term[[4, 3]]] lam2[term[[4, 3]], term[[4, 4]], term[[2]]]
+          ],
+          Lookup[cyc, 0]
+        ]
+      ]
+    }
+  ];
+
+CechDeRhamStarIntegral[aa_VillainField, bb_VillainField, dims : {_Integer, _Integer, _Integer}] :=
+  CechDeRhamStarIntegral[CechDeRhamTriple[aa, dims], CechDeRhamTriple[bb, dims], dims];
+
+CechDeRhamGaugeTransform[{conn_, lam_, nn_}, xi_, mm_, dims : {_Integer, _Integer, _Integer}] :=
+  {
+    Function[{p, x, mu}, conn[p, x, mu] + xi[p, Mod[x + UnitVector[3, mu], dims]] - xi[p, x]],
+    Function[{p, q, x}, lam[p, q, x] + xi[q, x] - xi[p, x] - mm[p, q]],
+    Function[{p, q, r}, nn[p, q, r] + mm[q, r] - mm[p, r] + mm[p, q]]
+  };
 
 End[];
 

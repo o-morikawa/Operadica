@@ -389,8 +389,27 @@ CechDeRhamChernNumbers[A, dims] === THooftFlux[n, dims]      (* True *)
 ```
 
 The transition functions and `N` depend on the flux `n` alone, which is why the
-modified Villain form needs no transition functions. The comparison of the
-actions (the star product of that paper) is not done yet.
+modified Villain form needs no transition functions.
+
+The star product of two such cocycles is summed over a chain of cells with
+their cubes (`CechDeRhamFundamentalCycle`). The sum is defined modulo 1, and on
+the cocycles of flat Villain fields its four contributions are, term by term,
+those of the Villain form:
+
+```wolfram
+CechDeRhamStarIntegral[A, B, dims]
+(* {sum of Cup[a, F_B] / (2 Pi)^2, 0, - sum of Cup[n, b] / (2 Pi), 0} *)
+Total[CechDeRhamStarIntegral[A, A, dims]]
+(* the sum of VillainChernSimons[2][A, phi] / (2 Pi): the action at level 2 *)
+```
+
+So `DeligneProduct` is this star product after the descent. The weight at an
+even level `2 j` is `Exp[2 Pi I j (the integral)]`; half of the integral is not
+defined modulo 1 (a large gauge transformation changes it by minus the sum of
+`ChernSimonsLargeGaugeAnomaly`, which can be odd), the obstruction at odd level
+again. The pieces of the chain on the links and on the sites are fixed here by
+the cycle conditions; their signs have not been compared with the formulas of
+that paper.
 
 ## Category layer
 
@@ -919,6 +938,7 @@ python3 reference/braidgroup_reference.py   # homology of braid groups, unordere
 python3 reference/villain_reference.py      # Villain fields, differential cochains, Chern-Simons, the theta term
 python3 reference/oddlevel_reference.py     # Chern-Simons at odd level: the anomaly and the signs that cancel it
 python3 reference/cech_reference.py         # a flat Villain field as a Cech-de Rham cocycle; background fields
+python3 reference/star_reference.py         # the star product and its integral on the Cech-de Rham cocycle
 ```
 
 ## Layout

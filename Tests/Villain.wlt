@@ -912,6 +912,222 @@ VerificationTest[
 ]
 
 (* ---------------------------------------------------------------------- *)
+(* the star product and its integral on the Cech-de Rham cocycle           *)
+(* ---------------------------------------------------------------------- *)
+
+(* the chain of the integral: 1 + 3 + 6 + 6 terms for every site, the last
+   cube of a term is the cube based at the base point of its cell *)
+
+VerificationTest[
+  With[{dims = {3, 3, 3}},
+    With[{cyc = CechDeRhamFundamentalCycle[dims]},
+      {
+        Map[Function[key, Length[Lookup[cyc, key]]], {3, 2, 1, 0}],
+        Union[Flatten[Map[Function[key, Map[First, Lookup[cyc, key]]], {3, 2, 1, 0}]]],
+        AllTrue[{3, 2, 1, 0},
+          Function[key,
+            AllTrue[Lookup[cyc, key],
+              Function[term,
+                Length[term[[3]]] === key && Length[term[[4]]] === 4 - key && Last[term[[4]]] === term[[2]] &&
+                  DuplicateFreeQ[term[[4]]]
+              ]
+            ]
+          ]
+        ],
+        Select[Lookup[cyc, 2], Function[term, term[[2]] === {1, 1, 1}]],
+        Select[Lookup[cyc, 1], Function[term, term[[2]] === {1, 1, 1}]],
+        Select[Lookup[cyc, 0], Function[term, term[[2]] === {1, 1, 1}]]
+      }
+    ]
+  ],
+  {
+    {27, 81, 162, 162},
+    {-1, 1},
+    True,
+    {
+      {1, {1, 1, 1}, {2, 3}, {{0, 1, 1}, {1, 1, 1}}},
+      {-1, {1, 1, 1}, {1, 3}, {{1, 0, 1}, {1, 1, 1}}},
+      {1, {1, 1, 1}, {1, 2}, {{1, 1, 0}, {1, 1, 1}}}
+    },
+    {
+      {1, {1, 1, 1}, {1}, {{1, 0, 0}, {1, 1, 0}, {1, 1, 1}}},
+      {-1, {1, 1, 1}, {1}, {{1, 0, 0}, {1, 0, 1}, {1, 1, 1}}},
+      {-1, {1, 1, 1}, {2}, {{0, 1, 0}, {1, 1, 0}, {1, 1, 1}}},
+      {1, {1, 1, 1}, {2}, {{0, 1, 0}, {0, 1, 1}, {1, 1, 1}}},
+      {1, {1, 1, 1}, {3}, {{0, 0, 1}, {1, 0, 1}, {1, 1, 1}}},
+      {-1, {1, 1, 1}, {3}, {{0, 0, 1}, {0, 1, 1}, {1, 1, 1}}}
+    },
+    {
+      {1, {1, 1, 1}, {}, {{0, 0, 0}, {0, 1, 0}, {0, 1, 1}, {1, 1, 1}}},
+      {-1, {1, 1, 1}, {}, {{0, 0, 0}, {0, 0, 1}, {0, 1, 1}, {1, 1, 1}}},
+      {-1, {1, 1, 1}, {}, {{0, 0, 0}, {1, 0, 0}, {1, 0, 1}, {1, 1, 1}}},
+      {1, {1, 1, 1}, {}, {{0, 0, 0}, {0, 0, 1}, {1, 0, 1}, {1, 1, 1}}},
+      {1, {1, 1, 1}, {}, {{0, 0, 0}, {1, 0, 0}, {1, 1, 0}, {1, 1, 1}}},
+      {-1, {1, 1, 1}, {}, {{0, 0, 0}, {0, 1, 0}, {1, 1, 0}, {1, 1, 1}}}
+    }
+  },
+  TestID -> "Villain-Cech-de-Rham-cycle"
+]
+
+(* for the cocycles of two flat Villain fields the four contributions are
+   the sum of a cup F_B / (2 Pi)^2, 0, minus the sum of n cup b / (2 Pi), 0:
+   the integral of the star product is the sum of the connection of
+   DeligneProduct over 2 Pi, and for the square it is the sum of the
+   Chern-Simons Lagrangian at level 2 over 2 Pi.  The two orders differ by
+   cup_1 terms *)
+
+VerificationTest[
+  With[{dims = {3, 3, 3}},
+    With[{
+        field = Function[{p, f},
+          PeriodicCochain[p, dims,
+            Association[Map[Function[c, {c[[1]], c[[2]]} -> f[c[[1]], c[[2]]]], LCells[dims, p]]]
+          ]
+        ],
+        flux = THooftFluxCochain[{{0, 1, -2}, {-1, 0, 3}, {2, -3, 0}}, dims],
+        n2 = THooftFluxCochain[{{0, 2, 0}, {-2, 0, -1}, {0, 1, 0}}, dims]
+      },
+      With[{
+          e0 = field[1, Function[{y, s}, Mod[y[[1]] + 2 y[[2]] + 3 y[[3]] + s[[1]] (1 + y[[1]] y[[2]] + y[[3]]), 3] - 1]],
+          a = field[1, Function[{y, s}, Mod[2 y[[1]] + y[[2]] y[[3]] + s[[1]] y[[2]] + s[[1]], 5] - 2]],
+          b = field[1, Function[{y, s}, Mod[y[[1]] y[[2]] + 2 y[[3]] + s[[1]] (y[[1]] + 1), 5] - 2]]
+        },
+        With[{
+            n = field[2, Function[{y, s}, CochainValue[flux + Coboundary[e0], y, s]]]
+          },
+          With[{aa = VillainField[a, n], bb = VillainField[b, n2]},
+            With[{
+                self = CechDeRhamStarIntegral[aa, aa, dims],
+                pair = CechDeRhamStarIntegral[aa, bb, dims],
+                swap = CechDeRhamStarIntegral[bb, aa, dims]
+              },
+              {
+                Expand[self - {20 / (2 Pi) + 20 / (2 Pi)^2, 0, 3 / (2 Pi), 0}],
+                Expand[pair - {3 / (2 Pi) + 33 / (2 Pi)^2, 0, 10 / (2 Pi), 0}],
+                Expand[swap - {10 / (2 Pi) - 33 / (2 Pi)^2, 0, -8 / (2 Pi), 0}],
+                Expand[
+                  pair - {
+                      CochainIntegrate[Cup[a, VillainCurvature[bb]], dims] / (2 Pi)^2, 0,
+                      -CochainIntegrate[Cup[n, b], dims] / (2 Pi), 0
+                    }
+                ],
+                Expand[Total[pair] - CochainIntegrate[VillainConnection[DeligneProduct[aa, bb]], dims] / (2 Pi)],
+                Expand[
+                  Total[self] -
+                    CochainIntegrate[VillainChernSimons[2][aa, PeriodicCochain[0, dims, <||>]], dims] / (2 Pi)
+                ],
+                Expand[
+                  Total[pair] - Total[swap] +
+                    CochainIntegrate[HigherCup[1][VillainCurvature[aa], VillainCurvature[bb]], dims] / (2 Pi)^2
+                ],
+                CochainIntegrate[HigherCup[1][n, n2], dims]
+              }
+            ]
+          ]
+        ]
+      ]
+    ]
+  ],
+  {{0, 0, 0, 0}, {0, 0, 0, 0}, {0, 0, 0, 0}, {0, 0, 0, 0}, 0, 0, 1, 1},
+  TestID -> "Villain-Cech-de-Rham-star"
+]
+
+(* the integral is defined modulo 1: a gauge transformation of the cocycle
+   with xi alone moves the value between the four contributions and leaves
+   the total; with mm the total changes by an integer.  The large gauge
+   transformation of the Villain field changes the integral of the square
+   by minus the sum of q(m, n), here the odd number 17: half of the
+   integral is not defined modulo 1 *)
+
+VerificationTest[
+  With[{dims = {3, 3, 3}},
+    With[{
+        field = Function[{p, f},
+          PeriodicCochain[p, dims,
+            Association[Map[Function[c, {c[[1]], c[[2]]} -> f[c[[1]], c[[2]]]], LCells[dims, p]]]
+          ]
+        ],
+        flux = THooftFluxCochain[{{0, 1, -2}, {-1, 0, 3}, {2, -3, 0}}, dims],
+        n2 = THooftFluxCochain[{{0, 2, 0}, {-2, 0, -1}, {0, 1, 0}}, dims],
+        xi = Function[{p, x},
+          With[{r = Mod[x - p, dims]},
+            (Mod[2 p[[1]] + p[[2]] p[[3]] + 3 r[[1]] + r[[2]] (1 + p[[3]]) + 2 r[[3]] p[[1]], 7] - 3) / 5
+          ]
+        ],
+        mm = Function[{p, q},
+          With[{
+              w = Mod[q - p, dims, -1] . {1, 2, 4},
+              g = Function[c, Mod[c[[1]] + 2 c[[2]] c[[3]] + c[[3]] + c[[1]] c[[2]], 3]]
+            },
+            If[w === 0, 0, Sign[w] (Mod[g[p] + g[q] + Abs[w], 3] - 1)]
+          ]
+        ],
+        none = Function[{p, q}, 0]
+      },
+      With[{
+          e0 = field[1, Function[{y, s}, Mod[y[[1]] + 2 y[[2]] + 3 y[[3]] + s[[1]] (1 + y[[1]] y[[2]] + y[[3]]), 3] - 1]],
+          m2 = field[1, Function[{y, s}, Mod[s[[1]] y[[1]] + y[[2]] y[[3]] + 2 s[[1]] y[[3]] + y[[1]] + s[[1]], 2]]],
+          a = field[1, Function[{y, s}, Mod[2 y[[1]] + y[[2]] y[[3]] + s[[1]] y[[2]] + s[[1]], 5] - 2]],
+          b = field[1, Function[{y, s}, Mod[y[[1]] y[[2]] + 2 y[[3]] + s[[1]] (y[[1]] + 1), 5] - 2]]
+        },
+        With[{
+            n = field[2, Function[{y, s}, CochainValue[flux + Coboundary[e0], y, s]]]
+          },
+          With[{
+              aa = VillainField[a, n],
+              big = VillainField[
+                field[1, Function[{y, s}, CochainValue[a + 2 Pi m2, y, s]]],
+                field[2, Function[{y, s}, CochainValue[n + Coboundary[m2], y, s]]]
+              ]
+            },
+            With[{
+                t1 = CechDeRhamTriple[aa, dims],
+                t2 = CechDeRhamTriple[VillainField[b, n2], dims]
+              },
+              With[{
+                  x1 = CechDeRhamGaugeTransform[t1, xi, none, dims],
+                  g1 = CechDeRhamGaugeTransform[t1, xi, mm, dims],
+                  g2 = CechDeRhamGaugeTransform[t2, xi, mm, dims]
+                },
+                With[{
+                    s11 = CechDeRhamStarIntegral[t1, t1, dims],
+                    s12 = CechDeRhamStarIntegral[t1, t2, dims],
+                    sxx = CechDeRhamStarIntegral[x1, x1, dims],
+                    sgg = CechDeRhamStarIntegral[g1, g1, dims],
+                    sg2 = CechDeRhamStarIntegral[g1, t2, dims],
+                    s1g = CechDeRhamStarIntegral[t1, g2, dims]
+                  },
+                  {
+                    Expand[
+                      sxx - {46 / 5 + (234 / 5) / (2 Pi) + 20 / (2 Pi)^2, -46 / 5 - (134 / 5) / (2 Pi),
+                          16 / 5 + 3 / (2 Pi), -16 / 5}
+                    ],
+                    Expand[
+                      sgg - {46 / 5 + (234 / 5) / (2 Pi) + 20 / (2 Pi)^2, -91 / 5 - (109 / 5) / (2 Pi),
+                          -2 / (2 Pi), 15}
+                    ],
+                    Expand[
+                      sg2 - {-1 / 5 - (8 / 5) / (2 Pi) + 33 / (2 Pi)^2, 16 / 5 + (28 / 5) / (2 Pi), 9 / (2 Pi), 0}
+                    ],
+                    Expand[s1g - {3 / (2 Pi) + 33 / (2 Pi)^2, 0, 16 / 5 + 10 / (2 Pi), 59 / 5}],
+                    Expand[{Total[sxx], Total[sgg]} - Total[s11]],
+                    Expand[{Total[sg2], Total[s1g]} - Total[s12]],
+                    Expand[Total[CechDeRhamStarIntegral[big, big, dims]] - Total[s11]],
+                    CochainIntegrate[ChernSimonsLargeGaugeAnomaly[m2, n], dims]
+                  }
+                ]
+              ]
+            ]
+          ]
+        ]
+      ]
+    ]
+  ],
+  {{0, 0, 0, 0}, {0, 0, 0, 0}, {0, 0, 0, 0}, {0, 0, 0, 0}, {0, 6}, {3, 15}, -17, 17},
+  TestID -> "Villain-Cech-de-Rham-star-gauge"
+]
+
+(* ---------------------------------------------------------------------- *)
 (* background fields of the 1-form symmetry                               *)
 (* ---------------------------------------------------------------------- *)
 

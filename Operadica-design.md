@@ -1,6 +1,6 @@
 # Operadica 設計文書
 
-最終更新: 2026-11-23(v0.20.0)
+最終更新: 2026-11-23(v0.21.0)
 
 ## 1. 目的
 
@@ -595,8 +595,61 @@ cocycle の段階での対応を与えておらず、Villain 形式で Λ を省
   三重の重なりの整数 N を、coboundary を除いてすでに決めているからである。ゲージ変換 `a → a + δλ` は A_p を `d(λ/2π)` だけ変え、Λ と N を変えない。
   m_p と Λ は整数なので、閉じた道に沿った holonomy は、どちらの形でも 1 を法として `Σ a/2π` である。
 
-まだしていないこと:同論文の星積と積分(6、7 節)をこの 3 つ組の上で評価して、`∫ k a⋆a` と上の Chern–Simons のラグランジアンを比べること。
-Čech–de Rham の類から Villain 場への逆向きの写像。同論文の式は本文から読み取ったもので、符号の規約を 1 つずつ照合してはいない。
+**星積と積分**(`CechDeRhamTriple`、`CechDeRhamFundamentalCycle`、`CechDeRhamStarIntegral`、`CechDeRhamGaugeTransform`。
+`reference/star_reference.py` で確認)
+
+2 つの 3 つ組 (A, Λ, N)、(A′, Λ′, N′) の星積(同論文 7 節の形:前の因子が前の patch、後の因子が後の patch を取り、patch を 1 つ共有する)は
+
+| 成分 | 式 | 置かれる場所 |
+|---|---|---|
+| (3, 0) | `A_p ∪ dA′_p` | 立方体 p |
+| (2, 1) | `Λ_pq ∪ dA′_q` | p と q の交わりの plaquette |
+| (1, 2) | `N_pqr A′_r` | 3 つの交わりの link |
+| (0, 3) | `N_pqr Λ′_rs` | 4 つの交わりの site |
+| (−1, 4) | `N_pqr N′_rst` | 整数(積分には寄与しない) |
+
+である。cocycle 条件から、Čech の coboundary `δ̌`(順序のついた組の上)と格子の coboundary `d` について
+`δ̌ω₃₀ = dω₂₁`、`δ̌ω₂₁ = −dω₁₂`、`δ̌ω₁₂ = dω₀₃`、`δ̌ω₀₃ = −N N′` が出る。したがって積分は、
+
+    ∂σ₃₀ + ∂̌σ₂₁ = 0,   ∂σ₂₁ − ∂̌σ₁₂ = 0,   ∂σ₁₂ + ∂̌σ₀₃ = 0
+
+を満たす鎖 `σ₃₀ + σ₂₁ + σ₁₂ + σ₀₃`(`σ_ij` は「次元 i の cell と、それを含む j+1 個の立方体」の整数係数の和)との対で、
+1 を法として定まる。この鎖(`CechDeRhamFundamentalCycle`)は錐で作る:`σ₃₀` は「立方体 x を、それ自身の中で」の和で、
+次の段は、前の段の境界に現れる各 cell に、**その cell の基点を最小の角とする立方体を最後の patch として付け加えた**ものである。
+積が消える項(N と Λ は交代的)を落とすと、1 つの site あたり 1 + 3 + 6 + 6 項で、係数はすべて ±1 になる:
+
+- `σ₂₁`:x にあって μ に垂直な plaquette を、立方体 `(x − e_μ, x)` の中で、係数 `(−1)^(μ−1)`
+- `σ₁₂`:link (x; μ) を、`(x − e_α − e_β, x − e_β, x)` の中で係数 `(−1)^(μ−1)`、`(x − e_α − e_β, x − e_α, x)` の中でその逆符号(α < β は μ 以外の方向)
+- `σ₀₃`:site x を、x で終わる link (x − e_μ; μ) の 2 項それぞれの最後に立方体 x を付け加えたものの中で、同じ係数
+
+`σ₂₁` は同論文の式と一致する。`σ₁₂` と `σ₀₃` は項の数(各 6 項)が同論文と一致するが、**符号と patch の並びは同論文の式と照合していない**
+(論文の式は PDF の本文を機械的に読んだものしか見ていない)。ここでの符号は上の 3 つの条件で決めてあり、その条件自体を
+順序のついた鎖の上で確かめている。
+
+確かめていること(参照実装で 3×3×3、3×3×4、3×4×5。Wolfram Language のテストは 3×3×3):
+
+- **1 を法として定まる**:ゲージ変換 `A_p → A_p + dξ_p`、`Λ_pq → Λ_pq + ξ_q − ξ_p − m_pq`、`N → N + δ̌m`(`CechDeRhamGaugeTransform`)で、
+  ξ だけなら 4 つの寄与の間で値が移るが合計は変わらず、整数 m があると合計は整数だけ変わる(どちらの因子を変換しても)。
+- **平坦な Villain 場の 3 つ組の上では、項ごとに Villain の式になる**:(a, n) と (b, n′) について 4 つの寄与は、等式として
+
+      Σ (a/2π) ∪ (F_B/2π),   0,   −Σ n ∪ (b/2π),   0
+
+  である。(2, 1) と (0, 3) が消えるのは、Λ が鎖の各 plaquette・site の基点で 0 になるからで、(3, 0) と (1, 2) に m_p が現れないのは、
+  m_p が立方体の基点から出る link の上で 0 だからである(どちらも、上の木のゲージと「最後の patch は基点の立方体」という鎖の選び方による)。
+  したがって**積分は `(1/2π) Σ VillainConnection[DeligneProduct[A, B]]` に等しい**。v0.13.0 以来の `DeligneProduct` は、
+  降下したあとの星積そのものである。A = B なら `(1/2π) Σ VillainChernSimons[2]`、すなわち level 2 の作用で、
+  同論文の「level 2k の作用は `∫ k a⋆a`」と合う。
+- **偶数 level と奇数 level**:level 2j の重みは `exp(2πi j ∫A⋆A)` で、類の関数である。`∫A⋆A` の半分は 1 を法として定まらない:
+  大きなゲージ変換 `(a + 2πm, n + δm)` と (a, n) はゲージ同値な 3 つ組を与えるが、積分は `−Σ q(m, n)` だけ違い、これは奇数になりうる
+  (テストでは 17)。上の「奇数 level」の障害と同じものが、Čech–de Rham の側では「積分が 1 を法としてしか定まらない」こととして現れる。
+- **格子の上では 2 つの因子について対称でない**:`I(A, B) − I(B, A) = −Σ (F_A/2π) ∪₁ (F_B/2π) + Σ n ∪₁ n′`。
+  どちらかの曲率が 0 なら 1 を法として対称である。∪ が ∪₁ を除いてしか可換でないことの現れで、`DeligneSwapGauge` の m(`n∪₁n′`)と
+  `DeligneSwapDefect`(`F_A∪₁F_B` の項)を積分したものにあたる。
+
+成り立つ範囲:辺の長さが 3 以上の三次元トーラス、平坦な場(`δn = 0`。monopole があると降下の最初の段階で失敗する)。
+
+まだしていないこと:同論文の対称化した積(∪₁ の補正が入る)と奇数 level の扱い(13.1 節)を、上の非対称性および 3.9 節の符号 z と比べること。
+Čech–de Rham の類から Villain 場への逆向きの写像。同論文の式は本文から読み取ったもので、`σ₂₁` と cocycle 条件のほかは、符号の規約を 1 つずつ照合してはいない。
 
 補正項の探索は 3.8 節にある。
 
@@ -938,7 +991,7 @@ c(a, b) とする。これは平面の向きの選び方で、逆に取ると `c
 | 3 | little 2-cubes、Gerstenhaber operad、Pₙ | C_n(2) ≃ S^(n−1)。k 点成分の Poincaré 多項式が ∏(1+jt) | 実装済み(Pₙ の次元は arity 4 まで、参照実装で arity 5 まで。Betti 数との照合は、脈体で k = 2 と (n, k) = (2, 3)、Barratt–Eccles の段で (3, 3) まで、参照実装で (2, 4) と (4, 3) まで) |
 | C | 点付き Eₙ モノイダル圏、coherence、braid 群の作用 | 五角形・六角形・分類の個数。coherence が長さ 6 まで | 実装済み(little squares の道の braid とその位相、六角形 = operad の合成との両立まで。parenthesized braids を operad として扱う一般の coherence は未着手) |
 | G | 多重線形展開、ゲージ変分、作用、補正項の探索 | 5 節の恒等式が通る。Chern–Simons の ∪₁ の補正項が線形方程式の一意な解として出る | 実装済み(補正項の探索は、与えた候補の線形結合の中から。候補の自動生成は未着手) |
-| V | Villain 形式の U(1) 場、Deligne–Beilinson 積、構成的な格子作用 | 積がゲージ同値類の上で定まる。BF と Chern–Simons が積から出る。平坦な Z_N 場の上で Dijkgraaf–Witten になる | 実装済み(対象、ゲージ変換、積、BF、Chern–Simons、Z_N への制限、積の可換性のホモトピー、θ 項と Witten 効果、differential cochain としての定式化、Chern–Simons の零モードの数、奇数 level の障害と三次元トーラスの上でそれを消す符号、その符号と境界条件の対応、Čech–de Rham の形の cocycle、背景場と 1-form 対称性のアノマリー)。符号の局所的な式(Majorana)、星積による作用の比較は未着手 |
+| V | Villain 形式の U(1) 場、Deligne–Beilinson 積、構成的な格子作用 | 積がゲージ同値類の上で定まる。BF と Chern–Simons が積から出る。平坦な Z_N 場の上で Dijkgraaf–Witten になる | 実装済み(対象、ゲージ変換、積、BF、Chern–Simons、Z_N への制限、積の可換性のホモトピー、θ 項と Witten 効果、differential cochain としての定式化、Chern–Simons の零モードの数、奇数 level の障害と三次元トーラスの上でそれを消す符号、その符号と境界条件の対応、Čech–de Rham の形の cocycle、背景場と 1-form 対称性のアノマリー、星積とその積分が level 2 の作用に等しいこと)。符号の局所的な式(Majorana)は未着手 |
 | 4 | E∞ operad(Barratt–Eccles、table reduction で surjection へ)、Eₙ フィルトレーション、cochain への作用 | eᵢ ↦ (1,2,1,2,…) の作用が ∪ᵢ を再現。三つの法則 (L)・(C)・(E)。Hirsch 公式のホモトピー | 実装済み(surjection operad の合成は未実装) |
 | 5 | 単体的対象、bar 構成 B(Σⁿ, Cₙ, X) | 反復 bar 構成で作った BⁿA のホモトピー群が次数 n の A だけ。近似定理を有理 Poincaré 級数の一致で確認 | 離散群の場合を実装済み(BⁿA のホモロジーとホモトピー群、Eₙ 構造 = BⁿA の cocycle、格子の作用 = K(A, n) の cocycle)。ΩⁿY への little cubes の作用と近似写像 α は実装済み。近似定理は、球面の楔について有理 Poincaré 級数の一致を arity 4 まで確認済み。n = 2 の Z₂ 係数では球面 1 個について重み 8 まで(braid 群のホモロジーと Kudo–Araki の多項式代数)。両側 bar 構成 B(Σⁿ, Cₙ, X) そのものは未着手 |
 
@@ -948,8 +1001,9 @@ c(a, b) とする。これは平面の向きの選び方で、逆に取ると `c
   整数性(2π × 整数になるか)を条件に入れること、単体の上で解くこと
 - 奇数 level の続き:障害が fermion の類 `(1/2) P(B)` であること、三次元トーラスの上でそれを消す 8 個の符号、境界条件との対応は 3.9 節にある。
   次は、その符号の局所的な式(Gu–Wen の Grassmann 積分、Majorana)、単体複体(w₂ の代表)、奇数電荷の Wilson line
-- Ikeda の格子 Deligne–Beilinson コホモロジー(arXiv:2601.15939)との比較の続き:Villain 場から Čech–de Rham の cocycle への写像は 3.9 節にある。
-  次は、同論文の星積と積分をその上で評価して作用を比べること、逆向きの写像、framing のある Wilson loop の比較
+- Ikeda の格子 Deligne–Beilinson コホモロジー(arXiv:2601.15939)との比較の続き:Villain 場から Čech–de Rham の cocycle への写像と、
+  星積の積分が level 2 の Chern–Simons の作用に等しいことは 3.9 節にある。次は、同論文の対称化した積と奇数 level の扱いを
+  3.9 節の符号 z と比べること、逆向きの写像、framing のある Wilson loop の比較、`σ₁₂`・`σ₀₃` の符号を同論文の式と照合すること
 - Z_N の背景場の続き:アノマリーの類と level kN² との関係は 3.9 節と 6 節にある。次は、背景場を入れた作用のゲージ変分(背景場のゲージ変換を含む)、
   ゲージ化した理論の線、`F_A∪₁F_B` のような格子に固有の項の系統的な扱い
 - 混合アノマリー(K(A, n) の積の上の cocycle)と 2-group(`δB = β(A)`)
@@ -1023,6 +1077,8 @@ operad の側の候補:
   単独の層のロードと、17 層すべてのロードも確認済み。`SpinStructureHolonomy` を含む。
 - v0.20.0:`wolframscript -file Scripts/RunTests.wls` で 349/349 が通過(2026-11-23、Wolfram Language 15.0.1、利用者の環境)。
   単独の層のロードと、17 層すべてのロードも確認済み。`VillainPatchPrimitive`、`CechDeRhamConnection`、`CechDeRhamTransition`、`CechDeRhamChern`、`CechDeRhamCocycleQ`、`CechDeRhamChernNumbers`、`ChernSimonsOneFormAnomalyQ` を含む。
+- v0.21.0:`wolframscript -file Scripts/RunTests.wls` で 352/352 が通過(2026-11-23、Wolfram Language 15.0.1、利用者の環境)。
+  単独の層のロードと、17 層すべてのロードも確認済み。`CechDeRhamTriple`、`CechDeRhamFundamentalCycle`、`CechDeRhamStarIntegral`、`CechDeRhamGaugeTransform` を含む。
 
 ### Python 参照実装(整数・有理数の厳密計算)
 
@@ -1081,3 +1137,7 @@ operad の側の候補:
   Čech cocycle 条件。3×3×3 と 3×4×5)、Chern 数が flux に等しいこと、monopole があると原始関数が作れないこと、
   背景場を入れた `Q(n + B/N)` の展開と交差項の恒等式、inflow の恒等式、level kN² との関係(立方格子と単体)、
   平坦な Z_N 場の上で `(K/2N²) Q(B)` が `(p/2N) P(B)` に 1 を法として等しいこと
+- `star_reference.py`:星積の積分に使う鎖を錐で作り、3 つの条件を順序のついた鎖の上で確かめること(消える項を落とす前と後。3×3×3 と 3×4×5)、
+  閉じた式との一致、ξ による不変性と整数 m による整数の変化(どちらの因子でも)、平坦な Villain 場の 3 つ組の上で 4 つの寄与が
+  `Σ(a/τ)∪(F_B/τ)`、0、`−Σ n∪(b/τ)`、0 に等式として等しいこと、大きなゲージ変換での変化が `−Σ q(m, n)` で奇数になりうること、
+  2 つの因子の入れ替えでの差が `−Σ(F_A/τ)∪₁(F_B/τ) + Σ n∪₁n′` であること(3×3×3、3×3×4、3×4×5 を 3 通りずつ)
