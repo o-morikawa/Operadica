@@ -1,6 +1,6 @@
 # Operadica 設計文書
 
-最終更新: 2026-11-23(v0.23.0)
+最終更新: 2026-11-23(v0.24.0)
 
 ## 1. 目的
 
@@ -577,6 +577,39 @@ Hopkins–Singer の differential cocycle の、微分形式を実 cochain に�
 ここでの式は立方格子の ∪₁ に合わせて順序を探して決めたもので、文献の式(Gu–Wen と Gaiotto–Kapustin の Grassmann 積分。
 奇数 level の格子 Chern–Simons については arXiv:2601.04318 と arXiv:2601.15939 の 13.1 節)と項ごとに照合してはいない。
 
+**framing のある Wilson loop**(`VillainFramedWilsonLoop`。arXiv:2303.06160 の IV 節に従う。`reference/wilson_reference.py` で確認)
+
+整数値の 2-cochain b(双対格子の曲線 C̃ の Poincaré 双対)に対して
+
+`W_b(a, n) = (1/2)(a∪b + b∪a) − π b∪₁n`
+
+と置く。`exp(i Σ W_b)` が同論文の式 (33) の framing のある Wilson loop である:`a∪b` と `b∪a` は対角方向にずれた 2 本の電荷 1/2 の線で、
+`b∪₁n` はその間を張る n の面である。一般の cochain について次が厳密に成り立つ。
+
+- **背景の flux への応答**:`L_k(a, n − b/k, φ) − π b∪₁n − L_k(a, n, φ) = W_b + (1/2) a∪₁δb − (1/k) φ∪δb`。
+  閉じた b を背景場として入れることと、Wilson loop を挿入することは同じである。
+- **ゲージ不変性**(閉じた b):ゲージ変換では全微分だけ、大きいゲージ変換では `2π b∪m − π δ(b∪₁m) + π δb∪₁m`、つまり 2π × 整数と全微分だけ変わる。
+  `b∪₁n` の項がないと変化は `π(m∪b + b∪m)` で、電荷 1/2 の線 2 本だけでは不変にならない。
+- **電荷 k の線は flux のずらしである**:`L_k(a, n, φ) + W_kb(a, n) = L_k(a, n − b, φ) − kπ b∪₁n`(閉じた b)。n は和を取る変数なので、
+  k が偶数なら電荷 k の線は自明である(Z_k の 1-form 対称性)。
+- **曲線の変形**(閉じた b と n、閉じた格子の上の和):`b → b + δv`、`a → a − (2π/k) v` で
+
+  `Σ [L_k + W_(b+δv)] − Σ [L_k + W_b] = −(π/k) Σ q(v, b) + 2π Σ v∪n`
+
+  ここで q は上の大きいゲージ変換のアノマリーと**同じ cochain** `q(v, b) = δv∪v + v∪b + b∪v + v∪₁δb` である。a のずらしは積分変数の変換なので、
+  `⟨W_(b+δv)⟩ = exp(−2πi Σq(v, b)/2k) ⟨W_b⟩`。電荷 c の線(b → cb、v → cv)では位相は `c²/2k` 倍の Σq で、
+  3.7 節の線の spin `c²/2k`(`TopologicalSpin[ChernSimonsAnyons[k], {c}]`)である。
+- **数**(三次元トーラス):`Σ q(v, 0) = Σ δv∪v` は、v の双対の面の境界が格子の framing について持つ自己絡み数である。link 1 本と、1 点のまわりの link 4 本で 0、
+  角で出会う 2 本の link で 1(ねじれ 1 回)。まっすぐな管 b のまわりの link 4 本では `Σ q(v, b) = 2`
+  (`Σ v∪b = Σ b∪v = 1`。絡み数 1 で、位相は 1/k)。
+- **奇数 level の障害は、電荷 k の線の spin 1/2 である**:c = k と置くと位相は `(−1)^(k Σq)` で、上の「奇数 level」の障害そのものである。
+  k が奇数のとき重みには符号 z(n) が掛かり、`z(n) z(n − b) (−1)^(Σ b∪₁n) = z(b)`(Σ b∪₁b は偶数)なので、
+  **電荷 k の線の値は、その世界線の Grassmann 積分の符号 z(b) である**:電荷 k の線は fermion で、ねじれ 1 回ごとに −1、
+  周期的な方向に巻くまっすぐな線で −1 になる(`z(δv) = (−1)^(Σ q(v, 0))`)。
+
+位相の符号(±)は向きの規約に依る(同論文は重みを `e^(−S)` と書く。ここでは `exp(iS)`)。同論文の背景場のゲージ変換の式 (35)〜(37) のうち、
+L を含む Z₂ の項と `δb ≠ 0`(monopole 演算子、開いた線)は扱っていない。正準量子化(arXiv:2401.09597)の側の線の演算子との照合もまだである。
+
 **背景場と 1-form 対称性のアノマリー**(橋の `ChernSimonsOneFormAnomalyQ` は 6 節。`reference/cech_reference.py` で確認)
 
 - `L_k(a, n, φ) = L_(kN²)(a/N, n/N, Nφ)`:level k の理論は、level kN² の理論で flux を Z/N まで許したものである(N = 2 が上の level 4k)。
@@ -1028,7 +1061,7 @@ c(a, b) とする。これは平面の向きの選び方で、逆に取ると `c
 | 3 | little 2-cubes、Gerstenhaber operad、Pₙ | C_n(2) ≃ S^(n−1)。k 点成分の Poincaré 多項式が ∏(1+jt) | 実装済み(Pₙ の次元は arity 4 まで、参照実装で arity 5 まで。Betti 数との照合は、脈体で k = 2 と (n, k) = (2, 3)、Barratt–Eccles の段で (3, 3) まで、参照実装で (2, 4) と (4, 3) まで) |
 | C | 点付き Eₙ モノイダル圏、coherence、braid 群の作用 | 五角形・六角形・分類の個数。coherence が長さ 6 まで | 実装済み(little squares の道の braid とその位相、六角形 = operad の合成との両立まで。parenthesized braids を operad として扱う一般の coherence は未着手) |
 | G | 多重線形展開、ゲージ変分、作用、補正項の探索 | 5 節の恒等式が通る。Chern–Simons の ∪₁ の補正項が線形方程式の一意な解として出る | 実装済み(補正項の探索は、与えた候補の線形結合の中から。候補の自動生成は未着手) |
-| V | Villain 形式の U(1) 場、Deligne–Beilinson 積、構成的な格子作用 | 積がゲージ同値類の上で定まる。BF と Chern–Simons が積から出る。平坦な Z_N 場の上で Dijkgraaf–Witten になる | 実装済み(対象、ゲージ変換、積、BF、Chern–Simons、Z_N への制限、積の可換性のホモトピー、θ 項と Witten 効果、differential cochain としての定式化、Chern–Simons の零モードの数、奇数 level の障害と三次元トーラスの上でそれを消す符号、その符号と境界条件の対応、Čech–de Rham の形の cocycle、背景場と 1-form 対称性のアノマリー、星積とその積分が level 2 の作用に等しいこと、符号の局所的な式(Grassmann 積分))。単体複体の上の符号は未着手 |
+| V | Villain 形式の U(1) 場、Deligne–Beilinson 積、構成的な格子作用 | 積がゲージ同値類の上で定まる。BF と Chern–Simons が積から出る。平坦な Z_N 場の上で Dijkgraaf–Witten になる | 実装済み(対象、ゲージ変換、積、BF、Chern–Simons、Z_N への制限、積の可換性のホモトピー、θ 項と Witten 効果、differential cochain としての定式化、Chern–Simons の零モードの数、奇数 level の障害と三次元トーラスの上でそれを消す符号、その符号と境界条件の対応、Čech–de Rham の形の cocycle、背景場と 1-form 対称性のアノマリー、星積とその積分が level 2 の作用に等しいこと、符号の局所的な式(Grassmann 積分)、framing のある Wilson loop とその spin・絡み)。単体複体の上の符号は未着手 |
 | 4 | E∞ operad(Barratt–Eccles、table reduction で surjection へ)、Eₙ フィルトレーション、cochain への作用 | eᵢ ↦ (1,2,1,2,…) の作用が ∪ᵢ を再現。三つの法則 (L)・(C)・(E)。Hirsch 公式のホモトピー | 実装済み(surjection operad の合成は未実装) |
 | 5 | 単体的対象、bar 構成 B(Σⁿ, Cₙ, X) | 反復 bar 構成で作った BⁿA のホモトピー群が次数 n の A だけ。近似定理を有理 Poincaré 級数の一致で確認 | 離散群の場合を実装済み(BⁿA のホモロジーとホモトピー群、Eₙ 構造 = BⁿA の cocycle、格子の作用 = K(A, n) の cocycle)。ΩⁿY への little cubes の作用と近似写像 α は実装済み。近似定理は、球面の楔について有理 Poincaré 級数の一致を arity 4 まで確認済み。n = 2 の Z₂ 係数では球面 1 個について重み 8 まで(braid 群のホモロジーと Kudo–Araki の多項式代数)。両側 bar 構成 B(Σⁿ, Cₙ, X) そのものは未着手 |
 
@@ -1037,7 +1070,8 @@ c(a, b) とする。これは平面の向きの選び方で、逆に取ると `c
 - **補正項の探索の続き**:最初の版(与えた候補の中から係数を解く)は 3.8 節にある。次は、次数を指定して ∪ᵢ と E∞ の演算から候補を自動的に並べること、
   整数性(2π × 整数になるか)を条件に入れること、単体の上で解くこと
 - 奇数 level の続き:障害が fermion の類 `(1/2) P(B)` であること、三次元トーラスの上でそれを消す 8 個の符号、境界条件との対応は 3.9 節にある。
-  符号の局所的な式(Gu–Wen 型の Grassmann 積分)も 3.9 節にある。次は、単体複体(w₂ の代表)、奇数電荷の Wilson line、
+  符号の局所的な式(Gu–Wen 型の Grassmann 積分)と、framing のある Wilson loop(電荷 k の線が fermion であること)も 3.9 節にある。
+  次は、単体複体(w₂ の代表)、開いた線と monopole 演算子、正準量子化(arXiv:2401.09597)の線の演算子との照合、
   文献の Majorana の重みとの項ごとの照合。アノマリーの Čech の形(脈体の上の `m∪N + N∪m + δ̌m∪m`)も 3.9 節にある。
   次は、降下の像に限らない一般の Čech cocycle N の上で、それを消す符号を作ること
 - Ikeda の格子 Deligne–Beilinson コホモロジー(arXiv:2601.15939)との比較の続き:Villain 場から Čech–de Rham の cocycle への写像と、
@@ -1122,6 +1156,8 @@ operad の側の候補:
   単独の層のロードと、17 層すべてのロードも確認済み。`GuWenGrassmannSign` を含む。
 - v0.23.0:`wolframscript -file Scripts/RunTests.wls` で 354/354 が通過(2026-11-23、Wolfram Language 15.0.1、利用者の環境)。
   単独の層のロードと、17 層すべてのロードも確認済み。`CechDeRhamLargeGauge`、`CechDeRhamAnomaly` を含む。
+- v0.24.0:`wolframscript -file Scripts/RunTests.wls` で 356/356 が通過(2026-11-23、Wolfram Language 15.0.1、利用者の環境)。
+  単独の層のロードと、17 層すべてのロードも確認済み。`VillainFramedWilsonLoop` を含む。
 
 ### Python 参照実装(整数・有理数の厳密計算)
 
@@ -1189,3 +1225,6 @@ operad の側の候補:
 - `grassmann_reference.py`:Grassmann 積分の符号。6 つの面の並べ方 720 通りのうち (ii) を満たすのが巡回的な 12 通りだけであること
   (3×3×3 と 3×4×4)、`∪₁` が結ぶ面の対、まっすぐな管で −1(7 通りの大きさ)、link の境界で +1、2 本の link で −1、
   (i)・(ii)、8 個の符号が境界条件つきの積分に一致すること(3×3×3、3×3×4、4×4×4)
+- `wilson_reference.py`:framing のある Wilson loop。背景の flux への応答、ゲージ変換と大きいゲージ変換での変化(3×3×3 と 3×4×5、level 1〜3)、
+  曲線の変形での位相が `−Σ q(v, b)/2k` であること(3×3×3 と 3×3×4、level 1〜4)、自己絡み数 0・1 と絡み 2(3 通りの大きさ)、
+  奇数 level で電荷 k の線が Grassmann 積分の符号になること

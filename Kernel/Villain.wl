@@ -172,7 +172,8 @@
 (*                                                                        *)
 (*  Checked in reference/villain_reference.py,                            *)
 (*  reference/oddlevel_reference.py, reference/cech_reference.py,         *)
-(*  reference/star_reference.py and reference/grassmann_reference.py.     *)
+(*  reference/star_reference.py, reference/grassmann_reference.py and     *)
+(*  reference/wilson_reference.py.                                        *)
 (*                                                                        *)
 (*  Layer: lattice gauge theory.  Depends on: Lattice.                    *)
 (* ====================================================================== *)
@@ -254,6 +255,8 @@ GuWenGrassmannSign::usage = "GuWenGrassmannSign[{L1, L2, L3}][n] gives the sign 
 CechDeRhamLargeGauge::usage = "CechDeRhamLargeGauge[m, {L1, L2, L3}] gives the pair {xi, mm} of the gauge transformation of a cocycle of Cech-de Rham type that is the large gauge transformation of a flat Villain field by the integer 1-cochain m: CechDeRhamGaugeTransform[CechDeRhamTriple[A, dims], xi, mm, dims] has the values of CechDeRhamTriple[VillainLargeGaugeTransform[A, m], dims]. xi[p, x] is the sum of m along the path of the tree of the cube p from p to x (direction 3, then 2, then 1), and mm[p, q] is xi[q, c] - xi[p, c] at the lowest corner c of the intersection of the cubes p and q.";
 
 CechDeRhamAnomaly::usage = "CechDeRhamAnomaly[mm, nn, {L1, L2, L3}] gives the integer pairing of the Cech cochain mm_pq N_qrs + N_pqr mm_rs + (mm_qr - mm_pr + mm_pq) mm_rs with the sites of CechDeRhamFundamentalCycle, for an alternating integer function mm[p, q] and a Cech cocycle nn[p, q, r]: m cup N + N cup m + dm cup m with the Cech cup product. The total of CechDeRhamStarIntegral of a cocycle with itself changes by minus this integer under CechDeRhamGaugeTransform with mm. It is the Cech form of ChernSimonsLargeGaugeAnomaly: for the mm of CechDeRhamLargeGauge[m, dims] and the cocycle of a flat Villain field with the flux n it is the sum of ChernSimonsLargeGaugeAnomaly[m, n].";
+
+VillainFramedWilsonLoop::usage = "VillainFramedWilsonLoop[b][A] gives the cochain (Cup[a, b] + Cup[b, a]) / 2 - Pi HigherCup[1][b, n] for the Villain field A = VillainField[a, n] of degree 1 and an integer 2-cochain b in three dimensions. For b the Poincare dual of a closed curve of the dual lattice, Exp[I (its sum)] is the framed Wilson loop of arXiv:2303.06160, eq. (33): two lines of charge 1/2, displaced along the diagonal, and the sheet of n between them. For closed b the sum does not change under VillainGaugeTransform and changes by 2 Pi times an integer under VillainLargeGaugeTransform. The cochain is the response of VillainChernSimons[k] to the background flux n - b / k, and VillainFramedWilsonLoop[k b] is the shift of the flux n by b. Moving the curve, b -> b + Coboundary[v], multiplies the expectation value by Exp[-2 Pi I q / (2 k)] with q the sum of ChernSimonsLargeGaugeAnomaly[v, b]: the spin c^2 / (2 k) of the line of charge c and the linking phase 1 / k.";
 
 StaggeredMomentumCount::usage = "StaggeredMomentumCount[{L1, ..., Ld}] gives the number of momenta p on the periodic lattice with sides L1, ..., Ld whose components add up to Pi modulo 2 Pi: L1 ... Ld / lcm(L1, ..., Ld) if the lcm is even, and 0 if all sides are odd.";
 
@@ -814,6 +817,13 @@ CechDeRhamAnomaly[mm_, nn_, dims : {_Integer, _Integer, _Integer}] :=
       Lookup[CechDeRhamFundamentalCycle[dims], 0]
     ]
   ];
+
+(* ---------------------------------------------------------------------- *)
+(* framed Wilson loops (arXiv:2303.06160, section IV)                      *)
+(* ---------------------------------------------------------------------- *)
+
+VillainFramedWilsonLoop[b_][VillainField[a_, n_]] :=
+  (1 / 2) (Cup[a, b] + Cup[b, a]) - Pi HigherCup[1][b, n];
 
 End[];
 

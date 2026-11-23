@@ -378,6 +378,25 @@ Among the 720 orders of the six faces of a cube, only this cyclic order gives
 a quadratic refinement of the cup-1 pairing. The formula has not been compared
 term by term with the Grassmann and Majorana weights of the literature.
 
+Framed Wilson loops follow arXiv:2303.06160: for the Poincare dual `b` of a
+curve of the dual lattice, `VillainFramedWilsonLoop[b][A]` is the cochain
+`(a cup b + b cup a) / 2 - Pi b cup_1 n`, two lines of charge 1/2 and the sheet
+of `n` between them. It is the response of the Lagrangian to a background flux,
+and moving the curve by `b -> b + dv` changes the expectation value by the
+phase `-q / (2 k)`, with the same cochain `q` as the anomaly of large gauge
+transformations:
+
+```wolfram
+one = PeriodicCochain[1, dims, <|{{0, 0, 0}, {1}} -> 1|>];
+CochainIntegrate[ChernSimonsLargeGaugeAnomaly[one, zero], dims]     (* 0: no twist *)
+CochainIntegrate[ChernSimonsLargeGaugeAnomaly[two, zero], dims]     (* 1: one twist, the spin 1 / (2 k) *)
+```
+
+For the charge `c` the phase is `c^2 / (2 k)` per twist, the spin of the line.
+For `c = k` it is `(-1)^k`: the obstruction at odd level is the spin 1/2 of
+the line of charge `k`, and with the sign `z` in the weight the value of that
+line is the Grassmann sign of its world line.
+
 Background fields of the 1-form symmetry enter as fractional fluxes `n + B / N`.
 The level `k` is the level `k N^2` with fluxes in `Z / N`, and the anomaly of
 the Z_N 1-form symmetry at level `K` is the class of the line of charge `K / N`,
@@ -959,6 +978,7 @@ python3 reference/oddlevel_reference.py     # Chern-Simons at odd level: the ano
 python3 reference/cech_reference.py         # a flat Villain field as a Cech-de Rham cocycle; background fields
 python3 reference/star_reference.py         # the star product and its integral on the Cech-de Rham cocycle
 python3 reference/grassmann_reference.py    # the sign at odd level as a Grassmann integral
+python3 reference/wilson_reference.py       # framed Wilson loops: spin and linking
 ```
 
 ## Layout

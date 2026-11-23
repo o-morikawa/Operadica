@@ -908,6 +908,138 @@ VerificationTest[
 ]
 
 (* ---------------------------------------------------------------------- *)
+(* framed Wilson loops (arXiv:2303.06160, section IV)                      *)
+(* ---------------------------------------------------------------------- *)
+
+(* the framed Wilson loop is the response of the Chern-Simons Lagrangian to
+   a background flux n - b / k; the loop of charge k is the shift of n by b.
+   For closed b it is invariant under gauge transformations, and it changes
+   by 2 Pi times an integer and a total derivative under large ones *)
+
+VerificationTest[
+  With[{
+      a = Cochain[1, fa], n = Cochain[2, fn], b = Cochain[2, fb], phi = Cochain[0, fp],
+      lam = Cochain[0, fl], m = Cochain[1, fm]
+    },
+    With[{aa = VillainField[a, n], w = VillainFramedWilsonLoop[b]},
+      {
+        CochainZeroQ[
+          VillainChernSimons[kk][VillainField[a, n - b / kk], phi] - Pi HigherCup[1][b, n] -
+            VillainChernSimons[kk][aa, phi] -
+            (w[aa] + (1 / 2) HigherCup[1][a, Coboundary[b]] - (1 / kk) Cup[phi, Coboundary[b]]),
+          3
+        ],
+        CochainZeroQ[
+          VillainChernSimons[kk][VillainField[a, n - b], phi] - kk Pi HigherCup[1][b, n] -
+            VillainChernSimons[kk][aa, phi] -
+            (VillainFramedWilsonLoop[kk b][aa] + (kk / 2) HigherCup[1][a, Coboundary[b]] - Cup[phi, Coboundary[b]]),
+          3
+        ],
+        CochainZeroQ[
+          w[VillainGaugeTransform[aa, lam]] - w[aa] -
+            ((1 / 2) Coboundary[Cup[lam, b] + Cup[b, lam]] -
+              (1 / 2) (Cup[lam, Coboundary[b]] + Cup[Coboundary[b], lam])),
+          3
+        ],
+        CochainZeroQ[
+          w[VillainLargeGaugeTransform[aa, m]] - w[aa] -
+            (2 Pi Cup[b, m] - Pi Coboundary[HigherCup[1][b, m]] + Pi HigherCup[1][Coboundary[b], m]),
+          3
+        ]
+      }
+    ]
+  ],
+  {True, True, True, True},
+  TestID -> "Villain-framed-Wilson-loop"
+]
+
+(* moving the curve, b -> b + dv with a -> a - (2 Pi / k) v, changes the sum
+   of the Lagrangian and the loop by - (Pi / k) sum q(v, b) + 2 Pi sum v cup n
+   (q the anomaly of large gauge transformations): the phase of the spin
+   1 / (2 k).  sum q(v, 0) is 0 for one link and for four links around a
+   point, 1 for the two links that meet at a corner (a twist), and
+   sum q(v, b) is 2 for the four links around a straight tube b (linking
+   number 1).  At odd level the loop of charge k is the fermion, and its
+   value is the Grassmann sign of its world line *)
+
+VerificationTest[
+  With[{dims = {3, 3, 3}, q = ChernSimonsLargeGaugeAnomaly},
+    With[{
+        field = Function[{p, f},
+          PeriodicCochain[p, dims,
+            Association[Map[Function[c, {c[[1]], c[[2]]} -> f[c[[1]], c[[2]]]], LCells[dims, p]]]
+          ]
+        ],
+        flux = THooftFluxCochain[{{0, 1, -2}, {-1, 0, 3}, {2, -3, 0}}, dims],
+        tube = THooftFluxCochain[{{0, 1, 0}, {-1, 0, 0}, {0, 0, 0}}, dims],
+        zero = PeriodicCochain[2, dims, <||>],
+        phi = PeriodicCochain[0, dims, <||>],
+        one = PeriodicCochain[1, dims, <|{{0, 0, 0}, {1}} -> 1|>],
+        two = PeriodicCochain[1, dims, <|{{0, 0, 0}, {1}} -> 1, {{1, 0, 0}, {2}} -> 1|>],
+        around = PeriodicCochain[1, dims,
+          <|{{2, 2, 0}, {3}} -> 1, {{0, 2, 0}, {3}} -> 1, {{2, 0, 0}, {3}} -> 1, {{0, 0, 0}, {3}} -> 1|>
+        ]
+      },
+      With[{
+          e0 = field[1, Function[{y, s}, Mod[y[[1]] + 2 y[[2]] + 3 y[[3]] + s[[1]] (1 + y[[1]] y[[2]] + y[[3]]), 3] - 1]],
+          m2 = field[1, Function[{y, s}, Mod[s[[1]] y[[1]] + y[[2]] y[[3]] + 2 s[[1]] y[[3]] + y[[1]] + s[[1]], 2]]],
+          a = field[1, Function[{y, s}, Mod[2 y[[1]] + y[[2]] y[[3]] + s[[1]] y[[2]] + s[[1]], 5] - 2]]
+        },
+        With[{
+            n = field[2, Function[{y, s}, CochainValue[flux + Coboundary[e0], y, s]]]
+          },
+          With[{
+              aa = VillainField[a, n],
+              moved = field[2, Function[{y, s}, CochainValue[n - tube, y, s]]]
+            },
+            {
+              {
+                CochainIntegrate[q[one, zero], dims], CochainIntegrate[q[two, zero], dims],
+                CochainIntegrate[q[around, zero], dims], CochainIntegrate[q[around, tube], dims]
+              },
+              {CochainIntegrate[Cup[around, tube], dims], CochainIntegrate[Cup[tube, around], dims]},
+              {CochainIntegrate[q[m2, tube], dims], CochainIntegrate[Cup[m2, n], dims]},
+              Table[
+                Expand[
+                  CochainIntegrate[
+                    VillainChernSimons[k][VillainField[a - (2 Pi / k) m2, n], phi] +
+                      VillainFramedWilsonLoop[tube + Coboundary[m2]][VillainField[a - (2 Pi / k) m2, n]] -
+                      VillainChernSimons[k][aa, phi] - VillainFramedWilsonLoop[tube][aa],
+                    dims
+                  ]
+                ],
+                {k, 1, 3}
+              ],
+              GuWenGrassmannSign[dims][n] GuWenGrassmannSign[dims][moved] *
+                  (-1)^CochainIntegrate[HigherCup[1][tube, n], dims] === GuWenGrassmannSign[dims][tube],
+              {
+                GuWenGrassmannSign[dims][Coboundary[one]], GuWenGrassmannSign[dims][Coboundary[two]],
+                GuWenGrassmannSign[dims][Coboundary[around]]
+              },
+              Table[
+                TopologicalSpin[ChernSimonsAnyons[k], {c}] ===
+                  Mod[c^2 CochainIntegrate[q[two, zero], dims] / (2 k), 1],
+                {k, 1, 4}, {c, 0, k - 1}
+              ]
+            }
+          ]
+        ]
+      ]
+    ]
+  ],
+  {
+    {0, 1, 0, 2},
+    {1, 1},
+    {2, 15},
+    {28 Pi, 29 Pi, 88 Pi / 3},
+    True,
+    {1, -1, 1},
+    {{True}, {True, True}, {True, True, True}, {True, True, True, True}}
+  },
+  TestID -> "Villain-framed-Wilson-loop-spin"
+]
+
+(* ---------------------------------------------------------------------- *)
 (* a flat Villain field as a Cech-de Rham cocycle (the form of the lattice *)
 (* Deligne-Beilinson cohomology of arXiv:2601.15939)                       *)
 (* ---------------------------------------------------------------------- *)
