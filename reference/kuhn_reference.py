@@ -34,6 +34,31 @@ triangles.  Statements checked, for 2-cocycles N of the triangulation modulo 2:
  5. sum N(n) cup_1 N(n') = sum n cup_1 n' modulo 2: the descent takes the cup-1 pairing of the
     cubic lattice to that of the triangulation.
 
+A local formula: the Grassmann integral of Gu and Wen on the triangulation.  Every triangle
+on which N is odd carries two Grassmann variables, one in each of its two tetrahedra.  For the
+tetrahedron (v0, v1, v2, v3) with the faces f_i (v_i omitted), the product of the variables of
+its odd faces is taken in the order
+
+    f0, f2, f1, f3   if the coefficient is +1,       f3, f1, f2, f0   if it is -1,
+
+and the pair of a triangle is integrated with the weight 1 for (the variable of the
+tetrahedron in which the triangle is f_i with (coefficient) (-1)^i = +1)(the other one).
+sg(N) is the sign of the permutation that sorts the variables into the pairs.
+
+ 6. among the 576 pairs of orders of the four faces (one for each orientation), 32 give a
+    function with (ii); the orders above (those of Gu and Wen) are one of them;
+ 7. sg(N + dm) = sg(N) (-1)^(sum q(m, N) + sum of m over ALL edges): the defect is linear in
+    m, does not depend on N, and its chain w is the sum of all the edges of the triangulation
+    (a cycle: 14 edges at every vertex).  This is the representative of the second
+    Stiefel-Whitney class for this integral;
+ 8. w is the boundary, modulo 2, of the chain E of the triangles (p, p + e_mu, p + e_1 + e_2 +
+    e_3), mu = 1, 2, 3, so  sg(N) (-1)^(sum of N over E)  satisfies (i) and (ii): a spin
+    structure is a chain with the boundary w;
+ 9. with this E it is the sign zc of the spin structure that is periodic in the three
+    directions, for every size, and with h_rho^(Chern number of N for the plane normal to
+    rho) it is zc for the boundary conditions h: the same statement as for the cubic lattice
+    (grassmann_reference.py).
+
 Run:  python3 reference/kuhn_reference.py
 """
 
@@ -46,6 +71,7 @@ from oddlevel_reference import Torus, thooft, add, integrate, torus_anomaly, PLA
 from cech_reference import addv, unit, primitive, transition, chern, test_fields
 from star_reference import explicit_cycle, large_gauge, cech_anomaly, test_mm
 from grassmann_reference import gu_wen, closed_sample
+from grassmann_reference import perm_sign as gr_sign
 
 
 def perm_sign(p):
@@ -150,6 +176,89 @@ class Kuhn:
         return z
 
 
+ORDER_PLUS, ORDER_MINUS = (0, 2, 1, 3), (3, 1, 2, 0)
+
+
+def grassmann(K, N, op=ORDER_PLUS, om=ORDER_MINUS):
+    """the Grassmann integral on the triangulation, for a cocycle N modulo 2"""
+    tidx = {f: i for i, f in enumerate(K.tris)}
+    seq = []
+    for t in sorted(K.tets):
+        c = K.tets[t]
+        for i in (op if c == 1 else om):
+            f = t[:i] + t[i + 1:]
+            if N[f]:
+                seq.append(2 * tidx[f] + (0 if c * (-1) ** i == 1 else 1))
+    return gr_sign(seq)
+
+
+def spin_chain(K):
+    """the triangles (p, p + e_mu, p + e_1 + e_2 + e_3)"""
+    return [(p, addv(p, unit(mu), K.dims), addv(p, (1, 1, 1), K.dims)) for p in K.lat.points() for mu in (1, 2, 3)]
+
+
+def local_sign(K, hol=(1, 1, 1)):
+    E = spin_chain(K)
+
+    def z(N):
+        c = K.chern_numbers(N)
+        return (grassmann(K, N) * (-1) ** (sum(N[f] for f in E) % 2)
+                * hol[0] ** c[2] * hol[1] ** c[1] * hol[2] ** c[0])
+    return z
+
+
+def check_orders(dims, rng):
+    K = Kuhn(dims)
+    S = [K.addc(K.descended(closed_sample(K.lat, rng)), K.delta({e: rng.randint(0, 1) for e in K.edges}))
+         for _ in range(7)]
+    pairs = [(i, j) for i in range(7) for j in range(i + 1, 7)][:16]
+    good = []
+    for op in itertools.permutations(range(4)):
+        for om in itertools.permutations(range(4)):
+            g = [grassmann(K, x, op, om) for x in S]
+            if all(grassmann(K, K.addc(S[i], S[j]), op, om) * g[i] * g[j] == (-1) ** K.cup1(S[i], S[j])
+                   for (i, j) in pairs):
+                good.append((op, om))
+    assert (ORDER_PLUS, ORDER_MINUS) in good
+    return len(good)
+
+
+def check_local(dims, rng, full=True):
+    K = Kuhn(dims)
+    lat = K.lat
+    N = K.addc(K.descended(closed_sample(lat, rng)), K.delta({e: rng.randint(0, 1) for e in K.edges}))
+    zero = {e: 0 for e in K.edges}
+    # 7: the defect is the sum of m over all edges
+    for e in (K.edges if full else K.edges[::9]):
+        m = dict(zero)
+        m[e] = 1
+        assert grassmann(K, K.addc(N, K.delta(m))) == -grassmann(K, N) * (-1) ** K.anomaly(m, N)
+    for _ in range(3):
+        m = {e: rng.randint(0, 1) for e in K.edges}
+        assert (grassmann(K, K.addc(N, K.delta(m)))
+                == grassmann(K, N) * (-1) ** ((K.anomaly(m, N) + sum(m.values())) % 2))
+    deg = {}
+    for e in K.edges:
+        for v in e:
+            deg[v] = deg.get(v, 0) + 1
+    assert set(deg.values()) == {14}
+    # 8: the boundary of E is the sum of all edges
+    bd = {e: 0 for e in K.edges}
+    for f in spin_chain(K):
+        for e in ((f[0], f[1]), (f[0], f[2]), (f[1], f[2])):
+            bd[e] ^= 1
+    assert set(bd.values()) == {1}
+    # 9: the eight spin structures
+    for hol in itertools.product((1, -1), repeat=3):
+        z, zl = K.sign(hol), local_sign(K, hol)
+        for _ in range(2 if full else 1):
+            M = K.addc(K.descended(closed_sample(lat, rng)), K.delta({e: rng.randint(0, 1) for e in K.edges}))
+            assert z(M) == zl(M)
+    tubes = [K.descended(thooft(lat, {pl: 1})) for pl in PLANES]
+    assert [local_sign(K)(T) for T in tubes] == [-1, -1, -1]
+    return True
+
+
 def check_triangulation(dims):
     K = Kuhn(dims)
     want = {}
@@ -224,6 +333,15 @@ def test_numbers():
         assert z(moved) == z(N) * (-1) ** (an % 2)
         out[name] = an
     out["cup1"] = (K.cup1(N, N2), integrate(lat, cr.higher_cup(1, n, n2)))
+    E = spin_chain(K)
+    odd = odd_mm(dims)
+    moved = {f: (N[f] + odd(f[1], f[2]) - odd(f[0], f[2]) + odd(f[0], f[1])) % 2 for f in K.tris}
+    out["grassmann"] = (grassmann(K, N), grassmann(K, N3), grassmann(K, N2), grassmann(K, moved))
+    out["chain"] = tuple(sum(X[f] for f in E) % 2 for X in (N, N3, N2))
+    out["edges"] = sum(odd(*e) for e in K.edges) % 2
+    for signs in ((1, 1, 1), (-1, 1, -1)):
+        zl = local_sign(K, (-signs[2], -signs[1], -signs[0]))
+        assert (zl(N), zl(N3), zl(N2), zl(K.addc(N, N2))) == out[signs]
     return out
 
 
@@ -235,6 +353,11 @@ def main():
     for dims in ((3, 3, 3), (3, 3, 4)):
         assert check_sign(dims, rng)
     print("the sign on the cocycles of the triangulation: well defined, extends z, (i), (ii) with cup_1 of Steenrod  True")
+    for dims in ((3, 3, 3),):
+        print("  %s  pairs of orders of the faces with (ii): %d of 576" % (dims, check_orders(dims, rng)))
+    for dims, full in (((3, 3, 3), True), ((3, 3, 4), False), ((4, 4, 4), False), ((3, 4, 5), False)):
+        assert check_local(dims, rng, full)
+    print("the Grassmann integral on the triangulation: w = all edges, the chain E, the 8 spin structures  True")
     out = test_numbers()
     print("  the numbers of the Wolfram Language tests:", out)
     assert out["odd mm"] % 2 == 1

@@ -1540,6 +1540,113 @@ VerificationTest[
   TestID -> "Villain-Cech-de-Rham-spin-structure"
 ]
 
+(* the Grassmann integral of Gu and Wen on the triangulation: it changes by
+   the anomaly and by the sum of m over all edges (the chain of the second
+   Stiefel-Whitney class); the triangles {p, p + e_mu, p + e_1 + e_2 + e_3}
+   have that chain as their boundary, and with them and the boundary
+   conditions the integral is the sign of the spin structure *)
+
+VerificationTest[
+  With[{dims = {3, 3, 3}},
+    With[{
+        field = Function[{p, f},
+          PeriodicCochain[p, dims,
+            Association[Map[Function[c, {c[[1]], c[[2]]} -> f[c[[1]], c[[2]]]], LCells[dims, p]]]
+          ]
+        ],
+        flux = THooftFluxCochain[{{0, 1, -2}, {-1, 0, 3}, {2, -3, 0}}, dims],
+        n2 = THooftFluxCochain[{{0, 2, 0}, {-2, 0, -1}, {0, 1, 0}}, dims],
+        one = PeriodicCochain[1, dims, <|{{0, 0, 0}, {1}} -> 1|>],
+        mm = Function[{p, q},
+          With[{
+              w = Mod[q - p, dims, -1] . {1, 2, 4},
+              g = Function[c, Mod[c[[1]] + 2 c[[2]] c[[3]] + c[[3]] + c[[1]] c[[2]], 3]]
+            },
+            If[w === 0, 0, Sign[w] (Mod[g[p] + g[q] + Abs[w], 3] - 1)]
+          ]
+        ],
+        edge = Function[{p, q},
+          Boole[{p, q} === {{0, 0, 0}, {1, 0, 0}}] - Boole[{q, p} === {{0, 0, 0}, {1, 0, 0}}]
+        ],
+        tets = Map[Function[term, term[[4]]], Lookup[CechDeRhamFundamentalCycle[dims], 0]],
+        sg = CechDeRhamGrassmannSign[dims]
+      },
+      With[{
+          e0 = field[1, Function[{y, s}, Mod[y[[1]] + 2 y[[2]] + 3 y[[3]] + s[[1]] (1 + y[[1]] y[[2]] + y[[3]]), 3] - 1]],
+          m2 = field[1, Function[{y, s}, Mod[s[[1]] y[[1]] + y[[2]] y[[3]] + 2 s[[1]] y[[3]] + y[[1]] + s[[1]], 2]]],
+          lg = CechDeRhamLargeGauge[one, dims][[2]],
+          edges = Union[Flatten[Map[Function[t, Subsets[t, {2}]], tets], 1]],
+          chain = Flatten[
+            Map[
+              Function[p, Map[Function[dir, {p, Mod[p + UnitVector[3, dir], dims], Mod[p + {1, 1, 1}, dims]}], {1, 2, 3}]],
+              Tuples[{0, 1, 2}, 3]
+            ],
+            1
+          ]
+        },
+        With[{
+            n = field[2, Function[{y, s}, CochainValue[flux + Coboundary[e0], y, s]]]
+          },
+          With[{
+              n3 = field[2, Function[{y, s}, CochainValue[n + Coboundary[m2], y, s]]],
+              nna = CechDeRhamChern[VillainField[0, n], dims],
+              nnb = CechDeRhamChern[VillainField[0, n2], dims],
+              odd = Function[{p, q}, mm[p, q] + lg[p, q]],
+              shift = Function[{coc, gau}, Function[{p, q, r}, coc[p, q, r] + gau[q, r] - gau[p, r] + gau[p, q]]]
+            },
+            With[{nnc = CechDeRhamChern[VillainField[0, n3], dims], va = sg[nna]},
+              {
+                {va, sg[nnc], sg[nnb]},
+                Map[
+                  Function[m,
+                    {
+                      Mod[Total[Map[Function[e, m[e[[1]], e[[2]]]], edges]], 2],
+                      CechDeRhamAnomaly[m, nna, dims],
+                      sg[shift[nna, m]]
+                    }
+                  ],
+                  {mm, odd, edge}
+                ],
+                AllTrue[edges,
+                  Function[e, OddQ[Count[Flatten[Map[Function[f, Subsets[f, {2}]], chain], 1], e]]]
+                ],
+                Map[
+                  Function[signs,
+                    Map[
+                      Function[u, CechDeRhamGrassmannSign[dims, SpinStructureHolonomy[signs]][u]],
+                      {nna, nnc, nnb, Function[{p, q, r}, nna[p, q, r] + nnb[p, q, r]]}
+                    ]
+                  ],
+                  {{1, 1, 1}, {-1, 1, -1}}
+                ],
+                CechDeRhamGrassmannSign[dims, SpinStructureHolonomy[{1, 1, 1}]][shift[nna, odd]] ===
+                  CechDeRhamSpinStructureSign[dims, {1, 1, 1}][shift[nna, odd]],
+                Map[
+                  Function[z,
+                    CechDeRhamGrassmannSign[dims, {1, 1, 1}][CechDeRhamChern[VillainField[0, THooftFluxCochain[z, dims]], dims]]
+                  ],
+                  {{{0, 1, 0}, {-1, 0, 0}, {0, 0, 0}}, {{0, 0, 1}, {0, 0, 0}, {-1, 0, 0}}, {{0, 0, 0}, {0, 0, 1}, {0, -1, 0}}}
+                ],
+                sg[Function[{p, q, r}, nna[p, q, r] + Boole[{p, q, r} === {{0, 0, 0}, {1, 0, 0}, {1, 1, 0}}]]]
+              }
+            ]
+          ]
+        ]
+      ]
+    ]
+  ],
+  {
+    {-1, 1, 1},
+    {{0, -6, -1}, {0, -7, 1}, {1, 0, 1}},
+    True,
+    {{-1, 1, 1, 1}, {-1, 1, -1, -1}},
+    True,
+    {-1, -1, -1},
+    $Failed
+  },
+  TestID -> "Villain-Cech-de-Rham-Grassmann"
+]
+
 (* ---------------------------------------------------------------------- *)
 (* background fields of the 1-form symmetry                               *)
 (* ---------------------------------------------------------------------- *)

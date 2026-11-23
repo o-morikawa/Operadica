@@ -262,6 +262,8 @@ CechDeRhamSpinStructureSign::usage = "CechDeRhamSpinStructureSign[{L1, L2, L3}, 
 
 CechDeRhamCupOnePairing::usage = "CechDeRhamCupOnePairing[nn1, nn2, {L1, L2, L3}] gives, modulo 2, the sum over the tetrahedra {p, q, r, s} of the triangulation of CechDeRhamSpinStructureSign of nn1[p, r, s] nn2[p, q, r] + nn1[p, q, s] nn2[q, r, s]: the cup-1 product of Steenrod of two Cech 2-cochains. For the cocycles of two flat Villain fields with the fluxes n and n2 it is the sum of HigherCup[1][n, n2] modulo 2.";
 
+CechDeRhamGrassmannSign::usage = "CechDeRhamGrassmannSign[{L1, L2, L3}][nn] gives the Grassmann integral of Gu and Wen for the Cech 2-cocycle nn[p, q, r] (integer, a cocycle modulo 2) on the triangulation of CechDeRhamSpinStructureSign: every triangle on which nn is odd carries one Grassmann variable in each of its two tetrahedra; the tetrahedron {v0, v1, v2, v3} with the faces f_i (v_i omitted) contributes the product of the variables of its odd faces in the order f0, f2, f1, f3 if its coefficient is 1 and f3, f1, f2, f0 if it is -1; and the pair of a triangle is integrated with the weight 1 for (the variable of the tetrahedron in which it is f_i with coefficient (-1)^i = 1)(the other one). The result is the sign of the permutation that sorts the variables into the pairs. When the coboundary of a function m on the edges is added to nn, it changes by (-1)^(CechDeRhamAnomaly + the sum of m over all the edges of the triangulation): the sum of all edges is the chain of the second Stiefel-Whitney class for this integral. CechDeRhamGrassmannSign[dims, {h1, h2, h3}][nn] multiplies it by (-1)^(the sum of nn over the triangles {p, p + e_mu, p + e_1 + e_2 + e_3}), whose boundary modulo 2 is the sum of all edges, and by h_rho for an odd Chern number of nn for the plane normal to rho: CechDeRhamGrassmannSign[dims, SpinStructureHolonomy[s]][nn] is CechDeRhamSpinStructureSign[dims, s][nn]. The result is $Failed if nn is not a cocycle modulo 2 on the triangulation.";
+
 StaggeredMomentumCount::usage = "StaggeredMomentumCount[{L1, ..., Ld}] gives the number of momenta p on the periodic lattice with sides L1, ..., Ld whose components add up to Pi modulo 2 Pi: L1 ... Ld / lcm(L1, ..., Ld) if the lcm is even, and 0 if all sides are odd.";
 
 Begin["`Private`"];
@@ -913,6 +915,73 @@ CechDeRhamSpinStructureSign[dims : {_Integer, _Integer, _Integer}, signs : {(1 |
           Function[{p, q, r}, Lookup[table, Key[{p, q, r}]]],
           dims
         ]
+    ]
+  ];
+
+(* ---------------------------------------------------------------------- *)
+(* the Grassmann integral on the triangulation                             *)
+(* ---------------------------------------------------------------------- *)
+
+(* the faces of a tetrahedron of the chain in the order of its Grassmann
+   variables, as {triangle, tag}; the tag is 0 for the faces f_i with
+   (coefficient) (-1)^i = 1 *)
+cdrGrassmannSlots[{c_Integer, x_List, {}, {p_List, q_List, r_List, s_List}}] :=
+  If[c === 1,
+    {{{q, r, s}, 0}, {{p, q, s}, 0}, {{p, r, s}, 1}, {{p, q, r}, 1}},
+    {{{p, q, r}, 0}, {{p, r, s}, 0}, {{p, q, s}, 1}, {{q, r, s}, 1}}
+  ];
+
+CechDeRhamGrassmannSign[dims : {_Integer, _Integer, _Integer}][nn_] :=
+  Module[{terms, tris, index, odd},
+    terms = Lookup[CechDeRhamFundamentalCycle[dims], 0];
+    tris = Union[Flatten[Map[Function[term, Subsets[term[[4]], {3}]], terms], 1]];
+    index = Association[Table[tris[[i]] -> i, {i, 1, Length[tris]}]];
+    odd = Association[Map[Function[f, f -> OddQ[nn[f[[1]], f[[2]], f[[3]]]]], tris]];
+    If[
+      ! AllTrue[terms,
+        Function[term,
+          EvenQ[Count[Map[Function[f, Lookup[odd, Key[f]]], Subsets[term[[4]], {3}]], True]]
+        ]
+      ],
+      $Failed,
+      Signature[
+        Flatten[
+          Map[
+            Function[term,
+              Map[
+                Function[slot, 2 Lookup[index, Key[slot[[1]]]] + slot[[2]]],
+                Select[cdrGrassmannSlots[term], Function[slot, Lookup[odd, Key[slot[[1]]]]]]
+              ]
+            ],
+            terms
+          ]
+        ]
+      ]
+    ]
+  ];
+
+CechDeRhamGrassmannSign[dims : {_Integer, _Integer, _Integer}, hol : {(1 | -1), (1 | -1), (1 | -1)}][nn_] :=
+  With[{base = CechDeRhamGrassmannSign[dims][nn]},
+    If[base === $Failed,
+      $Failed,
+      With[{
+          cls = cdrChernParity[nn, dims],
+          chain = Total[
+            Flatten[
+              Map[
+                Function[p,
+                  Map[
+                    Function[mu, nn[p, Mod[p + UnitVector[3, mu], dims], Mod[p + {1, 1, 1}, dims]]],
+                    {1, 2, 3}
+                  ]
+                ],
+                Tuples[Map[Function[len, Range[0, len - 1]], dims]]
+              ]
+            ]
+          ]
+        },
+        base (-1)^chain hol[[1]]^cls[[3]] hol[[2]]^cls[[2]] hol[[3]]^cls[[1]]
+      ]
     ]
   ];
 

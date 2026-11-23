@@ -450,6 +450,10 @@ lattice with six tetrahedra in every dual cube, so this integer is a simplicial
 expression; on the cocycles of that triangulation
 `CechDeRhamSpinStructureSign` extends `SpinStructureSign`, cancels the integer
 at odd level, and is a quadratic refinement of the cup-1 pairing of Steenrod.
+It also has a local formula, the Grassmann integral of Gu and Wen on the
+tetrahedra (`CechDeRhamGrassmannSign`): the chain of the second
+Stiefel-Whitney class is the sum of all edges, and a spin structure is a chain
+of triangles with that boundary.
 The pieces of the chain on the links and on the sites are fixed here by
 the cycle conditions; their signs have not been compared with the formulas of
 that paper.
