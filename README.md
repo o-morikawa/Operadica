@@ -52,7 +52,7 @@ automatically; the lattice and category layers do not need the operad layer.
 | lattice gauge theory | ``Operadica`Lattice` `` | | cochains, coboundary, cup and higher cup products, local multilinear operations |
 | lattice gauge theory | ``Operadica`Gauge` `` | Lattice | multilinear expansion, gauge variations, actions |
 | lattice gauge theory | ``Operadica`Simplicial` `` | Lattice | the same cochain expressions on simplices: Steenrod's cup-i products |
-| lattice gauge theory | ``Operadica`Villain` `` | Lattice | U(1) gauge fields in the modified Villain form, differential cochains, the Deligne-Beilinson product, BF and Chern-Simons actions, the theta term |
+| lattice gauge theory | ``Operadica`Villain` `` | Lattice | U(1) gauge fields in the modified Villain form, differential cochains, the Deligne-Beilinson product, BF and Chern-Simons actions, the theta term, the anomaly at odd level |
 | bridge | ``Operadica`EInfinity` `` | Graded, BarrattEccles, Lattice | the E-infinity operad acts on lattice cochains: higher cup products and the homotopies between them |
 | bridge | ``Operadica`Bridge` `` | Trees, Operads, LittleCubes, Loops, Graded, Presented, BarrattEccles, BarConstruction, Lattice, Simplicial, Villain, EnCategories | statements connecting the layers |
 
@@ -329,8 +329,33 @@ ChernSimonsZeroModeCount /@ {{2, 2, 2}, {3, 3, 3}, {2, 3, 4}}   (* {8, 0, 4} *)
 StaggeredMomentumCount /@ {{2, 2, 2}, {3, 3, 3}, {2, 3, 4}}     (* {4, 0, 2} *)
 ```
 
-Odd levels (spin structures), the coupling to Z_N background fields and the
-search for correction terms are not there yet.
+Odd level. In four dimensions the Chern-Simons Lagrangian `L` is a primitive of
+the theta term at `theta = 2 Pi k` up to an integer part,
+
+    dL = (k / 4 Pi) Q(F) - k Pi Q(n) + (k a + d phi) cup dn,     Q(x) = x cup x + x cup_1 dx,
+
+and `k Pi Q(n)` is `2 Pi` times an integer cochain only for even `k`. In three
+dimensions this is the anomaly of the large gauge transformations: `exp(i S)`
+changes by `(-1)^(k times the sum of q(m, n))` with the integer cochain
+`q = ChernSimonsLargeGaugeAnomaly[m, n]`, and the sum can be odd. On a
+three-torus the anomaly is cancelled by a sign `z(n)` with
+`z(n + dm) = z(n) (-1)^(sum of q(m, n))`. Eight such functions are quadratic
+refinements of the cup-1 pairing; they play the role of the spin structures:
+
+```wolfram
+dims = {3, 3, 3};
+two = PeriodicCochain[1, dims, <|{{0, 0, 0}, {1}} -> 1, {{1, 0, 0}, {2}} -> 1|>];
+zero = PeriodicCochain[2, dims, <||>];
+CochainIntegrate[ChernSimonsLargeGaugeAnomaly[two, zero], dims]     (* 1: odd *)
+
+z = SpinStructureSign[dims, {1, 1, 1}];    (* the signs of the three unit fluxes *)
+z[Coboundary[two]]                                                  (* -1 *)
+z[THooftFluxCochain[{{0, 1, 0}, {-1, 0, 0}, {0, 0, 0}}, dims]]      (* 1 *)
+```
+
+A local expression for `z` (Majorana fermions), the identification of the eight
+functions with boundary conditions, and the coupling to Z_N background fields
+are not there yet.
 
 ## Category layer
 
@@ -857,6 +882,7 @@ python3 reference/braiding_reference.py     # braids of paths of little squares,
 python3 reference/steenrod_reference.py     # Steenrod squares of cochains, the fermion on K(Z_2, 3)
 python3 reference/braidgroup_reference.py   # homology of braid groups, unordered configurations
 python3 reference/villain_reference.py      # Villain fields, differential cochains, Chern-Simons, the theta term
+python3 reference/oddlevel_reference.py     # Chern-Simons at odd level: the anomaly and the signs that cancel it
 ```
 
 ## Layout

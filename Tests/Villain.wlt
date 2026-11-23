@@ -530,3 +530,197 @@ VerificationTest[
   {True, True, True, True, False},
   TestID -> "Villain-large-gauge-algebra"
 ]
+
+(* ---------------------------------------------------------------------- *)
+(* odd level                                                              *)
+(* ---------------------------------------------------------------------- *)
+
+(* in four dimensions the Chern-Simons Lagrangian L is a primitive of the
+   theta term at theta = 2 Pi k up to k Pi Q(n):
+     dL = (k / 4 Pi) Q(F) - k Pi Q(n) + (k a + d phi) cup dn,   Q(x) = x cup x + x cup_1 dx.
+   Q is the Pontryagin square plus 2 x cup_1 dx, and its change under
+   n -> n + dm is the coboundary of the anomaly q(m, n), up to 2 m cup dn *)
+
+VerificationTest[
+  With[{
+      a = Cochain[1, fa], n = Cochain[2, fn], phi = Cochain[0, fp], m = Cochain[1, fm],
+      qq = Function[u, Cup[u, u] + HigherCup[1][u, Coboundary[u]]]
+    },
+    With[{aa = VillainField[a, n], curv = Coboundary[a] - 2 Pi n},
+      With[{
+          lhs = Coboundary[VillainChernSimons[kk][aa, phi]],
+          tail = Cup[kk a + Coboundary[phi], Coboundary[n]],
+          rhs = (kk / (4 Pi)) qq[curv] - kk Pi qq[n],
+          rhsP = (kk / (4 Pi)) PontryaginSquare[curv] - kk Pi PontryaginSquare[n],
+          descent = {
+            qq[n + Coboundary[m]] - qq[n],
+            Coboundary[ChernSimonsLargeGaugeAnomaly[m, n]] + 2 Cup[m, Coboundary[n]]
+          }
+        },
+        {
+          CochainEqualQ[lhs, rhs + tail, 4],
+          SimplexCochainEqualQ[lhs, rhs + tail],
+          CochainEqualQ[
+            (kk / (4 Pi)) qq[curv],
+            VillainThetaTerm[2 Pi kk][aa] + (kk / (4 Pi)) HigherCup[1][curv, Coboundary[curv]],
+            4
+          ],
+          CochainEqualQ[lhs, rhsP + tail - kk HigherCup[1][Coboundary[a], Coboundary[n]], 4],
+          CochainEqualQ[lhs, rhsP + tail, 4],
+          CochainEqualQ[qq[n], PontryaginSquare[n], 4, Modulus -> 2],
+          CochainEqualQ[descent[[1]], descent[[2]], 4],
+          SimplexCochainEqualQ[descent[[1]], descent[[2]]]
+        }
+      ]
+    ]
+  ],
+  {True, True, True, True, False, True, True, True},
+  TestID -> "Villain-odd-level-inflow"
+]
+
+(* in three dimensions: under a large gauge transformation the Lagrangian
+   changes by -(k/2) d(m cup a) - k Pi q(m, n).  q is a cocycle of the group
+   of the m, and modulo 2 and up to a coboundary it is m cup dm + dm cup_1 n.
+   The theory at level k is the theory at level 4k with half-integer fluxes *)
+
+VerificationTest[
+  With[{
+      a = Cochain[1, fa], n = Cochain[2, fn], phi = Cochain[0, fp],
+      m = Cochain[1, fm], m2 = Cochain[1, fm2],
+      q = ChernSimonsLargeGaugeAnomaly
+    },
+    With[{
+        aa = VillainField[a, n],
+        large = {
+          VillainChernSimons[kk][VillainLargeGaugeTransform[VillainField[a, n], m], phi] -
+            VillainChernSimons[kk][VillainField[a, n], phi],
+          -(kk / 2) Coboundary[Cup[m, a]] - kk Pi q[m, n]
+        },
+        cocycle = {q[m, n] + q[m2, n + Coboundary[m]] - q[m + m2, n], -Coboundary[Cup[m2, m]]},
+        guwen = Cup[m, Coboundary[m]] + HigherCup[1][Coboundary[m], n] +
+          Coboundary[Cup[m, m] + HigherCup[1][m, n]],
+        even = 2 (Cup[n, m] + HigherCup[1][m, Coboundary[n]] - HigherCup[1][Coboundary[m], n])
+      },
+      {
+        CochainEqualQ[large[[1]], large[[2]], 3],
+        SimplexCochainEqualQ[large[[1]], large[[2]]],
+        CochainEqualQ[cocycle[[1]], cocycle[[2]], 3],
+        SimplexCochainEqualQ[cocycle[[1]], cocycle[[2]]],
+        CochainEqualQ[q[m, n], guwen + even, 3],
+        SimplexCochainEqualQ[q[m, n], guwen + even],
+        CochainEqualQ[q[m, n], guwen, 3, Modulus -> 2],
+        CochainZeroQ[q[m, n], 3, Modulus -> 2],
+        CochainEqualQ[
+          VillainChernSimons[kk][aa, phi],
+          VillainChernSimons[4 kk][VillainField[a / 2, n / 2], 2 phi],
+          3
+        ]
+      }
+    ]
+  ],
+  {True, True, True, True, True, True, True, False, True},
+  TestID -> "Villain-odd-level-anomaly"
+]
+
+(* on a three-torus the sum of the anomaly can be odd, so that exp(i S) is
+   not invariant at odd level: m = 1 on two links that meet at a corner is
+   the smallest example.  A closed m does not see the anomaly *)
+
+VerificationTest[
+  With[{dims = {3, 3, 3}, q = ChernSimonsLargeGaugeAnomaly},
+    With[{
+        field = Function[{p, f},
+          PeriodicCochain[p, dims,
+            Association[Map[Function[c, {c[[1]], c[[2]]} -> f[c[[1]], c[[2]]]], LCells[dims, p]]]
+          ]
+        ]
+      },
+      With[{
+          zero = PeriodicCochain[2, dims, <||>],
+          one = PeriodicCochain[1, dims, <|{{0, 0, 0}, {1}} -> 1|>],
+          two = PeriodicCochain[1, dims, <|{{0, 0, 0}, {1}} -> 1, {{1, 0, 0}, {2}} -> 1|>],
+          m1 = field[1, Function[{y, s}, Mod[y[[1]] + 2 y[[2]] + 3 y[[3]] + s[[1]] (1 + y[[1]] y[[2]] + y[[3]]), 3] - 1]],
+          m2 = field[1, Function[{y, s}, Mod[s[[1]] y[[1]] + y[[2]] y[[3]] + 2 s[[1]] y[[3]] + y[[1]] + s[[1]], 2]]],
+          mu0 = field[0, Function[{y, s}, Mod[y[[1]] y[[2]] + 2 y[[3]] + y[[2]], 3]]],
+          wall = field[1, Function[{y, s}, Boole[s === {3} && y[[3]] === 0]]],
+          flux = THooftFluxCochain[{{0, 1, -2}, {-1, 0, 3}, {2, -3, 0}}, dims]
+        },
+        With[{n1 = flux + Coboundary[m1]},
+          {
+            CochainZeroQ[Coboundary[n1], dims],
+            CochainIntegrate[q[one, zero], dims],
+            CochainIntegrate[q[two, zero], dims],
+            CochainIntegrate[q[m2, n1], dims],
+            CochainZeroQ[Coboundary[Coboundary[mu0] + wall], dims],
+            Mod[CochainIntegrate[q[Coboundary[mu0] + wall, n1], dims], 2]
+          }
+        ]
+      ]
+    ]
+  ],
+  {True, 0, 1, 17, True, 0},
+  TestID -> "Villain-odd-level-obstruction"
+]
+
+(* the signs that cancel the anomaly on a three-torus:
+     z(n + dm) = z(n) (-1)^(sum of q(m, n)),
+     z(n + n') = z(n) z(n') (-1)^(sum of n cup_1 n').
+   The eight choices are labelled by the signs of the three unit fluxes, and
+   two of them differ by (-1)^(sum of alpha cup n) with alpha flat.  The
+   flux dm of the two links above has the sign -1 for every choice *)
+
+VerificationTest[
+  With[{dims = {3, 3, 3}, q = ChernSimonsLargeGaugeAnomaly},
+    With[{
+        field = Function[{p, f},
+          PeriodicCochain[p, dims,
+            Association[Map[Function[c, {c[[1]], c[[2]]} -> f[c[[1]], c[[2]]]], LCells[dims, p]]]
+          ]
+        ],
+        unit = Function[c,
+          THooftFluxCochain[{{0, c[[1]], c[[2]]}, {-c[[1]], 0, c[[3]]}, {-c[[2]], -c[[3]], 0}}, dims]
+        ],
+        sg = Function[sig, SpinStructureSign[dims, sig]]
+      },
+      With[{
+          zero = PeriodicCochain[2, dims, <||>],
+          one = PeriodicCochain[1, dims, <|{{0, 0, 0}, {1}} -> 1|>],
+          two = PeriodicCochain[1, dims, <|{{0, 0, 0}, {1}} -> 1, {{1, 0, 0}, {2}} -> 1|>],
+          m1 = field[1, Function[{y, s}, Mod[y[[1]] + 2 y[[2]] + 3 y[[3]] + s[[1]] (1 + y[[1]] y[[2]] + y[[3]]), 3] - 1]],
+          m2 = field[1, Function[{y, s}, Mod[s[[1]] y[[1]] + y[[2]] y[[3]] + 2 s[[1]] y[[3]] + y[[1]] + s[[1]], 2]]],
+          wall = field[1, Function[{y, s}, Boole[s === {3} && y[[3]] === 0]]],
+          flux = THooftFluxCochain[{{0, 1, -2}, {-1, 0, 3}, {2, -3, 0}}, dims]
+        },
+        With[{n1 = flux + Coboundary[m1], n2 = unit[{1, 1, 0}] + Coboundary[m2]},
+          {
+            sg[{1, 1, 1}][zero],
+            Map[
+              Function[c, sg[{-1, 1, -1}][unit[c]]],
+              {{1, 0, 0}, {0, 1, 0}, {0, 0, 1}, {1, 1, 0}, {1, 1, 1}}
+            ],
+            {sg[{1, 1, 1}][Coboundary[two]], sg[{-1, -1, -1}][Coboundary[two]], sg[{1, 1, 1}][Coboundary[one]]},
+            Map[
+              Function[st,
+                sg[st][n1 + Coboundary[m2]] sg[st][n1] === (-1)^CochainIntegrate[q[m2, n1], dims]
+              ],
+              {{1, 1, 1}, {-1, 1, -1}}
+            ],
+            Map[
+              Function[st,
+                sg[st][n1 + n2] sg[st][n1] sg[st][n2] ===
+                  (-1)^CochainIntegrate[HigherCup[1][n1, n2], dims]
+              ],
+              {{1, 1, 1}, {-1, 1, -1}}
+            ],
+            sg[{1, 1, 1}][n1] sg[{-1, 1, 1}][n1] === (-1)^CochainIntegrate[Cup[wall, n1], dims],
+            {sg[{1, 1, 1}][n1], sg[{1, 1, 1}][n2], sg[{1, 1, 1}][n1 + n2], sg[{-1, 1, -1}][n1], sg[{-1, 1, -1}][n2]},
+            {CochainIntegrate[HigherCup[1][n1, n2], dims], CochainIntegrate[Cup[wall, n1], dims]},
+            sg[{1, 1, 1}][PeriodicCochain[2, dims, <|{{0, 0, 0}, {1, 2}} -> 1|>]]
+          }
+        ]
+      ]
+    ]
+  ],
+  {1, {-1, 1, -1, 1, -1}, {-1, -1, 1}, {True, True}, {True, True}, True, {-1, -1, -1, -1, 1}, {15, 1}, $Failed},
+  TestID -> "Villain-spin-structure-sign"
+]

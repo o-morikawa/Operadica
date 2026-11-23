@@ -61,6 +61,8 @@ RandomCochain::usage = "RandomCochain[p, dims] is a p-cochain on the periodic la
 
 THooftFluxCochain::usage = "THooftFluxCochain[z, dims] is the closed 2-cochain on the periodic lattice with side lengths dims that equals z[[mu, nu]] on the plaquette in the (mu, nu) plane at the sites whose mu and nu coordinates are both maximal, and 0 elsewhere. z is an antisymmetric matrix.";
 
+THooftFlux::usage = "THooftFlux[n, dims] gives the antisymmetric matrix of the fluxes of the 2-cochain n on the periodic lattice with side lengths dims: the entry (mu, nu) with mu < nu is the sum of n over the plaquettes of the (mu, nu) plane through the origin. For a closed n the sums do not depend on the position of the plane, and a closed integer n differs from THooftFluxCochain[THooftFlux[n, dims], dims] by the coboundary of an integer 1-cochain.";
+
 CochainIntegrate::usage = "CochainIntegrate[c, dims] sums the top-degree cochain c over all top cells of the periodic lattice with side lengths dims.";
 
 PontryaginSquare::usage = "PontryaginSquare[b] gives Cup[b, b] - HigherCup[1][b, Coboundary[b]].";
@@ -355,6 +357,27 @@ THooftFluxCochain[z_?MatrixQ, dims_List] :=
           Mod[x[[s[[2]]]], dims[[s[[2]]]]] == dims[[s[[2]]]] - 1
         ]
     ]
+  ];
+
+(* the sum over the plaquettes of the (mu, nu) plane through the origin *)
+thPlane[n_, dims_List, mu_Integer, nu_Integer] :=
+  Total[
+    Flatten[
+      Table[
+        CochainValue[n, ReplacePart[ConstantArray[0, Length[dims]], {mu -> i, nu -> j}], {mu, nu}],
+        {i, 0, dims[[mu]] - 1}, {j, 0, dims[[nu]] - 1}
+      ]
+    ]
+  ];
+
+THooftFlux[n_, dims : {__Integer}] :=
+  Table[
+    Which[
+      mu < nu, thPlane[n, dims, mu, nu],
+      mu > nu, -thPlane[n, dims, nu, mu],
+      True, 0
+    ],
+    {mu, 1, Length[dims]}, {nu, 1, Length[dims]}
   ];
 
 CochainIntegrate[c_, dims_List] :=

@@ -1,6 +1,6 @@
 # Operadica 設計文書
 
-最終更新: 2026-11-23(v0.17.0)
+最終更新: 2026-11-23(v0.18.0)
 
 ## 1. 目的
 
@@ -51,7 +51,7 @@ operad の標準的な理論を、Mathematica 上で実際に計算しながら�
 | 格子ゲージ理論 | ``Operadica`Lattice` `` | なし | cochain、δ、∪、∪ᵢ、局所的な多重線形演算 |
 | 格子ゲージ理論 | ``Operadica`Gauge` `` | Lattice | 多重線形展開、ゲージ変分、作用 |
 | 格子ゲージ理論 | ``Operadica`Simplicial` `` | Lattice | 同じ cochain の式を単体の上で評価する:Steenrod の ∪ᵢ |
-| 格子ゲージ理論 | ``Operadica`Villain` `` | Lattice | modified Villain 形式の U(1) ゲージ場、differential cochain、Deligne–Beilinson 積、BF・Chern–Simons の作用、θ 項 |
+| 格子ゲージ理論 | ``Operadica`Villain` `` | Lattice | modified Villain 形式の U(1) ゲージ場、differential cochain、Deligne–Beilinson 積、BF・Chern–Simons の作用、θ 項、奇数 level の障害 |
 | 橋 | ``Operadica`EInfinity` `` | Graded, BarrattEccles, Lattice | 格子 cochain への E∞ operad の作用:∪ᵢ とその間のホモトピー |
 | 橋 | ``Operadica`Bridge` `` | Trees, Operads, LittleCubes, Loops, Graded, Presented, BarrattEccles, BarConstruction, Lattice, Simplicial, Villain, EnCategories | 層をつなぐ主張 |
 
@@ -341,7 +341,7 @@ braid 群の作用:右に寄せた積 `a₁(a₂(a₃…))` の上で、生成�
   arXiv:2401.09597 が奇数 level を作るのに使う手続きの、圏の側の形である。
 
 圏のデータとしては「bosonic な理論に spin TQFT {1, ψ} を掛けたもの」になっているが、格子の上では直積にはならない:fermion ψ は電荷 k の Wilson line
-そのもので、ゲージ場に結びついている。格子での構成(spin 構造、Majorana)はまだない(3.9 節)。
+そのもので、ゲージ場に結びついている。格子の側の障害と、三次元トーラスの上でそれを消す符号は 3.9 節にある。局所的な式(Majorana)はまだない。
 
 ### 3.8 cochain
 
@@ -405,7 +405,7 @@ Wilson 流の link 変数ではなく cochain の組を基本の対象にし、�
   `(k/2)·(A ∗ A の接続) − (k/2) a∪₁δn + φ∪δn`
 
   これは arXiv:2303.06160 式 (17) の modified Villain のラグランジアン(``Operadica`Gauge` `` の `ModifiedVillainCS`)と一致する。
-  「半分」を取るので大きいゲージ変換での変化は kπ × 整数 cochain になり、level k は偶数に限られる(5 節の恒等式)。
+  「半分」を取るので大きいゲージ変換での変化は kπ × 整数 cochain になり、そのままでは level k は偶数に限られる(5 節の恒等式。奇数 level は下の小節)。
   ∪₁ の項は、n が平坦でないときにもゲージ不変にするための補正である。
 
 **積の次数付き可換性**(`DeligneSwapGauge`、`DeligneSwapDefect`):連続理論の Deligne–Beilinson 積は次数付き可換で、
@@ -485,9 +485,56 @@ Hopkins–Singer の differential cocycle の、微分形式を実 cochain に�
 
   を満たす。arXiv:2401.09597 の大きいゲージ変換の演算子の合成則 `U[m]U[m′] = U[m+m′] exp(ikπ Σ m∪m′)` と同じ形である。
   その対称部分は (A3) で `m∪m′ + m′∪m = −δ(m∪₁m′) + δm∪₁m′ − m∪₁δm′` と ∪₁ で書ける。
-  k が奇数のときに残る障害がこれで、消すには spin 構造が要る。奇数 level の構成(Majorana、fermion condensation)はまだない。
+  k が奇数のときに残る障害がこれで、次の小節で扱う。
 
-Z_N の背景場との結合と、奇数 level の格子での構成(spin 構造)はまだない(7 節)。補正項の探索は 3.8 節にある。
+**奇数 level:障害と、それを消す符号**(`ChernSimonsLargeGaugeAnomaly`、`SpinStructureSign`、``Operadica`Lattice` `` の `THooftFlux`。`reference/oddlevel_reference.py` で確認)
+
+`Q(x) = x∪x + x∪₁δx` と置く(5 節の Pontryagin 平方 `P(x)` に `2 x∪₁δx` を足したもの。2 を法として P と同じ)。
+一般の cochain について、立方格子と単体の両方で次が厳密に成り立つ。
+
+- **inflow**(四次元):Chern–Simons のラグランジアン L の余境界は
+
+  `δL = (k/4π) Q(F) − kπ Q(n) + (ka + δφ)∪δn`
+
+  である。第 1 項は F だけで書けるのでゲージ不変で、monopole がなければ θ = 2πk の θ 項になる。第 3 項は monopole がなければ消える。
+  つまり L は θ 項の原始関数に `kπ Q(n)` だけ足りない。k が偶数ならこれは 2π × 整数 cochain で、重み `exp(iS)` には効かない。
+  k が奇数なら `π Q(n)` が残る。これは 6 節の fermion の類 `(1/2) P(B)`(B = n mod 2)の 2π 倍である。
+- **アノマリー**(三次元):大きいゲージ変換でのラグランジアンの変化(5 節)は `−(k/2) δ(m∪a) − kπ q(m, n)` で、
+
+  `q(m, n) = m∪n + n∪m + m∪₁δn + δm∪m`(整数 cochain。`ChernSimonsLargeGaugeAnomaly[m, n]`)
+
+  閉じた格子の上で `exp(iS)` は `(−1)^(k Σq)` 倍になる。
+- **q は Q の降下**(四次元):`Q(n + δm) − Q(n) = δq(m, n) + 2 m∪δn`。境界のアノマリーが、内部の項 `kπ Q(n)` の変化で打ち消される。
+- **q は大きいゲージ変換の群の cocycle**:`q(m, n) + q(m′, n + δm) − q(m + m′, n) = −δ(m′∪m)`。
+  アノマリーを n だけの関数で打ち消せるかどうかが、意味のある問いになる(Wess–Zumino の整合性条件)。
+- 2 を法とし全微分を除くと、q は Gu–Wen の形 `m∪δm + δm∪₁n` になる:
+  `q(m, n) = m∪δm + δm∪₁n + δ(m∪m + m∪₁n) + 2 (n∪m + m∪₁δn − δm∪₁n)`。
+- **level 4k**:`L_k(a, n, φ) = L_4k(a/2, n/2, 2φ)`。level k の理論は、level 4k の理論(偶数 level)で flux を半整数まで許したものである。
+  Z₂ の 1-form 対称性をゲージ化したものと読めて、n mod 2 がその 2-form ゲージ場、上の障害がこの対称性のアノマリーにあたる。
+  3.7 節の fermion condensation(level 4k の線 2k が fermion)の、格子の作用の側の形である。
+
+三次元トーラス(周期的な立方格子)の上では、次のことを確かめている。
+
+- **障害は実際に現れる**:`Σ q(m, n)` は奇数になりうる。最小の例は、角で出会う 2 本の link `((0,0,0); 1)` と `((1,0,0); 2)` の上で 1、ほかで 0 の m と、n = 0 で、`Σ q = 1`。
+  link 1 本では 0。閉じた m(ゲージ変換と平坦な部分)では、閉じた n について Σq は偶数になる。
+- **flux**:閉じた整数 2-cochain n は `THooftFluxCochain[z] + δm` と書ける。z は座標平面の上の n の和で、`THooftFlux[n, dims]` が返す。
+- **符号**:2 を法として閉じた整数 2-cochain n の上の、±1 に値を持つ関数 z で
+
+  (i) `z(n + δm) = z(n) (−1)^(Σ q(m, n))`   (ii) `z(n + n′) = z(n) z(n′) (−1)^(Σ n∪₁n′)`
+
+  を満たすものを考える。(i) は「k が奇数のとき `exp(iS)·z(n)` が大きいゲージ変換で不変」という条件、
+  (ii) は z が ∪₁ の対の二次の精密化であるという条件である。
+  - そのような z は 8 個ある。3 つの単位 flux(`THooftFluxCochain`)の上の値 `(s₁₂, s₁₃, s₂₃)` で決まる(`SpinStructureSign[dims, {s12, s13, s23}][n]`)。
+  - 2 つの z の比は `(−1)^(Σ α∪n)`(α は 2 を法として平坦な 1-cochain)。8 個は H¹(T³; Z₂) の torsor をなし、連続理論の spin 構造と同じ数え方になる。
+  - `z(δm) = (−1)^(Σ δm∪m)`。上の 2 本の link の m では、どの z でも −1 である。可縮な flux の輪でも、格子の上の形によって符号が付く。
+  - (μ, ν) 面を貫くまっすぐな flux の管は、どこに置いても符号 s_μν を持つ。
+  - 計算は、`n = (代表の flux) + δm` を 2 を法として解き(行簡約)、(i) で代表まで戻す。代表の上の値は (ii) で決める(3 つの代表どうしの ∪₁ の対は 1)。
+
+ここで作ったのは、条件 (i)・(ii) で特徴づけた関数で、局所的な式ではない。Gu–Wen の Grassmann 積分(Majorana fermion)がこの形の符号を局所的に与えることは
+知られているが、ここでは構成していない。8 個のどれがどの境界条件(周期的、反周期的)にあたるかも同定していない。
+確かめたのは三次元トーラスだけで、単体複体(w₂ の代表が現れるはずである)は扱っていない。
+
+Z_N の背景場との結合はまだない(7 節)。補正項の探索は 3.8 節にある。
 
 ## 4. 自動検証の4つの強さ
 
@@ -826,7 +873,7 @@ c(a, b) とする。これは平面の向きの選び方で、逆に取ると `c
 | 3 | little 2-cubes、Gerstenhaber operad、Pₙ | C_n(2) ≃ S^(n−1)。k 点成分の Poincaré 多項式が ∏(1+jt) | 実装済み(Pₙ の次元は arity 4 まで、参照実装で arity 5 まで。Betti 数との照合は、脈体で k = 2 と (n, k) = (2, 3)、Barratt–Eccles の段で (3, 3) まで、参照実装で (2, 4) と (4, 3) まで) |
 | C | 点付き Eₙ モノイダル圏、coherence、braid 群の作用 | 五角形・六角形・分類の個数。coherence が長さ 6 まで | 実装済み(little squares の道の braid とその位相、六角形 = operad の合成との両立まで。parenthesized braids を operad として扱う一般の coherence は未着手) |
 | G | 多重線形展開、ゲージ変分、作用、補正項の探索 | 5 節の恒等式が通る。Chern–Simons の ∪₁ の補正項が線形方程式の一意な解として出る | 実装済み(補正項の探索は、与えた候補の線形結合の中から。候補の自動生成は未着手) |
-| V | Villain 形式の U(1) 場、Deligne–Beilinson 積、構成的な格子作用 | 積がゲージ同値類の上で定まる。BF と Chern–Simons が積から出る。平坦な Z_N 場の上で Dijkgraaf–Witten になる | 実装済み(対象、ゲージ変換、積、BF、Chern–Simons、Z_N への制限、積の可換性のホモトピー、θ 項と Witten 効果、differential cochain としての定式化、Chern–Simons の零モードの数)。奇数 level の格子での構成、背景場との結合は未着手 |
+| V | Villain 形式の U(1) 場、Deligne–Beilinson 積、構成的な格子作用 | 積がゲージ同値類の上で定まる。BF と Chern–Simons が積から出る。平坦な Z_N 場の上で Dijkgraaf–Witten になる | 実装済み(対象、ゲージ変換、積、BF、Chern–Simons、Z_N への制限、積の可換性のホモトピー、θ 項と Witten 効果、differential cochain としての定式化、Chern–Simons の零モードの数、奇数 level の障害と三次元トーラスの上でそれを消す符号)。その符号の局所的な式(Majorana)、背景場との結合は未着手 |
 | 4 | E∞ operad(Barratt–Eccles、table reduction で surjection へ)、Eₙ フィルトレーション、cochain への作用 | eᵢ ↦ (1,2,1,2,…) の作用が ∪ᵢ を再現。三つの法則 (L)・(C)・(E)。Hirsch 公式のホモトピー | 実装済み(surjection operad の合成は未実装) |
 | 5 | 単体的対象、bar 構成 B(Σⁿ, Cₙ, X) | 反復 bar 構成で作った BⁿA のホモトピー群が次数 n の A だけ。近似定理を有理 Poincaré 級数の一致で確認 | 離散群の場合を実装済み(BⁿA のホモロジーとホモトピー群、Eₙ 構造 = BⁿA の cocycle、格子の作用 = K(A, n) の cocycle)。ΩⁿY への little cubes の作用と近似写像 α は実装済み。近似定理は、球面の楔について有理 Poincaré 級数の一致を arity 4 まで確認済み。n = 2 の Z₂ 係数では球面 1 個について重み 8 まで(braid 群のホモロジーと Kudo–Araki の多項式代数)。両側 bar 構成 B(Σⁿ, Cₙ, X) そのものは未着手 |
 
@@ -834,8 +881,8 @@ c(a, b) とする。これは平面の向きの選び方で、逆に取ると `c
 
 - **補正項の探索の続き**:最初の版(与えた候補の中から係数を解く)は 3.8 節にある。次は、次数を指定して ∪ᵢ と E∞ の演算から候補を自動的に並べること、
   整数性(2π × 整数になるか)を条件に入れること、単体の上で解くこと
-- 奇数 level の Chern–Simons の格子での構成:spin 構造(w₂ の自明化)と fermion condensation。圏の側(3.7 節の分解)は検査済みで、
-  障害は 6 節の fermion の類 `(1/2) P(B)` にあたるはずである
+- 奇数 level の続き:障害が fermion の類 `(1/2) P(B)` であることと、三次元トーラスの上でそれを消す 8 個の符号は 3.9 節にある。
+  次は、その符号の局所的な式(Gu–Wen の Grassmann 積分、Majorana)、8 個と境界条件の対応、単体複体(w₂ の代表)、奇数電荷の Wilson line
 - Ikeda の格子 Deligne–Beilinson コホモロジー(arXiv:2601.15939。双対格子の点を patch とする Čech–de Rham 型)との比較写像
 - Z_N の背景場との結合(1-form 対称性のゲージ化)、framing のある Wilson loop、`F_A∪₁F_B` のような格子に固有の項の系統的な扱い
 - 混合アノマリー(K(A, n) の積の上の cocycle)と 2-group(`δB = β(A)`)
@@ -903,6 +950,8 @@ operad の側の候補:
   単独の層のロードと、17 層すべてのロードも確認済み。`ChernSimonsAnyons`、`ChernSimonsSpinSplitQ`、`ChernSimonsFermionCondensationQ` を含む。
 - v0.17.0:`wolframscript -file Scripts/RunTests.wls` で 339/339 が通過(2026-11-23、Wolfram Language 15.0.1、利用者の環境)。
   単独の層のロードと、17 層すべてのロードも確認済み。`CochainLinearSolve` を含む。
+- v0.18.0:`wolframscript -file Scripts/RunTests.wls` で 344/344 が通過(2026-11-23、Wolfram Language 15.0.1、利用者の環境)。
+  単独の層のロードと、17 層すべてのロードも確認済み。`THooftFlux`、`ChernSimonsLargeGaugeAnomaly`、`SpinStructureSign` を含む。
 
 ### Python 参照実装(整数・有理数の厳密計算)
 
@@ -952,3 +1001,7 @@ operad の側の候補:
   θ 項の分解と Witten 項のゲージ変分(p = 1 は立方格子と単体、p = 2 は単体)、四次元トーラスの位相電荷が Pfaffian であること、
   differential cochain の d² = 0・Leibniz 則・結合則・可換性のホモトピー(立方格子は 5 次元まで、単体は次数 (3, 3) まで)、
   Villain 場が differential cochain であること、`Σ a∪δa` の零モードの数(三次元トーラス 10 通り)、大きいゲージ変換の合成則
+- `oddlevel_reference.py`:奇数 level の恒等式(inflow、アノマリー、降下、cocycle、Gu–Wen の形、level 4k。立方格子と単体)、
+  三次元トーラス 4 通りの上で、アノマリーの和が奇数になりうること、flux の読み出し、8 個の符号のそれぞれが条件 (i)・(ii) を満たすこと、
+  線形方程式の解の取り方に依らないこと、2 つの符号の比が平坦な 1-cochain で書けること、まっすぐな flux の管の符号、
+  類の代表の上の二次の精密化がちょうど 8 個であること

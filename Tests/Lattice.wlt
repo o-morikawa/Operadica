@@ -631,3 +631,41 @@ VerificationTest[
   {True, True, True, True, True, True},
   TestID -> "Lattice-Steenrod-coboundary"
 ]
+
+(* the fluxes of a closed 2-cochain on a torus: THooftFlux inverts
+   THooftFluxCochain, and an exact cochain has no flux *)
+
+VerificationTest[
+  With[{
+      dims = {2, 3, 4}, z = {{0, 1, -2}, {-1, 0, 3}, {2, -3, 0}},
+      dims4 = {2, 2, 2, 2}, z4 = {{0, 1, 2, -1}, {-1, 0, 3, 5}, {-2, -3, 0, 7}, {1, -5, -7, 0}}
+    },
+    With[{
+        m = PeriodicCochain[1, dims,
+          Association[
+            Map[
+              Function[c, {c[[1]], c[[2]]} -> Mod[c[[1, 1]] + 2 c[[1, 2]] c[[2, 1]] + c[[1, 3]], 3] - 1],
+              LCells[dims, 1]
+            ]
+          ]
+        ],
+        m4 = PeriodicCochain[1, dims4,
+          Association[
+            Map[
+              Function[c, {c[[1]], c[[2]]} -> Mod[c[[1, 1]] + c[[1, 2]] c[[1, 4]] + c[[2, 1]] c[[1, 3]], 2]],
+              LCells[dims4, 1]
+            ]
+          ]
+        ]
+      },
+      {
+        THooftFlux[THooftFluxCochain[z, dims], dims],
+        THooftFlux[THooftFluxCochain[z, dims] + Coboundary[m], dims] === z,
+        THooftFlux[Coboundary[m], dims],
+        THooftFlux[THooftFluxCochain[z4, dims4] + Coboundary[m4], dims4] === z4
+      }
+    ]
+  ],
+  {{{0, 1, -2}, {-1, 0, 3}, {2, -3, 0}}, True, {{0, 0, 0}, {0, 0, 0}, {0, 0, 0}}, True},
+  TestID -> "Lattice-tHooft-flux-inverse"
+]

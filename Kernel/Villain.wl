@@ -107,7 +107,37 @@
 (*  the lcm is even and none if all sides are odd.  These are the          *)
 (*  staggered modes of arXiv:2303.06160.                                   *)
 (*                                                                        *)
-(*  Checked in reference/villain_reference.py.                            *)
+(*  Odd level.  With Q(x) = x cup x + x cup_1 dx (the Pontryagin square    *)
+(*  plus 2 x cup_1 dx), the Chern-Simons Lagrangian L satisfies in four    *)
+(*  dimensions                                                            *)
+(*                                                                        *)
+(*    dL = (k / 4 Pi) Q(F) - k Pi Q(n) + (k a + d phi) cup dn :            *)
+(*                                                                        *)
+(*  it is a primitive of the theta term at theta = 2 Pi k up to            *)
+(*  k Pi Q(n), which is 2 Pi times an integer cochain only for even k.     *)
+(*  Under a large gauge transformation L changes by                        *)
+(*  -(k/2) d(m cup a) - k Pi q(m, n) with the integer cochain              *)
+(*                                                                        *)
+(*    q(m, n) = m cup n + n cup m + m cup_1 dn + dm cup m,                 *)
+(*    Q(n + dm) - Q(n) = d q(m, n) + 2 m cup dn,                           *)
+(*    q(m, n) + q(m', n + dm) - q(m + m', n) = - d(m' cup m),              *)
+(*    q(m, n) = m cup dm + dm cup_1 n + d(m cup m + m cup_1 n) + 2 (...).  *)
+(*                                                                        *)
+(*  The sum of q(m, n) over a three-torus can be odd, so exp(i S) is not   *)
+(*  invariant at odd level.  It is cancelled by a sign z(n), defined for   *)
+(*  the integer n that are closed modulo 2, with                           *)
+(*                                                                        *)
+(*    z(n + dm) = z(n) (-1)^(sum of q(m, n)),                              *)
+(*    z(n + n') = z(n) z(n') (-1)^(sum of n cup_1 n').                     *)
+(*                                                                        *)
+(*  There are eight such functions on a three-torus, labelled by their     *)
+(*  values on the three unit fluxes; two of them differ by                 *)
+(*  (-1)^(sum of alpha cup n) with alpha flat modulo 2.  They play the     *)
+(*  role of the spin structures.  A local expression for z (Majorana       *)
+(*  fermions) is not constructed here.                                     *)
+(*                                                                        *)
+(*  Checked in reference/villain_reference.py and                         *)
+(*  reference/oddlevel_reference.py.                                      *)
 (*                                                                        *)
 (*  Layer: lattice gauge theory.  Depends on: Lattice.                    *)
 (* ====================================================================== *)
@@ -157,6 +187,10 @@ VillainDifferentialCochain::usage = "VillainDifferentialCochain[A] gives the Vil
 DifferentialCochainEqualQ::usage = "DifferentialCochainEqualQ[x, y, d] gives True if the differential cochains x and y agree identically on the d-dimensional hypercubic lattice, component by component. Each of x and y is a DifferentialCochain or a list of three components. DifferentialCochainEqualQ[x, y, {L1, ..., Ld}] compares on all cells of a periodic lattice.";
 
 ChernSimonsZeroModeCount::usage = "ChernSimonsZeroModeCount[{L1, L2, L3}] gives the number of zero modes of the quadratic form sum of Cup[a, Coboundary[a]] on the periodic lattice with sides L1, L2, L3, beyond the closed 1-cochains (gauge transformations and flat connections). It is computed from the rank of the matrix of the form and equals 2 StaggeredMomentumCount[{L1, L2, L3}].";
+
+ChernSimonsLargeGaugeAnomaly::usage = "ChernSimonsLargeGaugeAnomaly[m, n] gives the integer cochain q(m, n) = Cup[m, n] + Cup[n, m] + HigherCup[1][m, Coboundary[n]] + Cup[Coboundary[m], m] of degree 3, for a 1-cochain m and a 2-cochain n. Under the large gauge transformation a -> a + 2 Pi m, n -> n + Coboundary[m] the Lagrangian VillainChernSimons[k] changes by -(k/2) Coboundary[Cup[m, a]] - k Pi q(m, n), so that exp(i S) changes by (-1)^(k times the sum of q): the anomaly at odd level k. It is the descent of the four-dimensional Q(n) = Cup[n, n] + HigherCup[1][n, Coboundary[n]]: Q(n + dm) - Q(n) = Coboundary[q(m, n)] + 2 Cup[m, Coboundary[n]].";
+
+SpinStructureSign::usage = "SpinStructureSign[{L1, L2, L3}, {s12, s13, s23}][n] gives the sign z(n) = 1 or -1 of the integer 2-cochain n on the periodic lattice with sides L1, L2, L3; n has to be closed modulo 2, otherwise the result is $Failed. The function z satisfies z(n + dm) = z(n) (-1)^(sum of ChernSimonsLargeGaugeAnomaly[m, n]) for every integer 1-cochain m, so that exp(i S) z(n) is invariant under large gauge transformations at odd level, and z(n + n') = z(n) z(n') (-1)^(sum of HigherCup[1][n, n']). The signs s12, s13, s23 (each 1 or -1) are the values of z on the unit fluxes THooftFluxCochain in the (1, 2), (1, 3) and (2, 3) planes. There are eight such functions, and they play the role of the spin structures of the three-torus. z is computed by solving n = THooftFluxCochain[c, dims] + dm modulo 2.";
 
 StaggeredMomentumCount::usage = "StaggeredMomentumCount[{L1, ..., Ld}] gives the number of momenta p on the periodic lattice with sides L1, ..., Ld whose components add up to Pi modulo 2 Pi: L1 ... Ld / lcm(L1, ..., Ld) if the lcm is even, and 0 if all sides are odd.";
 
@@ -272,6 +306,77 @@ ChernSimonsZeroModeCount[dims : {_Integer?Positive, _Integer?Positive, _Integer?
     poly = Expand[CochainIntegrate[Cup[field, Coboundary[field]], dims]];
     hess = D[poly, {vars, 2}];
     Length[vars] - MatrixRank[hess] - (Times @@ dims + 2)
+  ];
+
+(* ---------------------------------------------------------------------- *)
+(* odd level: the anomaly of the large gauge transformations, and the     *)
+(* signs that cancel it on a three-torus                                  *)
+(* ---------------------------------------------------------------------- *)
+
+ChernSimonsLargeGaugeAnomaly[m_, n_] :=
+  Cup[m, n] + Cup[n, m] + HigherCup[1][m, Coboundary[n]] + Cup[Coboundary[m], m];
+
+(* the antisymmetric matrix with the entries c = {c12, c13, c23} *)
+ssMatrix[c_List] :=
+  {{0, c[[1]], c[[2]]}, {-c[[1]], 0, c[[3]]}, {-c[[2]], -c[[3]], 0}};
+
+(* the column of the first 1 in a row of a row-reduced matrix, or 0 *)
+ssPivot[row_List] := SelectFirst[Range[Length[row]], Function[j, row[[j]] === 1], 0];
+
+(* an integer 1-cochain m with dm = t modulo 2 on the periodic lattice, or
+   $Failed if there is none: row reduction modulo 2 of the matrix of the
+   coboundary, with the free variables set to 0 *)
+ssSolve[t_, dims_List] :=
+  Module[{links, plaqs, nl, vars, field, mat, rhs, red, pivots, rows},
+    links = LCells[dims, 1];
+    plaqs = LCells[dims, 2];
+    nl = Length[links];
+    vars = Table[ssVar[i], {i, 1, nl}];
+    field = PeriodicCochain[1, dims,
+      Association[Table[{links[[i, 1]], links[[i, 2]]} -> vars[[i]], {i, 1, nl}]]
+    ];
+    mat = D[
+      Map[Function[cell, CochainValue[Coboundary[field], cell[[1]], cell[[2]]]], plaqs],
+      {vars}
+    ];
+    rhs = Map[Function[cell, Mod[CochainValue[t, cell[[1]], cell[[2]]], 2]], plaqs];
+    red = RowReduce[Join[mat, Map[List, rhs], 2], Modulus -> 2];
+    pivots = Map[ssPivot, red];
+    rows = Select[Range[Length[red]], Function[i, 1 <= pivots[[i]] <= nl]];
+    If[MemberQ[pivots, nl + 1],
+      $Failed,
+      PeriodicCochain[1, dims,
+        Association[
+          Map[
+            Function[i,
+              {links[[pivots[[i]], 1]], links[[pivots[[i]], 2]]} -> red[[i, nl + 1]]
+            ],
+            rows
+          ]
+        ]
+      ]
+    ]
+  ];
+
+SpinStructureSign[
+    dims : {_Integer?Positive, _Integer?Positive, _Integer?Positive},
+    signs : {(1 | -1), (1 | -1), (1 | -1)}
+  ][n_] :=
+  Module[{flux, cls, rep, m, gens, pair},
+    flux = THooftFlux[n, dims];
+    cls = Mod[{flux[[1, 2]], flux[[1, 3]], flux[[2, 3]]}, 2];
+    rep = THooftFluxCochain[ssMatrix[cls], dims];
+    m = ssSolve[n - rep, dims];
+    If[m === $Failed,
+      $Failed,
+      gens = Map[Function[u, THooftFluxCochain[ssMatrix[u], dims]], IdentityMatrix[3]];
+      pair = Function[{i, j},
+        cls[[i]] cls[[j]] CochainIntegrate[HigherCup[1][gens[[i]], gens[[j]]], dims]
+      ];
+      (Times @@ (signs^cls)) *
+        (-1)^(pair[1, 2] + pair[1, 3] + pair[2, 3] +
+          CochainIntegrate[ChernSimonsLargeGaugeAnomaly[m, rep], dims])
+    ]
   ];
 
 End[];
