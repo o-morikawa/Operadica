@@ -1210,6 +1210,103 @@ VerificationTest[
   TestID -> "Villain-Cech-de-Rham-star-gauge"
 ]
 
+(* the anomaly on the Cech side: the integral of a square changes by minus
+   the pairing of m cup N + N cup m + dm cup m (Cech cup product) with the
+   sites of the chain.  The large gauge transformation of the Villain field
+   by the lattice 1-cochain m2 is a gauge transformation of the cocycle, and
+   for it the pairing is the sum of q(m2, n) = 17 *)
+
+VerificationTest[
+  With[{dims = {3, 3, 3}},
+    With[{
+        field = Function[{p, f},
+          PeriodicCochain[p, dims,
+            Association[Map[Function[c, {c[[1]], c[[2]]} -> f[c[[1]], c[[2]]]], LCells[dims, p]]]
+          ]
+        ],
+        flux = THooftFluxCochain[{{0, 1, -2}, {-1, 0, 3}, {2, -3, 0}}, dims],
+        xi = Function[{p, x},
+          With[{r = Mod[x - p, dims]},
+            (Mod[2 p[[1]] + p[[2]] p[[3]] + 3 r[[1]] + r[[2]] (1 + p[[3]]) + 2 r[[3]] p[[1]], 7] - 3) / 5
+          ]
+        ],
+        mm = Function[{p, q},
+          With[{
+              w = Mod[q - p, dims, -1] . {1, 2, 4},
+              g = Function[c, Mod[c[[1]] + 2 c[[2]] c[[3]] + c[[3]] + c[[1]] c[[2]], 3]]
+            },
+            If[w === 0, 0, Sign[w] (Mod[g[p] + g[q] + Abs[w], 3] - 1)]
+          ]
+        ],
+        cyc = CechDeRhamFundamentalCycle[dims]
+      },
+      With[{
+          e0 = field[1, Function[{y, s}, Mod[y[[1]] + 2 y[[2]] + 3 y[[3]] + s[[1]] (1 + y[[1]] y[[2]] + y[[3]]), 3] - 1]],
+          m2 = field[1, Function[{y, s}, Mod[s[[1]] y[[1]] + y[[2]] y[[3]] + 2 s[[1]] y[[3]] + y[[1]] + s[[1]], 2]]],
+          a = field[1, Function[{y, s}, Mod[2 y[[1]] + y[[2]] y[[3]] + s[[1]] y[[2]] + s[[1]], 5] - 2]]
+        },
+        With[{
+            n = field[2, Function[{y, s}, CochainValue[flux + Coboundary[e0], y, s]]]
+          },
+          With[{
+              t1 = CechDeRhamTriple[VillainField[a, n], dims],
+              big = CechDeRhamTriple[
+                VillainField[
+                  field[1, Function[{y, s}, CochainValue[a + 2 Pi m2, y, s]]],
+                  field[2, Function[{y, s}, CochainValue[n + Coboundary[m2], y, s]]]
+                ],
+                dims
+              ],
+              lg = CechDeRhamLargeGauge[m2, dims]
+            },
+            With[{
+                g1 = CechDeRhamGaugeTransform[t1, xi, mm, dims],
+                moved = CechDeRhamGaugeTransform[t1, lg[[1]], lg[[2]], dims]
+              },
+              {
+                CechDeRhamAnomaly[mm, t1[[3]], dims],
+                Expand[Total[CechDeRhamStarIntegral[g1, g1, dims]] - Total[CechDeRhamStarIntegral[t1, t1, dims]]],
+                CechDeRhamAnomaly[lg[[2]], t1[[3]], dims],
+                CochainIntegrate[ChernSimonsLargeGaugeAnomaly[m2, n], dims],
+                AllTrue[Lookup[cyc, 3],
+                  Function[term,
+                    AllTrue[Tuples[{0, 1}, 3],
+                      Function[r,
+                        AllTrue[Select[{1, 2, 3}, Function[dir, r[[dir]] === 0]],
+                          Function[dir,
+                            With[{p = term[[2]], y = Mod[term[[2]] + r, dims]},
+                              Expand[moved[[1]][p, y, dir] - big[[1]][p, y, dir]] === 0
+                            ]
+                          ]
+                        ]
+                      ]
+                    ]
+                  ]
+                ],
+                AllTrue[Lookup[cyc, 2],
+                  Function[term,
+                    moved[[2]][term[[4, 1]], term[[4, 2]], term[[2]]] === big[[2]][term[[4, 1]], term[[4, 2]], term[[2]]]
+                  ]
+                ],
+                AllTrue[Lookup[cyc, 0],
+                  Function[term,
+                    moved[[3]][term[[4, 1]], term[[4, 2]], term[[4, 3]]] ===
+                        big[[3]][term[[4, 1]], term[[4, 2]], term[[4, 3]]] &&
+                      moved[[2]][term[[4, 3]], term[[4, 4]], term[[2]]] ===
+                        big[[2]][term[[4, 3]], term[[4, 4]], term[[2]]]
+                  ]
+                ]
+              }
+            ]
+          ]
+        ]
+      ]
+    ]
+  ],
+  {-6, 6, 17, 17, True, True, True},
+  TestID -> "Villain-Cech-de-Rham-anomaly"
+]
+
 (* ---------------------------------------------------------------------- *)
 (* background fields of the 1-form symmetry                               *)
 (* ---------------------------------------------------------------------- *)

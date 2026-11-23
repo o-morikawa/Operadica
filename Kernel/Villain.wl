@@ -251,6 +251,10 @@ CechDeRhamGaugeTransform::usage = "CechDeRhamGaugeTransform[{conn, lam, nn}, xi,
 
 GuWenGrassmannSign::usage = "GuWenGrassmannSign[{L1, L2, L3}][n] gives the sign 1 or -1 of the integer 2-cochain n, closed modulo 2, on the periodic cubic lattice as a Grassmann integral of the Gu-Wen type: every plaquette on which n is odd carries one Grassmann variable in each of its two cubes, a cube contributes the product of the variables of its odd faces in the order front 1, back 2, front 3, back 1, front 2, back 3 (front mu is the face at x + e_mu, back mu the face at x), and the pair of a plaquette is integrated with the weight 1 for (the variable later in this order)(the variable earlier in it). The result is the sign of the permutation that sorts the variables into the pairs. It is -1 on a straight flux tube (a closed straight world line of a fermion with periodic boundary conditions), and it satisfies the conditions (i) and (ii) of SpinStructureSign. GuWenGrassmannSign[dims, {h1, h2, h3}][n] multiplies it by h_rho for every odd unit of the flux of n through the plane x_rho = 0, the boundary condition h_rho (1 periodic, -1 antiperiodic) in the direction rho: GuWenGrassmannSign[dims, SpinStructureHolonomy[s]][n] is SpinStructureSign[dims, s][n]. The result is $Failed if n is not closed modulo 2.";
 
+CechDeRhamLargeGauge::usage = "CechDeRhamLargeGauge[m, {L1, L2, L3}] gives the pair {xi, mm} of the gauge transformation of a cocycle of Cech-de Rham type that is the large gauge transformation of a flat Villain field by the integer 1-cochain m: CechDeRhamGaugeTransform[CechDeRhamTriple[A, dims], xi, mm, dims] has the values of CechDeRhamTriple[VillainLargeGaugeTransform[A, m], dims]. xi[p, x] is the sum of m along the path of the tree of the cube p from p to x (direction 3, then 2, then 1), and mm[p, q] is xi[q, c] - xi[p, c] at the lowest corner c of the intersection of the cubes p and q.";
+
+CechDeRhamAnomaly::usage = "CechDeRhamAnomaly[mm, nn, {L1, L2, L3}] gives the integer pairing of the Cech cochain mm_pq N_qrs + N_pqr mm_rs + (mm_qr - mm_pr + mm_pq) mm_rs with the sites of CechDeRhamFundamentalCycle, for an alternating integer function mm[p, q] and a Cech cocycle nn[p, q, r]: m cup N + N cup m + dm cup m with the Cech cup product. The total of CechDeRhamStarIntegral of a cocycle with itself changes by minus this integer under CechDeRhamGaugeTransform with mm. It is the Cech form of ChernSimonsLargeGaugeAnomaly: for the mm of CechDeRhamLargeGauge[m, dims] and the cocycle of a flat Villain field with the flux n it is the sum of ChernSimonsLargeGaugeAnomaly[m, n].";
+
 StaggeredMomentumCount::usage = "StaggeredMomentumCount[{L1, ..., Ld}] gives the number of momenta p on the periodic lattice with sides L1, ..., Ld whose components add up to Pi modulo 2 Pi: L1 ... Ld / lcm(L1, ..., Ld) if the lcm is even, and 0 if all sides are odd.";
 
 Begin["`Private`"];
@@ -775,6 +779,41 @@ CechDeRhamGaugeTransform[{conn_, lam_, nn_}, xi_, mm_, dims : {_Integer, _Intege
     Function[{p, q, x}, lam[p, q, x] + xi[q, x] - xi[p, x] - mm[p, q]],
     Function[{p, q, r}, nn[p, q, r] + mm[q, r] - mm[p, r] + mm[p, q]]
   };
+
+(* the sum of the lattice 1-cochain m along the path of the tree of the
+   cube p from p to x: direction 3, then 2, then 1 *)
+cdrTreeSum[m_, dims_List][p_List, x_List] :=
+  With[{r = Mod[x - p, dims]},
+    With[{y3 = Mod[p + {0, 0, r[[3]]}, dims]},
+      With[{y2 = Mod[y3 + {0, r[[2]], 0}, dims]},
+        If[r[[3]] === 1, CochainValue[m, Mod[p, dims], {3}], 0] +
+          If[r[[2]] === 1, CochainValue[m, y3, {2}], 0] +
+          If[r[[1]] === 1, CochainValue[m, y2, {1}], 0]
+      ]
+    ]
+  ];
+
+CechDeRhamLargeGauge[m_, dims : {_Integer, _Integer, _Integer}] :=
+  With[{tree = cdrTreeSum[m, dims]},
+    {
+      Function[{p, x}, tree[p, x]],
+      Function[{p, q}, With[{c = cdrCorner[{p, q}, dims]}, tree[q, c] - tree[p, c]]]
+    }
+  ];
+
+CechDeRhamAnomaly[mm_, nn_, dims : {_Integer, _Integer, _Integer}] :=
+  Total[
+    Map[
+      Function[term,
+        With[{p = term[[4, 1]], q = term[[4, 2]], r = term[[4, 3]], s = term[[4, 4]]},
+          term[[1]] (
+            mm[p, q] nn[q, r, s] + nn[p, q, r] mm[r, s] + (mm[q, r] - mm[p, r] + mm[p, q]) mm[r, s]
+          )
+        ]
+      ],
+      Lookup[CechDeRhamFundamentalCycle[dims], 0]
+    ]
+  ];
 
 End[];
 

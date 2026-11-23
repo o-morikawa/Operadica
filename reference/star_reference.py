@@ -78,6 +78,22 @@ Statements checked:
     so it is symmetric modulo 1 when one of the curvatures vanishes (cup is commutative only
     up to cup_1).
 
+ 6. the change of the integral of a square under one gauge transformation (xi, mm) of both
+    factors is minus the pairing of the Cech cochain
+
+        qc(mm, N)_pqrs = mm_pq N_qrs + N_pqr mm_rs + (mm_qr - mm_pr + mm_pq) mm_rs
+
+    with the sites of the chain: m cup N + N cup m + dm cup m with the Cech cup product, the
+    form of q(m, n) = m cup n + n cup m + dm cup m (+ m cup_1 dn) on the lattice.
+ 7. the large gauge transformation (a + tau m, n + dm) of a flat Villain field is a gauge
+    transformation of its triple, with
+
+        xi_p(x)  = the sum of m along the path of the tree of the cube p from p to x
+                   (direction 3, then 2, then 1),
+        mm_pq    = xi_q - xi_p at the lowest corner of the intersection,
+
+    and qc(mm, N) paired with the chain is the sum of q(m, n).
+
 Run:  python3 reference/star_reference.py
 """
 
@@ -286,6 +302,28 @@ def random_gauge(dims, rng, den=5):
     return xi, mm
 
 
+def cech_anomaly(mm, nn, dims, cyc=None):
+    """CechDeRhamAnomaly: the pairing of qc(mm, N) with the sites of the chain"""
+    s03 = (cyc if cyc is not None else explicit_cycle(dims))[3]
+    return sum(c * (mm(p, q) * nn(q, r, s) + nn(p, q, r) * mm(r, s) + (mm(q, r) - mm(p, r) + mm(p, q)) * mm(r, s))
+               for (x, dirs, (p, q, r, s)), c in s03.items())
+
+
+def large_gauge(m, dims):
+    """CechDeRhamLargeGauge: (xi, mm) of the large gauge transformation by the lattice 1-cochain m"""
+    def xi(p, x):
+        r = rel(x, p, dims)
+        y3 = addv(p, (0, 0, r[2]), dims)
+        y2 = addv(y3, (0, r[1], 0), dims)
+        return (m(p, (3,)) if r[2] else 0) + (m(y3, (2,)) if r[1] else 0) + (m(y2, (1,)) if r[0] else 0)
+
+    def mm(p, q):
+        c = corner([p, q], dims)
+        return xi(q, c) - xi(p, c)
+
+    return xi, mm
+
+
 def trivial_xi(p, x):
     return 0
 
@@ -385,6 +423,7 @@ def check_villain(dims, rng, tau=7):
         diff = sum(star_integral(gg, gg, dims)) - sum(star_integral(t1, t1, dims))
         assert Fr(diff).denominator == 1
         odd += int(diff % 2 == 1)
+        assert diff == -cech_anomaly(mm, t1[2], dims)
     # the large gauge transformation of the Villain field
     m = lat.random_cochain(1, rng)
     a_new = add(lat, 1, a, cr.comb(lat, 1, [(tau, m)]))
@@ -392,6 +431,24 @@ def check_villain(dims, rng, tau=7):
     t_new = villain_triple(a_new, n_new, dims, tau)
     diff = sum(star_integral(t_new, t_new, dims)) - sum(star_integral(t1, t1, dims))
     assert diff == -integrate(lat, torus_anomaly(lat, m, n))
+    # it is a gauge transformation of the triple
+    xi_m, mm_m = large_gauge(m, dims)
+    moved = gauge_transform(t1, xi_m, mm_m, dims)
+    for x in lat.points():
+        for r in itertools.product((0, 1), repeat=3):
+            y = addv(x, r, dims)
+            for mu in (1, 2, 3):
+                if r[mu - 1] == 0:
+                    assert moved[0](x, y, mu) == t_new[0](x, y, mu)
+    for key_set in explicit_cycle(dims)[1:]:
+        for (x, dirs, ps) in key_set:
+            if len(ps) == 2:
+                assert moved[1](ps[0], ps[1], x) == t_new[1](ps[0], ps[1], x)
+            if len(ps) >= 3:
+                assert moved[2](ps[0], ps[1], ps[2]) == t_new[2](ps[0], ps[1], ps[2])
+            if len(ps) == 4:
+                assert moved[1](ps[2], ps[3], x) == t_new[1](ps[2], ps[3], x)
+    assert cech_anomaly(mm_m, t1[2], dims) == integrate(lat, torus_anomaly(lat, m, n))
     return odd, int(diff % 2)
 
 
@@ -448,6 +505,8 @@ def test_numbers():
     for key in tables[1]:
         out[key] = [poly_in_period(lambda tau, i=i: Fr(tables[tau][key][i])) for i in range(4)]
     out["q"] = integrate(lat, torus_anomaly(lat, m2, n))
+    t1 = villain_triple(a, n, dims, 1)
+    out["anomaly"] = (cech_anomaly(mm, t1[2], dims), cech_anomaly(large_gauge(m2, dims)[1], t1[2], dims))
     out["cup1"] = integrate(lat, cr.higher_cup(1, n, n2))
     return out
 
@@ -466,14 +525,17 @@ def main():
     print("  odd changes (same transformation of both factors, large gauge transformation): %s" % odd)
     assert any(o[1] == 1 for o in odd)
     print("the star integral: invariance, the Villain form term by term, the change - sum q(m, n)  True")
+    print("the Cech form of the anomaly, and large gauge transformations as gauge transformations of the triple  True")
     out = test_numbers()
     tot = {}
     for key, val in out.items():
-        if key in ("q", "cup1"):
+        if key in ("q", "cup1", "anomaly"):
             continue
         tot[key] = [sum(c[i] for c in val) for i in range(3)]
         print("  %-13s %s   total %s" % (key, [[str(v) for v in c] for c in val], [str(v) for v in tot[key]]))
-    print("  sum q(m2, n) = %s   sum n cup_1 n' = %s" % (out["q"], out["cup1"]))
+    print("  sum q(m2, n) = %s   sum n cup_1 n' = %s   Cech anomaly (test mm, large m2) = %s" % (
+        out["q"], out["cup1"], out["anomaly"]))
+    assert out["anomaly"] == (tot["self"][0] - tot["gauge self"][0], out["q"])
     assert tot["xi self"] == tot["self"]
     assert [a - b for a, b in zip(tot["gauge self"], tot["self"])][1:] == [0, 0]
     assert [a - b for a, b in zip(tot["large"], tot["self"])] == [-out["q"], 0, 0]

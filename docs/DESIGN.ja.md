@@ -1,6 +1,6 @@
 # Operadica 設計文書
 
-最終更新: 2026-11-23(v0.22.0)
+最終更新: 2026-11-23(v0.23.0)
 
 ## 1. 目的
 
@@ -620,7 +620,8 @@ cocycle の段階での対応を与えておらず、Villain 形式で Λ を省
   三重の重なりの整数 N を、coboundary を除いてすでに決めているからである。ゲージ変換 `a → a + δλ` は A_p を `d(λ/2π)` だけ変え、Λ と N を変えない。
   m_p と Λ は整数なので、閉じた道に沿った holonomy は、どちらの形でも 1 を法として `Σ a/2π` である。
 
-**星積と積分**(`CechDeRhamTriple`、`CechDeRhamFundamentalCycle`、`CechDeRhamStarIntegral`、`CechDeRhamGaugeTransform`。
+**星積と積分**(`CechDeRhamTriple`、`CechDeRhamFundamentalCycle`、`CechDeRhamStarIntegral`、`CechDeRhamGaugeTransform`、
+`CechDeRhamLargeGauge`、`CechDeRhamAnomaly`。
 `reference/star_reference.py` で確認)
 
 2 つの 3 つ組 (A, Λ, N)、(A′, Λ′, N′) の星積(同論文 7 節の形:前の因子が前の patch、後の因子が後の patch を取り、patch を 1 つ共有する)は
@@ -667,6 +668,17 @@ cocycle の段階での対応を与えておらず、Villain 形式で Λ を省
 - **偶数 level と奇数 level**:level 2j の重みは `exp(2πi j ∫A⋆A)` で、類の関数である。`∫A⋆A` の半分は 1 を法として定まらない:
   大きなゲージ変換 `(a + 2πm, n + δm)` と (a, n) はゲージ同値な 3 つ組を与えるが、積分は `−Σ q(m, n)` だけ違い、これは奇数になりうる
   (テストでは 17)。上の「奇数 level」の障害と同じものが、Čech–de Rham の側では「積分が 1 を法としてしか定まらない」こととして現れる。
+- **アノマリーの Čech の形**(`CechDeRhamAnomaly`):同じゲージ変換 (ξ, m) を `∫A⋆A` の両方の因子に施すと、積分は
+
+      −⟨ m∪N + N∪m + δ̌m∪m , σ₀₃ ⟩,   (m∪N + N∪m + δ̌m∪m)_pqrs = m_pq N_qrs + N_pqr m_rs + (δ̌m)_pqr m_rs
+
+  だけ変わる(∪ は Čech の cup 積。ξ には依らない)。格子の上の `q(m, n) = m∪n + n∪m + δm∪m`(閉じた n では ∪₁ の項は消える)と同じ形である。
+- **大きいゲージ変換は 3 つ組のゲージ変換である**(`CechDeRhamLargeGauge`):`(a + 2πm, n + δm)` の 3 つ組は、(a, n) の 3 つ組を
+
+      ξ_p(x) = 立方体 p の木に沿った p から x までの m の和,   m̌_pq = (ξ_q − ξ_p)(交わりの最小の角)
+
+  でゲージ変換したものに、関数として一致する。この m̌ について上の対は `Σ q(m, n)` に等しい(テストでは 17)。
+  Villain の側の障害と Čech–de Rham の側の障害は、降下で互いに移る同じ整数である。
 - **格子の上では 2 つの因子について対称でない**:`I(A, B) − I(B, A) = −Σ (F_A/2π) ∪₁ (F_B/2π) + Σ n ∪₁ n′`。
   どちらかの曲率が 0 なら 1 を法として対称である。∪ が ∪₁ を除いてしか可換でないことの現れで、`DeligneSwapGauge` の m(`n∪₁n′`)と
   `DeligneSwapDefect`(`F_A∪₁F_B` の項)を積分したものにあたる。
@@ -1026,7 +1038,8 @@ c(a, b) とする。これは平面の向きの選び方で、逆に取ると `c
   整数性(2π × 整数になるか)を条件に入れること、単体の上で解くこと
 - 奇数 level の続き:障害が fermion の類 `(1/2) P(B)` であること、三次元トーラスの上でそれを消す 8 個の符号、境界条件との対応は 3.9 節にある。
   符号の局所的な式(Gu–Wen 型の Grassmann 積分)も 3.9 節にある。次は、単体複体(w₂ の代表)、奇数電荷の Wilson line、
-  文献の Majorana の重みとの項ごとの照合、Čech–de Rham の側での同じ符号(脈体の上の `m∪N + N∪m + δ̌m∪m`)
+  文献の Majorana の重みとの項ごとの照合。アノマリーの Čech の形(脈体の上の `m∪N + N∪m + δ̌m∪m`)も 3.9 節にある。
+  次は、降下の像に限らない一般の Čech cocycle N の上で、それを消す符号を作ること
 - Ikeda の格子 Deligne–Beilinson コホモロジー(arXiv:2601.15939)との比較の続き:Villain 場から Čech–de Rham の cocycle への写像と、
   星積の積分が level 2 の Chern–Simons の作用に等しいことは 3.9 節にある。次は、同論文の対称化した積と奇数 level の扱いを
   3.9 節の符号 z と比べること、逆向きの写像、framing のある Wilson loop の比較、`σ₁₂`・`σ₀₃` の符号を同論文の式と照合すること
@@ -1107,6 +1120,8 @@ operad の側の候補:
   単独の層のロードと、17 層すべてのロードも確認済み。`CechDeRhamTriple`、`CechDeRhamFundamentalCycle`、`CechDeRhamStarIntegral`、`CechDeRhamGaugeTransform` を含む。
 - v0.22.0:`wolframscript -file Scripts/RunTests.wls` で 353/353 が通過(2026-11-23、Wolfram Language 15.0.1、利用者の環境)。
   単独の層のロードと、17 層すべてのロードも確認済み。`GuWenGrassmannSign` を含む。
+- v0.23.0:`wolframscript -file Scripts/RunTests.wls` で 354/354 が通過(2026-11-23、Wolfram Language 15.0.1、利用者の環境)。
+  単独の層のロードと、17 層すべてのロードも確認済み。`CechDeRhamLargeGauge`、`CechDeRhamAnomaly` を含む。
 
 ### Python 参照実装(整数・有理数の厳密計算)
 
@@ -1168,7 +1183,9 @@ operad の側の候補:
 - `star_reference.py`:星積の積分に使う鎖を錐で作り、3 つの条件を順序のついた鎖の上で確かめること(消える項を落とす前と後。3×3×3 と 3×4×5)、
   閉じた式との一致、ξ による不変性と整数 m による整数の変化(どちらの因子でも)、平坦な Villain 場の 3 つ組の上で 4 つの寄与が
   `Σ(a/τ)∪(F_B/τ)`、0、`−Σ n∪(b/τ)`、0 に等式として等しいこと、大きなゲージ変換での変化が `−Σ q(m, n)` で奇数になりうること、
-  2 つの因子の入れ替えでの差が `−Σ(F_A/τ)∪₁(F_B/τ) + Σ n∪₁n′` であること(3×3×3、3×3×4、3×4×5 を 3 通りずつ)
+  2 つの因子の入れ替えでの差が `−Σ(F_A/τ)∪₁(F_B/τ) + Σ n∪₁n′` であること(3×3×3、3×3×4、3×4×5 を 3 通りずつ)、
+  同じゲージ変換を両方の因子に施したときの変化が `−⟨m∪N + N∪m + δ̌m∪m, σ₀₃⟩` であること、大きいゲージ変換が 3 つ組のゲージ変換で
+  あることと、そのときの対が `Σ q(m, n)` であること(同じ格子)
 - `grassmann_reference.py`:Grassmann 積分の符号。6 つの面の並べ方 720 通りのうち (ii) を満たすのが巡回的な 12 通りだけであること
   (3×3×3 と 3×4×4)、`∪₁` が結ぶ面の対、まっすぐな管で −1(7 通りの大きさ)、link の境界で +1、2 本の link で −1、
   (i)・(ii)、8 個の符号が境界条件つきの積分に一致すること(3×3×3、3×3×4、4×4×4)

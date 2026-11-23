@@ -422,7 +422,11 @@ So `DeligneProduct` is this star product after the descent. The weight at an
 even level `2 j` is `Exp[2 Pi I j (the integral)]`; half of the integral is not
 defined modulo 1 (a large gauge transformation changes it by minus the sum of
 `ChernSimonsLargeGaugeAnomaly`, which can be odd), the obstruction at odd level
-again. The pieces of the chain on the links and on the sites are fixed here by
+again. On the Cech side the same integer is the pairing of
+`m cup N + N cup m + dm cup m` (Cech cup product) with the sites of the chain
+(`CechDeRhamAnomaly`), and a large gauge transformation of the Villain field
+is a gauge transformation of the cocycle (`CechDeRhamLargeGauge`).
+The pieces of the chain on the links and on the sites are fixed here by
 the cycle conditions; their signs have not been compared with the formulas of
 that paper.
 
