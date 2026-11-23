@@ -825,6 +825,89 @@ VerificationTest[
 ]
 
 (* ---------------------------------------------------------------------- *)
+(* the sign as a Grassmann integral                                        *)
+(* ---------------------------------------------------------------------- *)
+
+(* the Grassmann integral of the Gu-Wen type on the cubic lattice: -1 on the
+   straight flux tubes (for every length), +1 on the boundary of a link, -1
+   on the two links that meet at a corner, no value if n is not closed
+   modulo 2.  It changes by (-1)^(sum q) under a large gauge transformation
+   (here sum q = 17), and with the boundary conditions h = SpinStructureHolonomy[s]
+   it is the sign SpinStructureSign[dims, s], for all 8 spin structures *)
+
+VerificationTest[
+  With[{dims = {3, 3, 3}},
+    With[{
+        field = Function[{p, f},
+          PeriodicCochain[p, dims,
+            Association[Map[Function[c, {c[[1]], c[[2]]} -> f[c[[1]], c[[2]]]], LCells[dims, p]]]
+          ]
+        ],
+        flux = THooftFluxCochain[{{0, 1, -2}, {-1, 0, 3}, {2, -3, 0}}, dims],
+        tubes = Function[d,
+          Map[
+            Function[z, GuWenGrassmannSign[d][THooftFluxCochain[z, d]]],
+            {{{0, 1, 0}, {-1, 0, 0}, {0, 0, 0}}, {{0, 0, 1}, {0, 0, 0}, {-1, 0, 0}}, {{0, 0, 0}, {0, 0, 1}, {0, -1, 0}}}
+          ]
+        ],
+        one = PeriodicCochain[1, dims, <|{{0, 0, 0}, {1}} -> 1|>],
+        two = PeriodicCochain[1, dims, <|{{0, 0, 0}, {1}} -> 1, {{1, 0, 0}, {2}} -> 1|>]
+      },
+      With[{
+          e0 = field[1, Function[{y, s}, Mod[y[[1]] + 2 y[[2]] + 3 y[[3]] + s[[1]] (1 + y[[1]] y[[2]] + y[[3]]), 3] - 1]],
+          m2 = field[1, Function[{y, s}, Mod[s[[1]] y[[1]] + y[[2]] y[[3]] + 2 s[[1]] y[[3]] + y[[1]] + s[[1]], 2]]],
+          loop = field[2, Function[{y, s}, CochainValue[Coboundary[two], y, s]]]
+        },
+        With[{
+            n = field[2, Function[{y, s}, CochainValue[flux + Coboundary[e0], y, s]]]
+          },
+          With[{
+              n3 = field[2, Function[{y, s}, CochainValue[n + Coboundary[m2], y, s]]]
+            },
+            {
+              {tubes[{3, 3, 3}], tubes[{4, 4, 4}], tubes[{3, 4, 4}]},
+              {GuWenGrassmannSign[dims][Coboundary[one]], GuWenGrassmannSign[dims][loop]},
+              GuWenGrassmannSign[dims][PeriodicCochain[2, dims, <|{{0, 0, 0}, {1, 2}} -> 1|>]],
+              {
+                GuWenGrassmannSign[dims][n], GuWenGrassmannSign[dims][n3],
+                CochainIntegrate[ChernSimonsLargeGaugeAnomaly[m2, n], dims]
+              },
+              Map[
+                Function[signs,
+                  {
+                    GuWenGrassmannSign[dims, SpinStructureHolonomy[signs]][n],
+                    GuWenGrassmannSign[dims, SpinStructureHolonomy[signs]][n3]
+                  }
+                ],
+                Tuples[{1, -1}, 3]
+              ],
+              AllTrue[Tuples[{1, -1}, 3],
+                Function[signs,
+                  AllTrue[{n, n3, loop},
+                    Function[u,
+                      GuWenGrassmannSign[dims, SpinStructureHolonomy[signs]][u] === SpinStructureSign[dims, signs][u]
+                    ]
+                  ]
+                ]
+              ]
+            }
+          ]
+        ]
+      ]
+    ]
+  ],
+  {
+    {{-1, -1, -1}, {-1, -1, -1}, {-1, -1, -1}},
+    {1, -1},
+    $Failed,
+    {-1, 1, 17},
+    {{-1, 1}, {1, -1}, {-1, 1}, {1, -1}, {1, -1}, {-1, 1}, {1, -1}, {-1, 1}},
+    True
+  },
+  TestID -> "Villain-Gu-Wen-sign"
+]
+
+(* ---------------------------------------------------------------------- *)
 (* a flat Villain field as a Cech-de Rham cocycle (the form of the lattice *)
 (* Deligne-Beilinson cohomology of arXiv:2601.15939)                       *)
 (* ---------------------------------------------------------------------- *)

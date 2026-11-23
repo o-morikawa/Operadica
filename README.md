@@ -361,7 +361,22 @@ two-torus, which identifies the eight functions with boundary conditions: the
 fermion is periodic in a direction exactly if the straight flux tube along it
 has the sign -1.
 
-A local expression for `z` (Majorana fermions) is not there yet.
+The same functions have a local formula, a Grassmann integral of the Gu-Wen
+type: two Grassmann variables on every plaquette with odd `n`, one in each of
+its two cubes; the product of the variables of each cube in the order front 1,
+back 2, front 3, back 1, front 2, back 3; and a boundary condition across a
+wall in each direction.
+
+```wolfram
+GuWenGrassmannSign[dims][Coboundary[two]]                           (* -1 *)
+GuWenGrassmannSign[dims][THooftFluxCochain[{{0, 1, 0}, {-1, 0, 0}, {0, 0, 0}}, dims]]
+(* -1: a straight closed world line with periodic boundary conditions *)
+GuWenGrassmannSign[dims, SpinStructureHolonomy[s]][n] === SpinStructureSign[dims, s][n]    (* True *)
+```
+
+Among the 720 orders of the six faces of a cube, only this cyclic order gives
+a quadratic refinement of the cup-1 pairing. The formula has not been compared
+term by term with the Grassmann and Majorana weights of the literature.
 
 Background fields of the 1-form symmetry enter as fractional fluxes `n + B / N`.
 The level `k` is the level `k N^2` with fluxes in `Z / N`, and the anomaly of
@@ -939,6 +954,7 @@ python3 reference/villain_reference.py      # Villain fields, differential cocha
 python3 reference/oddlevel_reference.py     # Chern-Simons at odd level: the anomaly and the signs that cancel it
 python3 reference/cech_reference.py         # a flat Villain field as a Cech-de Rham cocycle; background fields
 python3 reference/star_reference.py         # the star product and its integral on the Cech-de Rham cocycle
+python3 reference/grassmann_reference.py    # the sign at odd level as a Grassmann integral
 ```
 
 ## Layout

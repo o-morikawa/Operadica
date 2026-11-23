@@ -171,8 +171,8 @@
 (*  level 2.                                                               *)
 (*                                                                        *)
 (*  Checked in reference/villain_reference.py,                            *)
-(*  reference/oddlevel_reference.py, reference/cech_reference.py and      *)
-(*  reference/star_reference.py.                                          *)
+(*  reference/oddlevel_reference.py, reference/cech_reference.py,         *)
+(*  reference/star_reference.py and reference/grassmann_reference.py.     *)
 (*                                                                        *)
 (*  Layer: lattice gauge theory.  Depends on: Lattice.                    *)
 (* ====================================================================== *)
@@ -248,6 +248,8 @@ CechDeRhamFundamentalCycle::usage = "CechDeRhamFundamentalCycle[{L1, L2, L3}] gi
 CechDeRhamStarIntegral::usage = "CechDeRhamStarIntegral[{conn1, lam1, nn1}, {conn2, lam2, nn2}, {L1, L2, L3}] gives the list of the four contributions to the integral of the star product of two cocycles of Cech-de Rham type over CechDeRhamFundamentalCycle: the sums of A_p cup dA'_p over the cubes, of Lambda_pq cup dA'_q over the plaquettes, of N_pqr A'_r over the links and of N_pqr Lambda'_rs over the sites (the product of the lattice Deligne-Beilinson cohomology of arXiv:2601.15939). Their total does not change under CechDeRhamGaugeTransform of either factor with mm = 0, and changes by an integer with mm not 0: it is defined modulo 1. CechDeRhamStarIntegral[A, B, dims] for flat Villain fields A = VillainField[a, n] and B = VillainField[b, n2] uses CechDeRhamTriple; then the four contributions are the sum of Cup[a, F_B] / (2 Pi)^2, 0, minus the sum of Cup[n, b] / (2 Pi), and 0, and the total is the sum of VillainConnection[DeligneProduct[A, B]] / (2 Pi). For A = B it is the sum of VillainChernSimons[2] / (2 Pi): the weight at the even level 2 j is Exp[2 Pi I j (the total)]. Half of the total is not defined modulo 1 (odd level).";
 
 CechDeRhamGaugeTransform::usage = "CechDeRhamGaugeTransform[{conn, lam, nn}, xi, mm, {L1, L2, L3}] gives the cocycle of Cech-de Rham type after the gauge transformation A_p -> A_p + d xi_p, Lambda_pq -> Lambda_pq + xi_q - xi_p - mm_pq, N_pqr -> N_pqr + mm_qr - mm_pr + mm_pq, for a function xi[p, x] on the sites x of the cube p and an alternating integer function mm[p, q] of two cubes with a common point.";
+
+GuWenGrassmannSign::usage = "GuWenGrassmannSign[{L1, L2, L3}][n] gives the sign 1 or -1 of the integer 2-cochain n, closed modulo 2, on the periodic cubic lattice as a Grassmann integral of the Gu-Wen type: every plaquette on which n is odd carries one Grassmann variable in each of its two cubes, a cube contributes the product of the variables of its odd faces in the order front 1, back 2, front 3, back 1, front 2, back 3 (front mu is the face at x + e_mu, back mu the face at x), and the pair of a plaquette is integrated with the weight 1 for (the variable later in this order)(the variable earlier in it). The result is the sign of the permutation that sorts the variables into the pairs. It is -1 on a straight flux tube (a closed straight world line of a fermion with periodic boundary conditions), and it satisfies the conditions (i) and (ii) of SpinStructureSign. GuWenGrassmannSign[dims, {h1, h2, h3}][n] multiplies it by h_rho for every odd unit of the flux of n through the plane x_rho = 0, the boundary condition h_rho (1 periodic, -1 antiperiodic) in the direction rho: GuWenGrassmannSign[dims, SpinStructureHolonomy[s]][n] is SpinStructureSign[dims, s][n]. The result is $Failed if n is not closed modulo 2.";
 
 StaggeredMomentumCount::usage = "StaggeredMomentumCount[{L1, ..., Ld}] gives the number of momenta p on the periodic lattice with sides L1, ..., Ld whose components add up to Pi modulo 2 Pi: L1 ... Ld / lcm(L1, ..., Ld) if the lcm is even, and 0 if all sides are odd.";
 
@@ -437,6 +439,59 @@ SpinStructureSign[
   ];
 
 SpinStructureHolonomy[{s12 : (1 | -1), s13 : (1 | -1), s23 : (1 | -1)}] := {-s23, -s13, -s12};
+
+(* ---------------------------------------------------------------------- *)
+(* the sign as a Grassmann integral                                        *)
+(* ---------------------------------------------------------------------- *)
+
+(* the six faces of the cube x in the order of its Grassmann variables,
+   front 1, back 2, front 3, back 1, front 2, back 3, as {site of the
+   plaquette, normal direction, tag}.  The tag is 1 in the first three slots
+   and 0 in the last three: sorting the variables puts, for every plaquette,
+   the variable of its later slot first *)
+gwSlots[x_List, dims_List] :=
+  {
+    {Mod[x + UnitVector[3, 1], dims], 1, 1},
+    {x, 2, 1},
+    {Mod[x + UnitVector[3, 3], dims], 3, 1},
+    {x, 1, 0},
+    {Mod[x + UnitVector[3, 2], dims], 2, 0},
+    {x, 3, 0}
+  };
+
+gwVariable[{y_List, mu_Integer, tag_Integer}, dims_List] :=
+  2 (3 ((y[[1]] dims[[2]] + y[[2]]) dims[[3]] + y[[3]]) + mu - 1) + tag;
+
+GuWenGrassmannSign[dims : {_Integer, _Integer, _Integer}][n_] :=
+  If[! CochainZeroQ[Coboundary[n], dims, Modulus -> 2],
+    $Failed,
+    Signature[
+      Flatten[
+        Map[
+          Function[x,
+            Map[
+              Function[slot, gwVariable[slot, dims]],
+              Select[
+                gwSlots[x, dims],
+                Function[slot, OddQ[CochainValue[n, slot[[1]], DeleteCases[{1, 2, 3}, slot[[2]]]]]]
+              ]
+            ]
+          ],
+          Tuples[Map[Function[len, Range[0, len - 1]], dims]]
+        ]
+      ]
+    ]
+  ];
+
+GuWenGrassmannSign[dims : {_Integer, _Integer, _Integer}, hol : {(1 | -1), (1 | -1), (1 | -1)}][n_] :=
+  With[{base = GuWenGrassmannSign[dims][n]},
+    If[base === $Failed,
+      $Failed,
+      With[{fl = THooftFlux[n, dims]},
+        base hol[[1]]^Mod[fl[[2, 3]], 2] hol[[2]]^Mod[fl[[1, 3]], 2] hol[[3]]^Mod[fl[[1, 2]], 2]
+      ]
+    ]
+  ];
 
 (* ---------------------------------------------------------------------- *)
 (* a flat Villain field as a Cech-de Rham cocycle for the cover of the     *)

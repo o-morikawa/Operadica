@@ -1,6 +1,6 @@
 # Operadica 設計文書
 
-最終更新: 2026-11-23(v0.21.0)
+最終更新: 2026-11-23(v0.22.0)
 
 ## 1. 目的
 
@@ -547,10 +547,35 @@ Hopkins–Singer の differential cocycle の、微分形式を実 cochain に�
   `{1, 1, 1}` は 3 方向とも反周期的、`{−1, −1, −1}` は 3 方向とも周期的である。
 - 平面の中で可縮でない曲線の上では `z = −(その曲線に沿った holonomy)`、可縮な曲線の上では `z = +1`。閉じた fermion の世界線の符号の形になっている。
 
-ここで作ったのは、条件 (i)・(ii) で特徴づけた関数で、局所的な式ではない。Gu–Wen の Grassmann 積分(Majorana fermion)がこの形の符号を局所的に与えることは
-知られているが、ここでは構成していない。境界条件との対応を確かめたのは座標平面の中の flux についてで、平面に収まらない配置
-(上の 2 本の link の例など)の符号を局所的な規則で説明することはまだしていない。
-確かめたのは三次元トーラスだけで、単体複体(w₂ の代表が現れるはずである)は扱っていない。
+**符号の局所的な式:Grassmann 積分**(`GuWenGrassmannSign`。`reference/grassmann_reference.py` で確認)
+
+上の z は条件 (i)・(ii) で特徴づけた関数で、計算には線形方程式を解いている。同じ関数は、Gu–Wen 型の Grassmann 積分として局所的に書ける。
+
+- plaquette は 2 つの立方体の面である:x にあって μ に垂直な plaquette は、立方体 x − e_μ の「前の面」F_μ で、立方体 x の「後ろの面」B_μ である。
+- n が奇数の plaquette ごとに、その 2 つの立方体に 1 つずつ Grassmann 変数を置く。
+- 立方体 x は、n が奇数の面の変数を **F1, B2, F3, B1, F2, B3** の順に掛けたものを寄与する。n が 2 を法として閉じていれば個数は偶数で、
+  立方体どうしの積の順序は効かない。
+- plaquette の 2 つの変数の対は、「この順で後ろの slot の変数、前の slot の変数」の順の積に対して重み 1 で積分する。
+
+`σ(n)` は全立方体の積の積分で、変数を対に並べ替える置換の符号である(`GuWenGrassmannSign[dims][n]`)。確かめていること:
+
+- **変数の順序は決まる**:6 つの面の並べ方 720 通りのうち、(ii) を満たす関数を与えるのは 12 通りで、上の順を巡回的に読んだもの
+  (向きと出発点の取り方)だけである。そのすべてで (i) も成り立つ(3×3×3 と 3×4×4)。立方体の上の `n∪₁n′` が結ぶ面の対は、
+  F1・B2・F3 の中の対と B1・F2・B3 の中の対、つまり角 (1, 0, 1) と (0, 1, 0) に集まる面どうしである。
+- **値**:まっすぐな flux の管の上で、どの方向でも、どの長さでも −1(周期的な境界条件での、閉じたまっすぐな fermion の世界線の符号)。
+  link 1 本の境界(plaquette 4 枚の輪)で +1、角で出会う 2 本の link の境界で −1。
+- **σ は (i)・(ii) を満たす**。したがって k が奇数のとき、重み `exp(iS)·σ(n)^k` は大きいゲージ変換で不変である。
+- **8 個の z は、境界条件つきの Grassmann 積分である**:`h = SpinStructureHolonomy[{s12, s13, s23}]` として
+
+  `z(n) = σ(n) · h₁^(平面 x₁ = 0 を貫く flux) · h₂^(…) · h₃^(…)`
+
+  (`GuWenGrassmannSign[dims, h][n]`)。壁 `x_ρ = 0` を世界線が横切るたびに h_ρ(1 が周期的、−1 が反周期的)が掛かる。
+  上の「境界条件との対応」は座標平面の中の flux の二次形式から読み取ったものだったが、ここでは局所的な式そのものから出る。
+  平面に収まらない配置(2 本の link の例など)の符号も、この式が与える。
+
+確かめたのは三次元トーラスだけで(参照実装で 3×3×3、3×3×4、4×4×4。まっすぐな管は 7 通りの大きさ)、単体複体(w₂ の代表が現れるはずである)は扱っていない。
+ここでの式は立方格子の ∪₁ に合わせて順序を探して決めたもので、文献の式(Gu–Wen と Gaiotto–Kapustin の Grassmann 積分。
+奇数 level の格子 Chern–Simons については arXiv:2601.04318 と arXiv:2601.15939 の 13.1 節)と項ごとに照合してはいない。
 
 **背景場と 1-form 対称性のアノマリー**(橋の `ChernSimonsOneFormAnomalyQ` は 6 節。`reference/cech_reference.py` で確認)
 
@@ -991,7 +1016,7 @@ c(a, b) とする。これは平面の向きの選び方で、逆に取ると `c
 | 3 | little 2-cubes、Gerstenhaber operad、Pₙ | C_n(2) ≃ S^(n−1)。k 点成分の Poincaré 多項式が ∏(1+jt) | 実装済み(Pₙ の次元は arity 4 まで、参照実装で arity 5 まで。Betti 数との照合は、脈体で k = 2 と (n, k) = (2, 3)、Barratt–Eccles の段で (3, 3) まで、参照実装で (2, 4) と (4, 3) まで) |
 | C | 点付き Eₙ モノイダル圏、coherence、braid 群の作用 | 五角形・六角形・分類の個数。coherence が長さ 6 まで | 実装済み(little squares の道の braid とその位相、六角形 = operad の合成との両立まで。parenthesized braids を operad として扱う一般の coherence は未着手) |
 | G | 多重線形展開、ゲージ変分、作用、補正項の探索 | 5 節の恒等式が通る。Chern–Simons の ∪₁ の補正項が線形方程式の一意な解として出る | 実装済み(補正項の探索は、与えた候補の線形結合の中から。候補の自動生成は未着手) |
-| V | Villain 形式の U(1) 場、Deligne–Beilinson 積、構成的な格子作用 | 積がゲージ同値類の上で定まる。BF と Chern–Simons が積から出る。平坦な Z_N 場の上で Dijkgraaf–Witten になる | 実装済み(対象、ゲージ変換、積、BF、Chern–Simons、Z_N への制限、積の可換性のホモトピー、θ 項と Witten 効果、differential cochain としての定式化、Chern–Simons の零モードの数、奇数 level の障害と三次元トーラスの上でそれを消す符号、その符号と境界条件の対応、Čech–de Rham の形の cocycle、背景場と 1-form 対称性のアノマリー、星積とその積分が level 2 の作用に等しいこと)。符号の局所的な式(Majorana)は未着手 |
+| V | Villain 形式の U(1) 場、Deligne–Beilinson 積、構成的な格子作用 | 積がゲージ同値類の上で定まる。BF と Chern–Simons が積から出る。平坦な Z_N 場の上で Dijkgraaf–Witten になる | 実装済み(対象、ゲージ変換、積、BF、Chern–Simons、Z_N への制限、積の可換性のホモトピー、θ 項と Witten 効果、differential cochain としての定式化、Chern–Simons の零モードの数、奇数 level の障害と三次元トーラスの上でそれを消す符号、その符号と境界条件の対応、Čech–de Rham の形の cocycle、背景場と 1-form 対称性のアノマリー、星積とその積分が level 2 の作用に等しいこと、符号の局所的な式(Grassmann 積分))。単体複体の上の符号は未着手 |
 | 4 | E∞ operad(Barratt–Eccles、table reduction で surjection へ)、Eₙ フィルトレーション、cochain への作用 | eᵢ ↦ (1,2,1,2,…) の作用が ∪ᵢ を再現。三つの法則 (L)・(C)・(E)。Hirsch 公式のホモトピー | 実装済み(surjection operad の合成は未実装) |
 | 5 | 単体的対象、bar 構成 B(Σⁿ, Cₙ, X) | 反復 bar 構成で作った BⁿA のホモトピー群が次数 n の A だけ。近似定理を有理 Poincaré 級数の一致で確認 | 離散群の場合を実装済み(BⁿA のホモロジーとホモトピー群、Eₙ 構造 = BⁿA の cocycle、格子の作用 = K(A, n) の cocycle)。ΩⁿY への little cubes の作用と近似写像 α は実装済み。近似定理は、球面の楔について有理 Poincaré 級数の一致を arity 4 まで確認済み。n = 2 の Z₂ 係数では球面 1 個について重み 8 まで(braid 群のホモロジーと Kudo–Araki の多項式代数)。両側 bar 構成 B(Σⁿ, Cₙ, X) そのものは未着手 |
 
@@ -1000,7 +1025,8 @@ c(a, b) とする。これは平面の向きの選び方で、逆に取ると `c
 - **補正項の探索の続き**:最初の版(与えた候補の中から係数を解く)は 3.8 節にある。次は、次数を指定して ∪ᵢ と E∞ の演算から候補を自動的に並べること、
   整数性(2π × 整数になるか)を条件に入れること、単体の上で解くこと
 - 奇数 level の続き:障害が fermion の類 `(1/2) P(B)` であること、三次元トーラスの上でそれを消す 8 個の符号、境界条件との対応は 3.9 節にある。
-  次は、その符号の局所的な式(Gu–Wen の Grassmann 積分、Majorana)、単体複体(w₂ の代表)、奇数電荷の Wilson line
+  符号の局所的な式(Gu–Wen 型の Grassmann 積分)も 3.9 節にある。次は、単体複体(w₂ の代表)、奇数電荷の Wilson line、
+  文献の Majorana の重みとの項ごとの照合、Čech–de Rham の側での同じ符号(脈体の上の `m∪N + N∪m + δ̌m∪m`)
 - Ikeda の格子 Deligne–Beilinson コホモロジー(arXiv:2601.15939)との比較の続き:Villain 場から Čech–de Rham の cocycle への写像と、
   星積の積分が level 2 の Chern–Simons の作用に等しいことは 3.9 節にある。次は、同論文の対称化した積と奇数 level の扱いを
   3.9 節の符号 z と比べること、逆向きの写像、framing のある Wilson loop の比較、`σ₁₂`・`σ₀₃` の符号を同論文の式と照合すること
@@ -1079,6 +1105,8 @@ operad の側の候補:
   単独の層のロードと、17 層すべてのロードも確認済み。`VillainPatchPrimitive`、`CechDeRhamConnection`、`CechDeRhamTransition`、`CechDeRhamChern`、`CechDeRhamCocycleQ`、`CechDeRhamChernNumbers`、`ChernSimonsOneFormAnomalyQ` を含む。
 - v0.21.0:`wolframscript -file Scripts/RunTests.wls` で 352/352 が通過(2026-11-23、Wolfram Language 15.0.1、利用者の環境)。
   単独の層のロードと、17 層すべてのロードも確認済み。`CechDeRhamTriple`、`CechDeRhamFundamentalCycle`、`CechDeRhamStarIntegral`、`CechDeRhamGaugeTransform` を含む。
+- v0.22.0:`wolframscript -file Scripts/RunTests.wls` で 353/353 が通過(2026-11-23、Wolfram Language 15.0.1、利用者の環境)。
+  単独の層のロードと、17 層すべてのロードも確認済み。`GuWenGrassmannSign` を含む。
 
 ### Python 参照実装(整数・有理数の厳密計算)
 
@@ -1141,3 +1169,6 @@ operad の側の候補:
   閉じた式との一致、ξ による不変性と整数 m による整数の変化(どちらの因子でも)、平坦な Villain 場の 3 つ組の上で 4 つの寄与が
   `Σ(a/τ)∪(F_B/τ)`、0、`−Σ n∪(b/τ)`、0 に等式として等しいこと、大きなゲージ変換での変化が `−Σ q(m, n)` で奇数になりうること、
   2 つの因子の入れ替えでの差が `−Σ(F_A/τ)∪₁(F_B/τ) + Σ n∪₁n′` であること(3×3×3、3×3×4、3×4×5 を 3 通りずつ)
+- `grassmann_reference.py`:Grassmann 積分の符号。6 つの面の並べ方 720 通りのうち (ii) を満たすのが巡回的な 12 通りだけであること
+  (3×3×3 と 3×4×4)、`∪₁` が結ぶ面の対、まっすぐな管で −1(7 通りの大きさ)、link の境界で +1、2 本の link で −1、
+  (i)・(ii)、8 個の符号が境界条件つきの積分に一致すること(3×3×3、3×3×4、4×4×4)
