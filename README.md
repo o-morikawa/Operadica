@@ -338,6 +338,17 @@ BraidRelationQ[cat, 3]                        (* True *)
 BraidPathPhase[Semion[], {{1}, {1}}, {1, 1}]  (* 1/2: one semion around another *)
 ```
 
+The lines of U(1) Chern-Simons theory at level `k` are `ChernSimonsAnyons[k]`.
+At odd level the category is not modular: the line `k` is a transparent
+fermion, and the theory is a spin theory. As a category it is a bosonic theory
+times `SuperVec[]`, and it sits inside the theory at level `4 k`:
+
+```wolfram
+MugerCenter[ChernSimonsAnyons[3]]       (* {{0}, {3}} *)
+ChernSimonsSpinSplitQ[3]                (* True: ZNAnyons[3, 4] times SuperVec[] *)
+ChernSimonsFermionCondensationQ[3]      (* True: the centralizer of the fermion at level 12 *)
+```
+
 Your own data go into `PointedCategory[{N1, ..., Nr}, w, c]`. Gauge
 transformations (`GaugeTransformCategory`) change the data and leave
 `PentagonQ`, `HexagonQ`, `SpinTable` and `MutualBraiding` unchanged.

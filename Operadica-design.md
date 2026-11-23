@@ -1,6 +1,6 @@
 # Operadica 設計文書
 
-最終更新: 2026-11-23(v0.15.0)
+最終更新: 2026-11-23(v0.16.0)
 
 ## 1. 目的
 
@@ -327,6 +327,21 @@ braid 群の作用:右に寄せた積 `a₁(a₂(a₃…))` の上で、生成�
 
 標準例:`ZNAnyons[n, p]`(`w = p·a·carry(b,c)/2`、`c = p·a·b/(2n)`。n が偶数か p が偶数のとき成立)、
 `VecZN[n, k]`(H³(Z_n, U(1)) の代表)、`DoubleZN[n]`、`ToricCode[]`、`Semion[]`、`SuperVec[]`。
+
+**U(1) Chern–Simons 理論の線**(`ChernSimonsAnyons[k]`。`reference/encategory_reference.py` で確認):level k では電荷 j の線の spin が `j²/2k` である。
+
+- k が偶数なら Z_k の上の `ZNAnyons[k, 1]` で、modular。
+- k が奇数なら `j²/2k` は 2k を法としてしか定まらず、Z_(2k) の上の `ZNAnyons[2k, 2]` になる。Müger 中心は {0, k} で、線 k は spin 1/2 の fermion である。
+  modular でないことが、理論が spin 構造に依ることの圏の側の形である。
+- **分解**(`ChernSimonsSpinSplitQ`):k が奇数のとき、電荷を `j = 2l + kε`(l は k を法とし、ε = 0, 1)と書くと、spin は `2l²/k + ε/2`、
+  相互 braiding は `4ll′/k` になる。つまり `U(1)_k = ZNAnyons[k, 4] ⊠ SuperVec` で、`ZNAnyons[k, 4]` は modular。
+  点付きの braided な圏は spin(二次形式)で決まるので、比べているのは spin と相互 braiding である。
+- **fermion condensation**(`ChernSimonsFermionCondensationQ`):同じ圏は、level 4k の理論 `ZNAnyons[4k, 1]`(偶数 level。格子の作用がある)の中で、
+  fermion である線 2k と相互 braiding が自明な線(電荷が偶数の線)のなす部分でもある。線 2i が level k の線 i にあたる。
+  arXiv:2401.09597 が奇数 level を作るのに使う手続きの、圏の側の形である。
+
+圏のデータとしては「bosonic な理論に spin TQFT {1, ψ} を掛けたもの」になっているが、格子の上では直積にはならない:fermion ψ は電荷 k の Wilson line
+そのもので、ゲージ場に結びついている。格子での構成(spin 構造、Majorana)はまだない(3.9 節)。
 
 ### 3.8 cochain
 
@@ -809,7 +824,8 @@ c(a, b) とする。これは平面の向きの選び方で、逆に取ると `c
 次の候補(研究で使う計算機としての方向。cochain の式を入れると、ゲージ変分・補正項・アノマリーの類が出てくること):
 
 - **補正項の探索**:`δX = Y` を解いて X を返すこと。コホモロジーで成り立つ等式の cochain での補正項を、∪ᵢ と E∞ の演算の線形結合の中から探す
-- 奇数 level の Chern–Simons(spin 構造、fermion condensation)。圏の側の `U(1)_k = (Z_k の braided 圏) ⊠ {1, ψ}`(k が奇数)の検査から始める
+- 奇数 level の Chern–Simons の格子での構成:spin 構造(w₂ の自明化)と fermion condensation。圏の側(3.7 節の分解)は検査済みで、
+  障害は 6 節の fermion の類 `(1/2) P(B)` にあたるはずである
 - Ikeda の格子 Deligne–Beilinson コホモロジー(arXiv:2601.15939。双対格子の点を patch とする Čech–de Rham 型)との比較写像
 - Z_N の背景場との結合(1-form 対称性のゲージ化)、framing のある Wilson loop、`F_A∪₁F_B` のような格子に固有の項の系統的な扱い
 - 混合アノマリー(K(A, n) の積の上の cocycle)と 2-group(`δB = β(A)`)
@@ -873,6 +889,8 @@ operad の側の候補:
   単独の層のロードと、17 層すべてのロードも確認済み。`DeligneSwapGauge`、`DeligneSwapDefect`、`VillainThetaTerm`、`VillainWittenTerm` を含む。
 - v0.15.0:`wolframscript -file Scripts/RunTests.wls` で 336/336 が通過(2026-11-23、Wolfram Language 15.0.1、利用者の環境)。
   単独の層のロードと、17 層すべてのロードも確認済み。`DifferentialCochain`、`DifferentialCoboundary`、`DifferentialProduct`、`DifferentialSwapHomotopy`、`VillainDifferentialCochain`、`ChernSimonsZeroModeCount`、`StaggeredMomentumCount` を含む。
+- v0.16.0:`wolframscript -file Scripts/RunTests.wls` で 337/337 が通過(2026-11-23、Wolfram Language 15.0.1、利用者の環境)。
+  単独の層のロードと、17 層すべてのロードも確認済み。`ChernSimonsAnyons`、`ChernSimonsSpinSplitQ`、`ChernSimonsFermionCondensationQ` を含む。
 
 ### Python 参照実装(整数・有理数の厳密計算)
 
@@ -880,7 +898,8 @@ operad の側の候補:
   Steenrod の規約、arXiv:2303.06160 付録 A の 1〜3 次元の成分公式、Hirsch 公式の欠損
 - `gauge_reference.py`:5 節の恒等式、't Hooft flux で ΣP(B) = 2 Pf(z)、相互 braiding との一致
 - `encategory_reference.py`:標準例が公理を満たすこと、ゲージ不変性、符号を変えた六角形が
-  落ちること、Z_N 上の構造の個数、coherence(長さ 6 まで)
+  落ちること、Z_N 上の構造の個数、coherence(長さ 6 まで)、
+  U(1)_k の線の圏(k ≤ 9 の奇数で、`Z_2k^(2) = Z_k^(4) ⊠ sVec` と、level 4k の fermion の中心化部分であること)
 - `operad_reference.py`:対称群の規約と同変性(End、語、little cubes)、
   分離被覆の脈体の Betti 数
 - `ainfinity_reference.py`:Koszul 符号つきの公理、d²=0 になる符号則(双線形な 128 通りのうち 4 通り)、

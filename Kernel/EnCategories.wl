@@ -77,6 +77,12 @@ ToricCode::usage = "ToricCode[] gives DoubleZN[2]: the objects {1, 0} and {0, 1}
 
 Semion::usage = "Semion[] gives ZNAnyons[2, 1], whose nontrivial object has spin 1/4.";
 
+ChernSimonsAnyons::usage = "ChernSimonsAnyons[k] gives the braided category of the lines of U(1) Chern-Simons theory at level k > 0, in which the line of charge j has the spin j^2 / (2 k): ZNAnyons[k, 1] on Z_k for even k, and ZNAnyons[2 k, 2] on Z_(2 k) for odd k. For even k it is modular. For odd k its Mueger center is {0, k} and the line k is a fermion: the theory depends on a spin structure.";
+
+ChernSimonsSpinSplitQ::usage = "ChernSimonsSpinSplitQ[k] gives True if k is odd and ChernSimonsAnyons[k] is the product of the modular category ZNAnyons[k, 4] and SuperVec[]: writing the charge as j = 2 l + k e with l modulo k and e = 0 or 1, the spin of j is the spin of l in ZNAnyons[k, 4] plus e / 2, and the double braiding of two charges is that of their l. Spins and double braidings determine a pointed braided category.";
+
+ChernSimonsFermionCondensationQ::usage = "ChernSimonsFermionCondensationQ[k] gives True if k is odd and ChernSimonsAnyons[k] is the centralizer of the fermion in ChernSimonsAnyons[4 k]: the line 2 k of the level 4 k theory has spin 1/2, the lines with trivial double braiding with it are the even ones, and the line 2 i has the spin and the double braidings of the line i at level k.";
+
 SuperVec::usage = "SuperVec[] gives ZNAnyons[2, 2], the symmetric category of super vector spaces: the nontrivial object is a fermion, with spin 1/2.";
 
 Begin["`Private`"];
@@ -295,6 +301,57 @@ ToricCode[] := DoubleZN[2];
 Semion[] := ZNAnyons[2, 1];
 
 SuperVec[] := ZNAnyons[2, 2];
+
+(* ---------------------------------------------------------------------- *)
+(* the lines of U(1) Chern-Simons theory                                  *)
+(* ---------------------------------------------------------------------- *)
+
+ChernSimonsAnyons[k_Integer?Positive] := If[EvenQ[k], ZNAnyons[k, 1], ZNAnyons[2 k, 2]];
+
+(* j = 2 l + k e:  {l, e} *)
+csSplit[k_Integer, j_Integer] := {Mod[Quotient[j - k Mod[j, 2], 2], k], Mod[j, 2]};
+
+ChernSimonsSpinSplitQ[k_Integer?Positive] :=
+  OddQ[k] &&
+    With[{cat = ZNAnyons[2 k, 2], bos = ZNAnyons[k, 4], charges = Range[0, 2 k - 1]},
+      ModularQ[bos] &&
+        Sort[MugerCenter[cat]] === {{0}, {k}} &&
+        TopologicalSpin[cat, {k}] === 1/2 &&
+        Sort[Map[Function[j, csSplit[k, j]], charges]] === Sort[Tuples[{Range[0, k - 1], {0, 1}}]] &&
+        AllTrue[charges,
+          Function[j,
+            TopologicalSpin[cat, {j}] ===
+              Mod[TopologicalSpin[bos, {csSplit[k, j][[1]]}] + csSplit[k, j][[2]] / 2, 1]
+          ]
+        ] &&
+        AllTrue[Tuples[charges, 2],
+          Function[t,
+            MutualBraiding[cat, {t[[1]]}, {t[[2]]}] ===
+                MutualBraiding[bos, {csSplit[k, t[[1]]][[1]]}, {csSplit[k, t[[2]]][[1]]}] &&
+              csSplit[k, Mod[t[[1]] + t[[2]], 2 k]] ===
+                {
+                  Mod[csSplit[k, t[[1]]][[1]] + csSplit[k, t[[2]]][[1]], k],
+                  Mod[csSplit[k, t[[1]]][[2]] + csSplit[k, t[[2]]][[2]], 2]
+                }
+          ]
+        ]
+    ];
+
+ChernSimonsFermionCondensationQ[k_Integer?Positive] :=
+  OddQ[k] &&
+    With[{big = ZNAnyons[4 k, 1], cat = ZNAnyons[2 k, 2], charges = Range[0, 2 k - 1]},
+      TopologicalSpin[big, {2 k}] === 1/2 &&
+        Select[Range[0, 4 k - 1], Function[j, MutualBraiding[big, {j}, {2 k}] === 0]] ===
+          Range[0, 4 k - 2, 2] &&
+        AllTrue[charges,
+          Function[i, TopologicalSpin[big, {2 i}] === TopologicalSpin[cat, {i}]]
+        ] &&
+        AllTrue[Tuples[charges, 2],
+          Function[t,
+            MutualBraiding[big, {2 t[[1]]}, {2 t[[2]]}] === MutualBraiding[cat, {t[[1]]}, {t[[2]]}]
+          ]
+        ]
+    ];
 
 End[];
 

@@ -284,3 +284,34 @@ VerificationTest[
   {0, {{0}}, False, True, False, False, False},
   TestID -> "EnCategories-modular-requires-braided"
 ]
+
+(* the lines of U(1) Chern-Simons theory at level k, with spin j^2 / (2 k).
+   Even k: modular, on Z_k.  Odd k: on Z_(2 k), with the transparent fermion
+   j = k; the category is ZNAnyons[k, 4] times SuperVec[], and it is the
+   centralizer of the fermion in the level 4 k theory *)
+
+VerificationTest[
+  {
+    Map[Function[k, ModularQ[ChernSimonsAnyons[k]]], {2, 4, 6}],
+    Map[Function[k, Length[CategoryObjects[ChernSimonsAnyons[k]]]], {2, 4, 1, 3, 5}],
+    Map[Function[k, Sort[MugerCenter[ChernSimonsAnyons[k]]]], {1, 3, 5}],
+    Map[Function[k, TopologicalSpin[ChernSimonsAnyons[k], {k}]], {1, 3, 5}],
+    Map[Function[k, EnLevel[ChernSimonsAnyons[k]]], {2, 3}],
+    Map[Function[j, TopologicalSpin[ChernSimonsAnyons[3], {j}]], Range[0, 5]],
+    Map[ChernSimonsSpinSplitQ, {1, 3, 5, 7, 2}],
+    Map[ChernSimonsFermionCondensationQ, {1, 3, 5, 2}],
+    ModularQ[ChernSimonsAnyons[3]]
+  },
+  {
+    {True, True, True},
+    {2, 4, 2, 6, 10},
+    {{{0}, {1}}, {{0}, {3}}, {{0}, {5}}},
+    {1/2, 1/2, 1/2},
+    {2, 2},
+    {0, 1/6, 2/3, 1/2, 2/3, 1/6},
+    {True, True, True, True, False},
+    {True, True, True, False},
+    False
+  },
+  TestID -> "EnCategories-Chern-Simons-odd-level"
+]

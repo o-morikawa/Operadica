@@ -316,6 +316,34 @@ def main():
     twisted = Cat(Group([3]), v.w, lambda a, b: Fr(a[0] * b[0], 3))
     assert pentagon(twisted) and not hexagons(twisted) and muger(twisted) == [(0,)]
     print("a non-degenerate double braiding does not make the data a braided category  True")
+    # the lines of U(1)_k: spin j^2 / 2k.  Even k: Z_k^(1), modular.  Odd k: Z_2k^(2), with the
+    # transparent fermion j = k; it is Z_k^(4) x sVec under j = 2 l + k e, and the centralizer of
+    # the fermion 2k in U(1)_4k
+    for k in (2, 4, 6):
+        cs = zn_anyons(k, 1)
+        assert pentagon(cs) and hexagons(cs) and muger(cs) == [(0,)]
+        assert all(spin(cs, (j,)) == mod1(Fr(j * j, 2 * k)) for j in range(k))
+    for k in (1, 3, 5, 7, 9):
+        cs, bos, big = zn_anyons(2 * k, 2), zn_anyons(k, 4), zn_anyons(4 * k, 1)
+        assert pentagon(cs) and hexagons(cs) and muger(cs) == [(0,), (k,)] and spin(cs, (k,)) == Fr(1, 2)
+        assert all(spin(cs, (j,)) == mod1(Fr(j * j, 2 * k)) for j in range(2 * k))
+        assert pentagon(bos) and hexagons(bos) and muger(bos) == [(0,)]
+        part = lambda j: (((j - k * (j % 2)) // 2) % k, j % 2)
+        assert sorted(part(j) for j in range(2 * k)) == sorted((l, e) for l in range(k) for e in (0, 1))
+        for j in range(2 * k):
+            l, e = part(j)
+            assert spin(cs, (j,)) == mod1(spin(bos, (l,)) + Fr(e, 2))
+            for j2 in range(2 * k):
+                l2, e2 = part(j2)
+                assert mutual(cs, (j,), (j2,)) == mutual(bos, (l,), (l2,))
+                assert part((j + j2) % (2 * k)) == ((l + l2) % k, (e + e2) % 2)
+        assert spin(big, (2 * k,)) == Fr(1, 2)
+        assert [j for j in range(4 * k) if mutual(big, (j,), (2 * k,)) == 0] == list(range(0, 4 * k, 2))
+        for i in range(2 * k):
+            assert spin(big, (2 * i,)) == spin(cs, (i,))
+            for i2 in range(2 * k):
+                assert mutual(big, (2 * i,), (2 * i2,)) == mutual(cs, (i,), (i2,))
+    print("U(1)_k for odd k: Z_2k^(2) = Z_k^(4) x sVec = the centralizer of the fermion in U(1)_4k  True")
     print("ALL CHECKS PASSED")
 
 
