@@ -724,3 +724,102 @@ VerificationTest[
   {1, {-1, 1, -1, 1, -1}, {-1, -1, 1}, {True, True}, {True, True}, True, {-1, -1, -1, -1, 1}, {15, 1}, $Failed},
   TestID -> "Villain-spin-structure-sign"
 ]
+
+(* fluxes in a coordinate plane.  For m along the direction rho and n on the
+   plaquettes that contain rho, m cup n + n cup m + dm cup m vanishes, so
+   the anomaly q(m, n) reduces to m cup_1 dn, which is zero for closed n:
+   planar deformations do not change the sign z *)
+
+VerificationTest[
+  With[{
+      line = Function[{rho, f}, Cochain[1, Function[{x, s}, If[s === {rho}, f[x, s], 0]]]],
+      sheet = Function[{rho, f}, Cochain[2, Function[{x, s}, If[MemberQ[s, rho], f[x, s], 0]]]],
+      part = Function[{u, v}, Cup[u, v] + Cup[v, u] + Cup[Coboundary[u], u]]
+    },
+    {
+      Table[CochainZeroQ[part[line[dir, fm], sheet[dir, fn]], 3], {dir, 1, 3}],
+      Table[
+        CochainEqualQ[
+          ChernSimonsLargeGaugeAnomaly[line[dir, fm], sheet[dir, fn]],
+          HigherCup[1][line[dir, fm], Coboundary[sheet[dir, fn]]],
+          3
+        ],
+        {dir, 1, 3}
+      ],
+      CochainZeroQ[part[line[1, fm], Cochain[2, fn]], 3],
+      CochainZeroQ[part[Cochain[1, fm], sheet[1, fn]], 3]
+    }
+  ],
+  {{True, True, True}, {True, True, True}, False, False},
+  TestID -> "Villain-odd-level-planar"
+]
+
+(* on the fluxes in a coordinate plane the sign z depends only on the class
+   (wa, wb) of the dual curve in the plane: z = sa^wa sb^wb (-1)^(wa wb).
+   It is 1 on contractible curves and minus the holonomy otherwise: the
+   quadratic form of a spin structure on the two-torus.  Below: the plane
+   x1 = 1 with the classes 0, (line along 3), (line along 2), (both), and
+   the plane x3 = 0 with 0, (line along 2), (line along 1), (both) *)
+
+VerificationTest[
+  With[{dims = {3, 3, 3}},
+    With[{
+        field = Function[{p, f},
+          PeriodicCochain[p, dims,
+            Association[Map[Function[c, {c[[1]], c[[2]]} -> f[c[[1]], c[[2]]]], LCells[dims, p]]]
+          ]
+        ],
+        sg = Function[sig, SpinStructureSign[dims, sig]]
+      },
+      With[{
+          tube = Function[{pl, pos},
+            field[2,
+              Function[{y, s}, Boole[s === pl && y[[pl[[1]]]] === pos[[1]] && y[[pl[[2]]]] === pos[[2]]]]
+            ]
+          ],
+          mp1 = field[1, Function[{y, s}, If[s === {1} && y[[1]] === 1, Mod[y[[2]] y[[3]] + y[[2]] + 1, 2], 0]]],
+          mp3 = field[1, Function[{y, s}, If[s === {3} && y[[3]] === 0, Mod[y[[1]] + y[[1]] y[[2]], 2], 0]]]
+        },
+        With[{
+            plane1 = {
+              Coboundary[mp1],
+              tube[{1, 2}, {1, 0}] + Coboundary[mp1],
+              tube[{1, 3}, {1, 2}] + Coboundary[mp1],
+              tube[{1, 2}, {1, 0}] + tube[{1, 3}, {1, 2}] + Coboundary[mp1]
+            },
+            plane3 = {
+              Coboundary[mp3],
+              tube[{1, 3}, {2, 0}] + Coboundary[mp3],
+              tube[{2, 3}, {1, 0}] + Coboundary[mp3],
+              tube[{1, 3}, {2, 0}] + tube[{2, 3}, {1, 0}] + Coboundary[mp3]
+            },
+            all = {{1, 1, 1}, {-1, 1, 1}, {-1, -1, 1}, {1, -1, -1}}
+          },
+          {
+            Map[Function[st, {Map[sg[st], plane1], Map[sg[st], plane3]}], all],
+            Map[SpinStructureHolonomy, all],
+            Map[
+              Function[st,
+                Map[sg[st], plane1] ===
+                  {1, -SpinStructureHolonomy[st][[3]], -SpinStructureHolonomy[st][[2]],
+                    -SpinStructureHolonomy[st][[3]] SpinStructureHolonomy[st][[2]]}
+              ],
+              all
+            ]
+          }
+        ]
+      ]
+    ]
+  ],
+  {
+    {
+      {{1, 1, 1, -1}, {1, 1, 1, -1}},
+      {{1, -1, 1, 1}, {1, 1, 1, -1}},
+      {{1, -1, -1, -1}, {1, -1, 1, 1}},
+      {{1, 1, -1, 1}, {1, -1, -1, -1}}
+    },
+    {{-1, -1, -1}, {-1, -1, 1}, {-1, 1, 1}, {1, 1, -1}},
+    {True, True, True, True}
+  },
+  TestID -> "Villain-spin-structure-planar"
+]

@@ -136,6 +136,16 @@
 (*  role of the spin structures.  A local expression for z (Majorana       *)
 (*  fermions) is not constructed here.                                     *)
 (*                                                                        *)
+(*  For m along the direction rho and n on the plaquettes that contain     *)
+(*  rho (the fluxes whose dual curves lie in a plane orthogonal to rho),   *)
+(*  m cup n + n cup m + dm cup m = 0.  On such planar fluxes z depends     *)
+(*  only on the class of the dual curve in the plane: z = 1 if it is       *)
+(*  trivial, and z = (-1)^e with e a quadratic refinement of the           *)
+(*  intersection form of the two-torus.  By Johnson's theorem this is a    *)
+(*  spin structure on each coordinate two-torus: the fermion is periodic   *)
+(*  in the direction rho if and only if s_(mu nu) = -1, and on a curve     *)
+(*  that is not contractible in the plane z is minus the holonomy.         *)
+(*                                                                        *)
 (*  Checked in reference/villain_reference.py and                         *)
 (*  reference/oddlevel_reference.py.                                      *)
 (*                                                                        *)
@@ -190,7 +200,9 @@ ChernSimonsZeroModeCount::usage = "ChernSimonsZeroModeCount[{L1, L2, L3}] gives 
 
 ChernSimonsLargeGaugeAnomaly::usage = "ChernSimonsLargeGaugeAnomaly[m, n] gives the integer cochain q(m, n) = Cup[m, n] + Cup[n, m] + HigherCup[1][m, Coboundary[n]] + Cup[Coboundary[m], m] of degree 3, for a 1-cochain m and a 2-cochain n. Under the large gauge transformation a -> a + 2 Pi m, n -> n + Coboundary[m] the Lagrangian VillainChernSimons[k] changes by -(k/2) Coboundary[Cup[m, a]] - k Pi q(m, n), so that exp(i S) changes by (-1)^(k times the sum of q): the anomaly at odd level k. It is the descent of the four-dimensional Q(n) = Cup[n, n] + HigherCup[1][n, Coboundary[n]]: Q(n + dm) - Q(n) = Coboundary[q(m, n)] + 2 Cup[m, Coboundary[n]].";
 
-SpinStructureSign::usage = "SpinStructureSign[{L1, L2, L3}, {s12, s13, s23}][n] gives the sign z(n) = 1 or -1 of the integer 2-cochain n on the periodic lattice with sides L1, L2, L3; n has to be closed modulo 2, otherwise the result is $Failed. The function z satisfies z(n + dm) = z(n) (-1)^(sum of ChernSimonsLargeGaugeAnomaly[m, n]) for every integer 1-cochain m, so that exp(i S) z(n) is invariant under large gauge transformations at odd level, and z(n + n') = z(n) z(n') (-1)^(sum of HigherCup[1][n, n']). The signs s12, s13, s23 (each 1 or -1) are the values of z on the unit fluxes THooftFluxCochain in the (1, 2), (1, 3) and (2, 3) planes. There are eight such functions, and they play the role of the spin structures of the three-torus. z is computed by solving n = THooftFluxCochain[c, dims] + dm modulo 2.";
+SpinStructureSign::usage = "SpinStructureSign[{L1, L2, L3}, {s12, s13, s23}][n] gives the sign z(n) = 1 or -1 of the integer 2-cochain n on the periodic lattice with sides L1, L2, L3; n has to be closed modulo 2, otherwise the result is $Failed. The function z satisfies z(n + dm) = z(n) (-1)^(sum of ChernSimonsLargeGaugeAnomaly[m, n]) for every integer 1-cochain m, so that exp(i S) z(n) is invariant under large gauge transformations at odd level, and z(n + n') = z(n) z(n') (-1)^(sum of HigherCup[1][n, n']). The signs s12, s13, s23 (each 1 or -1) are the values of z on the unit fluxes THooftFluxCochain in the (1, 2), (1, 3) and (2, 3) planes. There are eight such functions, and they play the role of the spin structures of the three-torus: on the fluxes in a coordinate plane z is 1 on contractible curves and minus the holonomy of the spin structure otherwise, see SpinStructureHolonomy. z is computed by solving n = THooftFluxCochain[c, dims] + dm modulo 2.";
+
+SpinStructureHolonomy::usage = "SpinStructureHolonomy[{s12, s13, s23}] gives {h1, h2, h3} = {-s23, -s13, -s12}: the boundary conditions of the fermion in the directions 1, 2, 3 for the spin structure of the three-torus that SpinStructureSign[dims, {s12, s13, s23}] defines, 1 for periodic and -1 for antiperiodic. For a flux n on the plaquettes that contain the direction rho, at one value of the coordinate in that direction, the dual curve lies in a plane orthogonal to rho, and SpinStructureSign gives 1 if the curve is contractible in that plane and minus the product of the h of the directions it winds around an odd number of times otherwise. This is the quadratic form of a spin structure on the two-torus (Johnson): it takes the value -1 on all three nonzero classes exactly if the fermion is periodic in both directions.";
 
 StaggeredMomentumCount::usage = "StaggeredMomentumCount[{L1, ..., Ld}] gives the number of momenta p on the periodic lattice with sides L1, ..., Ld whose components add up to Pi modulo 2 Pi: L1 ... Ld / lcm(L1, ..., Ld) if the lcm is even, and 0 if all sides are odd.";
 
@@ -378,6 +390,8 @@ SpinStructureSign[
           CochainIntegrate[ChernSimonsLargeGaugeAnomaly[m, rep], dims])
     ]
   ];
+
+SpinStructureHolonomy[{s12 : (1 | -1), s13 : (1 | -1), s23 : (1 | -1)}] := {-s23, -s13, -s12};
 
 End[];
 

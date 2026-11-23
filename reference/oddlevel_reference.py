@@ -43,6 +43,16 @@ On a three-torus (periodic cubic lattice with sides L1, L2, L3):
                 odd k.  z(dm) = (-1)^(sum of dm cup m).  Every straight flux tube in the
                 (mu, nu) direction has the sign s_(mu nu), wherever it is.
                 z is computed by solving n = THooftFluxCochain[c] + dm modulo 2.
+  planes        for m along the direction rho and n on the plaquettes that contain rho (the
+                fluxes whose dual curves lie in a plane orthogonal to rho),
+                m cup n + n cup m + dm cup m = 0 identically.  So on such planar fluxes z depends
+                only on the class (wa, wb) of the dual curve in the plane, and
+                    z = sa^wa sb^wb (-1)^(wa wb):
+                1 on contractible curves, and (-1)^e with e a quadratic refinement of the
+                intersection form of the two-torus.  By Johnson's theorem this is a spin
+                structure on each coordinate two-torus: the fermion is periodic in the
+                direction rho if and only if s_(mu nu) = -1, and z is minus the holonomy
+                h = (-s23, -s13, -s12) along a curve that is not contractible in the plane.
 
 Run:  python3 reference/oddlevel_reference.py
 """
@@ -300,6 +310,58 @@ def check_torus(dims, rng):
     return 1
 
 
+def tube(lat, pl, pos):
+    """the plaquettes pl = (mu, nu) with (x_mu, x_nu) = pos: a straight flux tube"""
+    mu, nu = pl
+    return lat.formula(2, lambda x, S: int(S == pl and x[mu - 1] == pos[0] and x[nu - 1] == pos[1]))
+
+
+def check_planar_identity(dims, rng):
+    lat = Torus(dims)
+    for rho in (1, 2, 3):
+        base_m, base_n = lat.random_cochain(1, rng, 3), lat.random_cochain(2, rng, 3)
+        m = lat.formula(1, lambda x, S, rho=rho, b=base_m: b(x, S) if S == (rho,) else 0)
+        n = lat.formula(2, lambda x, S, rho=rho, b=base_n: b(x, S) if rho in S else 0)
+
+        def part(u, v):
+            return cr.comb(lat, 3, [(1, cr.cup(u, v)), (1, cr.cup(v, u)), (1, cr.cup(cr.delta(u), u))])
+        assert all(part(m, n)(x, S) == 0 for x, S in lat.cells(3))
+        assert any(part(m, base_n)(x, S) != 0 for x, S in lat.cells(3))
+        assert any(part(base_m, n)(x, S) != 0 for x, S in lat.cells(3))
+    return 1
+
+
+def check_planar(dims, rng):
+    """on the fluxes in a coordinate plane, z depends only on the class in the plane"""
+    lat = Torus(dims)
+    cnt = 0
+    for signs in itertools.product((1, -1), repeat=3):
+        z, _ = spin_sign(lat, signs)
+        sgn = dict(zip(PLANES, signs))
+        for rho in (1, 2, 3):
+            pla, plb = [pl for pl in PLANES if rho in pl]
+            for c in range(dims[rho - 1]):
+                tab = {x: rng.randint(0, 1) for x in lat.points() if x[rho - 1] == c}
+                mp = lat.formula(1, lambda x, S, rho=rho, tab=tab: tab.get(x, 0) if S == (rho,) else 0)
+                parts = [cr.delta(mp)]
+                for pl in (pla, plb):
+                    for _ in range(rng.randint(0, 3)):
+                        pos = tuple(c if d == rho else rng.randrange(dims[d - 1]) for d in pl)
+                        parts.append(tube(lat, pl, pos))
+                n = add(lat, 2, *parts)
+                fl = flux(lat, n)
+                wa, wb = fl[pla] % 2, fl[plb] % 2
+                assert z(n) == (sgn[pla] ** wa) * (sgn[plb] ** wb) * (-1) ** (wa * wb)
+                cnt += 1
+    return cnt
+
+
+def holonomy(signs):
+    """SpinStructureHolonomy: 1 periodic, -1 antiperiodic, in the directions 1, 2, 3"""
+    s12, s13, s23 = signs
+    return [-s23, -s13, -s12]
+
+
 def count_refinements(dims):
     """the sign functions on the eight classes that satisfy (ii) on the representatives"""
     lat = Torus(dims)
@@ -355,6 +417,18 @@ def test_numbers():
                      sg((-1, 1, -1))(n1), sg((-1, 1, -1))(n2)]
     out["numbers"] = [q, b12, integrate(lat, cr.cup(wall3, n1))]
     out["open"] = sg((1, 1, 1))(lat.table(2, {((0, 0, 0), (1, 2)): 1}))
+    # the planar fluxes of Tests/Villain.wlt
+    mp1 = lat.formula(1, lambda x, S: (x[1] * x[2] + x[1] + 1) % 2 if S == (1,) and x[0] == 1 else 0)
+    mp3 = lat.formula(1, lambda x, S: (x[0] + x[0] * x[1]) % 2 if S == (3,) and x[2] == 0 else 0)
+    plane1 = [cr.delta(mp1), add(lat, 2, tube(lat, (1, 2), (1, 0)), cr.delta(mp1)),
+              add(lat, 2, tube(lat, (1, 3), (1, 2)), cr.delta(mp1)),
+              add(lat, 2, tube(lat, (1, 2), (1, 0)), tube(lat, (1, 3), (1, 2)), cr.delta(mp1))]
+    plane3 = [cr.delta(mp3), add(lat, 2, tube(lat, (1, 3), (2, 0)), cr.delta(mp3)),
+              add(lat, 2, tube(lat, (2, 3), (1, 0)), cr.delta(mp3)),
+              add(lat, 2, tube(lat, (1, 3), (2, 0)), tube(lat, (2, 3), (1, 0)), cr.delta(mp3))]
+    out["planar"] = [[[sg(s)(n) for n in plane1], [sg(s)(n) for n in plane3]]
+                     for s in ((1, 1, 1), (-1, 1, 1), (-1, -1, 1), (1, -1, -1))]
+    out["holonomy"] = [holonomy(s) for s in ((1, 1, 1), (-1, 1, 1), (-1, -1, 1), (1, -1, -1))]
     # Tests/Lattice.wlt
     lat2 = Torus((2, 3, 4))
     zf = {(1, 2): 1, (1, 3): -2, (2, 3): 3}
@@ -387,15 +461,24 @@ def main():
     assert [count_refinements(dims) for dims in ((2, 2, 2), (3, 3, 3), (2, 3, 4))] == [8, 8, 8]
     print("eight quadratic refinements on the classes  True")
 
+    cnt = 0
+    for dims in ((3, 3, 3), (2, 3, 4), (4, 3, 2)):
+        check_planar_identity(dims, rng)
+        cnt += check_planar(dims, rng)
+    print("fluxes in a coordinate plane: z depends only on the class in the plane (%d cases)  True" % cnt)
+
     out = test_numbers()
     for key in ("obstruction", "normalization", "labels", "loops", "cancellation", "quadratic", "torsor",
-                "values", "numbers", "open", "flux"):
+                "values", "numbers", "open", "planar", "holonomy", "flux"):
         print("  %-14s %s" % (key, out[key]))
     assert out["obstruction"][:2] == [0, 1] and out["obstruction"][3] == 0
     assert out["normalization"] == 1 and out["labels"] == [-1, 1, -1, 1, -1]
     assert out["loops"] == [-1, -1, 1]
     assert all(out["cancellation"]) and all(out["quadratic"]) and out["torsor"]
     assert out["open"] is None and all(out["flux"])
+    assert out["planar"] == [[[1, 1, 1, -1], [1, 1, 1, -1]], [[1, -1, 1, 1], [1, 1, 1, -1]],
+                             [[1, -1, -1, -1], [1, -1, 1, 1]], [[1, 1, -1, 1], [1, -1, -1, -1]]]
+    assert out["holonomy"] == [[-1, -1, -1], [-1, -1, 1], [-1, 1, 1], [1, 1, -1]]
     print("the numbers of the Wolfram Language tests  True")
     print("ALL CHECKS PASSED")
 

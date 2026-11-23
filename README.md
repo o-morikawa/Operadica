@@ -351,11 +351,18 @@ CochainIntegrate[ChernSimonsLargeGaugeAnomaly[two, zero], dims]     (* 1: odd *)
 z = SpinStructureSign[dims, {1, 1, 1}];    (* the signs of the three unit fluxes *)
 z[Coboundary[two]]                                                  (* -1 *)
 z[THooftFluxCochain[{{0, 1, 0}, {-1, 0, 0}, {0, 0, 0}}, dims]]      (* 1 *)
+SpinStructureHolonomy[{1, 1, 1}]           (* {-1, -1, -1}: antiperiodic in all three directions *)
 ```
 
-A local expression for `z` (Majorana fermions), the identification of the eight
-functions with boundary conditions, and the coupling to Z_N background fields
-are not there yet.
+On fluxes whose dual curves lie in a coordinate plane, `z` depends only on the
+class of the curve in that plane: it is 1 on contractible curves and minus the
+holonomy otherwise. This is the quadratic form of a spin structure on the
+two-torus, which identifies the eight functions with boundary conditions: the
+fermion is periodic in a direction exactly if the straight flux tube along it
+has the sign -1.
+
+A local expression for `z` (Majorana fermions) and the coupling to Z_N
+background fields are not there yet.
 
 ## Category layer
 
